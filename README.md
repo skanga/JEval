@@ -26,3 +26,29 @@ mvn test
 ```
 
 If Maven is launched with an older Java runtime, configure a JDK 25 Maven toolchain or set `JAVA_HOME` to JDK 25 before running Maven.
+
+## LangChain4j providers
+
+JEval can use any LangChain4j `ChatModel` through `LangChain4jEvaluationModel`.
+Add the LangChain4j provider module you need, then wrap the model:
+
+```java
+import dev.jeval.EvaluationModel;
+import dev.jeval.langchain4j.LangChain4jEvaluationModel;
+import dev.jeval.metrics.AnswerRelevancyMetric;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
+
+ChatModel chatModel = OpenAiChatModel.builder()
+        .apiKey(System.getenv("OPENAI_API_KEY"))
+        .modelName("gpt-4o-mini")
+        .build();
+
+EvaluationModel model = LangChain4jEvaluationModel.from(chatModel);
+var metric = new AnswerRelevancyMetric(model);
+```
+
+JEval includes only `langchain4j-core`; provider modules such as OpenAI,
+Anthropic, Ollama, Gemini, or Bedrock stay application dependencies. This
+adapter is text-only because JEval's current `EvaluationModel` accepts a
+single prompt string.
