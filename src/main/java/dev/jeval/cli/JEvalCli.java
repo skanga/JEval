@@ -22,9 +22,20 @@ public final class JEvalCli {
     }
 
     static int run(String[] args, PrintStream out, PrintStream err, Path storeRoot) {
+        if (args.length > 0 && "settings".equals(args[0])) {
+            return CliSettings.settings(args, out, err);
+        }
+        if (args.length > 0 && "set-debug".equals(args[0])) {
+            return CliSettings.setDebug(args, out, err);
+        }
+        if (args.length > 0) {
+            var providerExit = CliSettings.provider(args[0], args, err);
+            if (providerExit >= 0) {
+                return providerExit;
+            }
+        }
         if (args.length > 0 && "generate".equals(args[0])) {
-            err.println("Use dev.jeval.synthesizer.Synthesizer from Java code; CLI provider wiring is not implemented yet.");
-            return 2;
+            return GenerateCommand.run(args, out, err);
         }
         if (args.length < 2 || !"test".equals(args[0])) {
             usage(err);
@@ -101,6 +112,9 @@ public final class JEvalCli {
 
     private static void usage(PrintStream err) {
         err.println("Usage: jeval test <file-or-directory> [--format markdown|html] [--output dir] [--quiet]");
+        err.println("       jeval settings -u key=value|-U key|-l filter [--save dotenv:.env] [--quiet]");
+        err.println("       jeval set-openai|set-ollama|set-anthropic ... [--save dotenv:.env]");
+        err.println("       jeval generate --method contexts|scratch|goldens --variation single-turn ...");
     }
 
     private record Options(String format, Path output, boolean quiet) {

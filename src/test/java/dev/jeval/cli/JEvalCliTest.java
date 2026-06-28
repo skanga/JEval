@@ -94,14 +94,144 @@ class JEvalCliTest {
     }
 
     @Test
-    void generateCommandExplainsLibraryApiIsRequiredForNow() {
+    void generateCommandRequiresResponsesFileUntilProviderRuntimeExists() {
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();
 
-        var exit = run(new String[] {"generate"}, out, err);
+        var exit = run(new String[] {"generate", "--method", "scratch", "--variation", "single-turn",
+                "--scenario", "users", "--task", "answer", "--input-format", "question"}, out, err);
 
         assertEquals(2, exit);
-        assertTrue(text(err).contains("Use dev.jeval.synthesizer.Synthesizer"));
+        assertTrue(text(err).contains("--responses-file"));
+    }
+
+    @Test
+    void generateContextsWritesGoldensFile() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "generated"
+        }, out, err);
+
+        assertEquals(0, exit);
+        var generated = Files.readString(output.resolve("generated.json"));
+        assertTrue(generated.contains("\"input\" : \"Capital?\""));
+        assertTrue(generated.contains("\"expected_output\" : \"Paris\""));
+    }
+
+    @Test
+    void generateScratchWritesGoldensFile() throws Exception {
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Study question?\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "scratch", "--variation", "single-turn",
+                "--scenario", "students", "--task", "study", "--input-format", "question",
+                "--num-goldens", "1", "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "scratch"
+        }, out, err);
+
+        assertEquals(0, exit);
+        assertTrue(Files.readString(output.resolve("scratch.json")).contains("Study question?"));
+    }
+
+    @Test
+    void generateRequiresMethodSpecificInput() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"generate", "--method", "contexts", "--variation", "single-turn"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("--contexts-file"));
+    }
+
+    @Test
+    void settingsSetUnsetListAndMaskSecretsInDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var setExit = run(new String[] {
+                "settings", "-u", "log-level=error", "-u", "temperature=0.92",
+                "-u", "anthropic-api-key=sk-test", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, setExit);
+        assertDotenv(env, "LOG_LEVEL", "40");
+        assertDotenv(env, "TEMPERATURE", "0.92");
+        assertDotenv(env, "ANTHROPIC_API_KEY", "sk-test");
+
+        out.reset();
+        err.reset();
+        var listExit = run(new String[] {"settings", "-l", "anthropic", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(0, listExit);
+        assertTrue(text(out).contains("ANTHROPIC_API_KEY=********"));
+        assertEquals(false, text(out).contains("sk-test"));
+
+        out.reset();
+        err.reset();
+        var unsetExit = run(new String[] {"settings", "-U", "temperature", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(0, unsetExit);
+        assertEquals(false, Files.readString(env).contains("TEMPERATURE="));
+        assertEquals(1, countKey(env, "LOG_LEVEL"));
+    }
+
+    @Test
+    void setDebugQuietUpdatesDotenvWithoutOutput() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-debug", "--log-level", "DEBUG", "--save", "dotenv:" + env, "--quiet"},
+                out, err);
+
+        assertEquals(0, exit);
+        assertEquals("", text(out));
+        assertDotenv(env, "LOG_LEVEL", "10");
+    }
+
+    @Test
+    void providerSetUnsetRoundtripUsesExclusiveFlags() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err));
+        assertDotenv(env, "USE_OPENAI_MODEL", "YES");
+        assertDotenv(env, "OPENAI_MODEL_NAME", "gpt-4o-mini");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-ollama", "--model", "llama3", "--base-url", "http://localhost:11434/", "--save", "dotenv:" + env
+        }, out, err));
+        assertDotenv(env, "USE_LOCAL_MODEL", "YES");
+        assertDotenv(env, "OLLAMA_MODEL_NAME", "llama3");
+        assertDotenv(env, "LOCAL_MODEL_BASE_URL", "http://localhost:11434/");
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENAI_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_MODEL_NAME"));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-ollama", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_LOCAL_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OLLAMA_MODEL_NAME"));
     }
 
     private static PrintStream print(ByteArrayOutputStream bytes) {
@@ -114,5 +244,31 @@ class JEvalCliTest {
 
     private static String text(ByteArrayOutputStream bytes) {
         return bytes.toString(StandardCharsets.UTF_8);
+    }
+
+    private static void assertDotenv(Path path, String key, String value) throws Exception {
+        assertEquals(value, readDotenv(path).get(key));
+    }
+
+    private static int countKey(Path path, String key) throws Exception {
+        if (!Files.exists(path)) {
+            return 0;
+        }
+        var prefix = key + "=";
+        return (int) Files.readAllLines(path).stream().filter(line -> line.startsWith(prefix)).count();
+    }
+
+    private static java.util.Map<String, String> readDotenv(Path path) throws Exception {
+        var values = new java.util.LinkedHashMap<String, String>();
+        if (!Files.exists(path)) {
+            return values;
+        }
+        for (var line : Files.readAllLines(path)) {
+            var index = line.indexOf('=');
+            if (index > 0) {
+                values.put(line.substring(0, index), line.substring(index + 1));
+            }
+        }
+        return values;
     }
 }

@@ -1,7 +1,9 @@
 package dev.jeval.runner;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.jeval.EvaluationDataset;
 import dev.jeval.Evaluator;
 import dev.jeval.LlmTestCase;
 import dev.jeval.Metric;
@@ -41,21 +43,74 @@ public final class TestRunner {
 
     private TestRunResult runFile(Path path) throws IOException {
         var spec = JSON.readValue(path.toFile(), EvaluationSpec.class);
+        if (spec.metrics() == null || spec.metrics().isEmpty()) {
+            throw new IllegalArgumentException("Evaluation spec must define at least one metric: " + path);
+        }
+        if (spec.dataset() == null && spec.cases() == null) {
+            throw new IllegalArgumentException("Evaluation spec must define cases or dataset: " + path);
+        }
         var metrics = spec.metrics().stream().map(TestRunner::metric).toList();
-        var results = spec.cases().stream()
+        var testCases = spec.dataset() == null
+                ? spec.cases().stream().map(TestRunner::testCase).toList()
+                : dataset(path.getParent(), spec.dataset());
+        var results = testCases.stream()
                 .map(testCase -> runCase(testCase, metrics))
                 .toList();
         return summarize(spec.name() == null ? stripExtension(path.getFileName().toString()) : spec.name(), results);
     }
 
-    private static TestCaseResult runCase(CaseSpec spec, List<Metric> metrics) {
-        var testCase = LlmTestCase.builder(spec.input())
+    private static LlmTestCase testCase(CaseSpec spec) {
+        return LlmTestCase.builder(spec.input())
                 .actualOutput(spec.actualOutput())
                 .expectedOutput(spec.expectedOutput())
                 .name(spec.name())
                 .build();
+    }
+
+    private static TestCaseResult runCase(LlmTestCase testCase, List<Metric> metrics) {
         var result = Evaluator.evaluate(testCase, metrics);
-        return new TestCaseResult(spec.name(), result.success(), result.metricResults());
+        return new TestCaseResult(testCase.name(), result.success(), result.metricResults());
+    }
+
+    private static List<LlmTestCase> dataset(Path parent, String dataset) {
+        var file = parent == null ? Path.of(dataset) : parent.resolve(dataset);
+        var data = new EvaluationDataset();
+        var name = file.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (name.endsWith(".jsonl")) {
+            return jsonlTestCases(file);
+        } else if (name.endsWith(".csv")) {
+            data.addTestCasesFromCsvFile(file, "input", "actual_output", "expected_output", "context", "retrieval_context");
+        } else if (name.endsWith(".json")) {
+            data.addTestCasesFromJsonFile(file, "input", "actual_output", "expected_output", "context", "retrieval_context");
+        } else {
+            throw new IllegalArgumentException("Unsupported dataset file type: " + file);
+        }
+        return data.testCases();
+    }
+
+    private static List<LlmTestCase> jsonlTestCases(Path file) {
+        try {
+            var cases = new ArrayList<LlmTestCase>();
+            for (var line : Files.readAllLines(file)) {
+                if (!line.isBlank()) {
+                    cases.add(jsonTestCase(JSON.readTree(line)));
+                }
+            }
+            return List.copyOf(cases);
+        } catch (IOException error) {
+            throw new IllegalArgumentException("The file " + file + " could not be read.", error);
+        }
+    }
+
+    private static LlmTestCase jsonTestCase(JsonNode node) {
+        return LlmTestCase.builder(text(node, "input"))
+                .actualOutput(text(node, "actual_output"))
+                .expectedOutput(text(node, "expected_output"))
+                .build();
+    }
+
+    private static String text(JsonNode node, String key) {
+        return node.has(key) && !node.get(key).isNull() ? node.get(key).asText() : null;
     }
 
     private static Metric metric(MetricSpec spec) {
@@ -109,7 +164,7 @@ public final class TestRunner {
         return dot < 0 ? fileName : fileName.substring(0, dot);
     }
 
-    private record EvaluationSpec(String name, List<MetricSpec> metrics, List<CaseSpec> cases) {
+    private record EvaluationSpec(String name, String dataset, List<MetricSpec> metrics, List<CaseSpec> cases) {
     }
 
     private record MetricSpec(String type, String pattern, Boolean ignoreCase, Double threshold) {

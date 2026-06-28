@@ -50,6 +50,38 @@ Evaluation files can use any file name and contain a name, metrics, and cases:
 
 Supported formats are `markdown` and `html`. Results are also written to `.jeval/.jeval`.
 
+Specs can also point at JSON, JSONL, or CSV datasets:
+
+```json
+{
+  "name": "answer-check",
+  "dataset": "cases.jsonl",
+  "metrics": [{"type": "exact_match"}]
+}
+```
+
+## CLI settings and providers
+
+Settings and provider commands persist DeepEval-style environment keys to dotenv files:
+
+```powershell
+java -jar target/jeval-0.1.0-SNAPSHOT.jar settings -u log-level=error --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar unset-openai --save dotenv:.env
+```
+
+Provider commands save configuration only. Provider modules remain application dependencies through LangChain4j.
+
+## CLI generate
+
+The `generate` command supports single-turn `contexts`, `scratch`, and `goldens`
+generation through JEval's synthesizer. Until provider runtime wiring is added,
+pass model responses with `--responses-file`:
+
+```powershell
+java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation single-turn --contexts-file contexts.json --responses-file responses.txt --output-dir generated
+```
+
 ## Synthesizer
 
 The synthesizer can generate single-turn `Golden` values from contexts, scratch
