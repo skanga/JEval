@@ -70,15 +70,19 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save 
 java -jar target/jeval-0.1.0-SNAPSHOT.jar unset-openai --save dotenv:.env
 ```
 
-Provider commands save configuration only. Provider modules remain application dependencies through LangChain4j.
+OpenAI and Ollama provider settings can be used by `generate`; other provider
+commands currently persist configuration only.
 
 ## CLI generate
 
 The `generate` command supports single-turn `contexts`, `scratch`, and `goldens`
-generation through JEval's synthesizer. Until provider runtime wiring is added,
-pass model responses with `--responses-file`:
+generation through JEval's synthesizer. It can use OpenAI/Ollama settings saved
+with provider commands, or deterministic scripted responses with `--responses-file`:
 
 ```powershell
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar settings -u openai-api-key=$env:OPENAI_API_KEY --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation single-turn --contexts-file contexts.json --save dotenv:.env --output-dir generated
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation single-turn --contexts-file contexts.json --responses-file responses.txt --output-dir generated
 ```
 
@@ -101,8 +105,7 @@ var goldens = synthesizer.generateGoldensFromContexts(
         List.of(List.of("Paris is the capital of France.")));
 ```
 
-Document chunking, conversational synthesis, and CLI provider wiring are not
-ported yet.
+Document chunking and conversational synthesis are not ported yet.
 
 ## LangChain4j providers
 
@@ -125,7 +128,6 @@ EvaluationModel model = LangChain4jEvaluationModel.from(chatModel);
 var metric = new AnswerRelevancyMetric(model);
 ```
 
-JEval includes only `langchain4j-core`; provider modules such as OpenAI,
-Anthropic, Ollama, Gemini, or Bedrock stay application dependencies. This
-adapter is text-only because JEval's current `EvaluationModel` accepts a
-single prompt string.
+JEval includes OpenAI and Ollama provider modules for CLI generation. Other
+providers stay application dependencies. This adapter is text-only because
+JEval's current `EvaluationModel` accepts a single prompt string.

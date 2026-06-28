@@ -94,7 +94,7 @@ class JEvalCliTest {
     }
 
     @Test
-    void generateCommandRequiresResponsesFileUntilProviderRuntimeExists() {
+    void generateCommandRequiresResponsesFileOrProviderSettings() {
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();
 
@@ -102,7 +102,7 @@ class JEvalCliTest {
                 "--scenario", "users", "--task", "answer", "--input-format", "question"}, out, err);
 
         assertEquals(2, exit);
-        assertTrue(text(err).contains("--responses-file"));
+        assertTrue(text(err).contains("No supported provider"));
     }
 
     @Test

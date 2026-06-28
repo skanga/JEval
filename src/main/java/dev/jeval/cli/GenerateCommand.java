@@ -71,12 +71,11 @@ final class GenerateCommand {
 
     private static Synthesizer synthesizer(String[] args) throws IOException {
         var responses = option(args, "--responses-file", null);
-        if (responses == null) {
-            throw new IllegalArgumentException("--responses-file is required until provider runtime wiring is implemented.");
-        }
-        var model = new ScriptedModel(Files.readAllLines(Path.of(responses)).stream()
-                .filter(line -> !line.isBlank())
-                .toList());
+        var model = responses == null
+                ? LangChain4jProviderModels.from(new DotenvFile(savePath(args)))
+                : new ScriptedModel(Files.readAllLines(Path.of(responses)).stream()
+                        .filter(line -> !line.isBlank())
+                        .toList());
         var scenario = option(args, "--scenario", null);
         if (scenario == null) {
             return new Synthesizer(model);
@@ -130,6 +129,11 @@ final class GenerateCommand {
             }
         }
         return fallback;
+    }
+
+    private static Path savePath(String[] args) {
+        var save = option(args, "--save", ".env");
+        return save.startsWith("dotenv:") ? Path.of(save.substring("dotenv:".length())) : Path.of(save);
     }
 
     private static int integer(String[] args, String name, int fallback) {
