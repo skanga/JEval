@@ -27,6 +27,29 @@ mvn test
 
 If Maven is launched with an older Java runtime, configure a JDK 25 Maven toolchain or set `JAVA_HOME` to JDK 25 before running Maven.
 
+## CLI test runner
+
+Package the jar, then run JSON evaluations with the `test` command:
+
+```powershell
+mvn -q -DskipTests package
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test path\to\eval.json --format markdown --output reports
+```
+
+Evaluation files can use any file name and contain a name, metrics, and cases:
+
+```json
+{
+  "name": "answer-check",
+  "metrics": [{"type": "exact_match"}],
+  "cases": [
+    {"name": "case-1", "input": "question", "actualOutput": "answer", "expectedOutput": "answer"}
+  ]
+}
+```
+
+Supported formats are `markdown` and `html`. Results are also written to `.jeval/.jeval`.
+
 ## LangChain4j providers
 
 JEval can use any LangChain4j `ChatModel` through `LangChain4jEvaluationModel`.
