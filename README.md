@@ -50,6 +50,28 @@ Evaluation files can use any file name and contain a name, metrics, and cases:
 
 Supported formats are `markdown` and `html`. Results are also written to `.jeval/.jeval`.
 
+## Synthesizer
+
+The synthesizer can generate single-turn `Golden` values from contexts, scratch
+styling, or existing goldens. It uses any `EvaluationModel`, including the
+LangChain4j adapter.
+
+```java
+import dev.jeval.Golden;
+import dev.jeval.synthesizer.Synthesizer;
+import dev.jeval.synthesizer.StylingConfig;
+
+var synthesizer = new Synthesizer(
+        model,
+        new StylingConfig("students learning geography", "ask study questions", "one question", null));
+
+var goldens = synthesizer.generateGoldensFromContexts(
+        List.of(List.of("Paris is the capital of France.")));
+```
+
+Document chunking, conversational synthesis, and CLI provider wiring are not
+ported yet.
+
 ## LangChain4j providers
 
 JEval can use any LangChain4j `ChatModel` through `LangChain4jEvaluationModel`.

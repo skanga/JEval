@@ -22,6 +22,10 @@ public final class JEvalCli {
     }
 
     static int run(String[] args, PrintStream out, PrintStream err, Path storeRoot) {
+        if (args.length > 0 && "generate".equals(args[0])) {
+            err.println("Use dev.jeval.synthesizer.Synthesizer from Java code; CLI provider wiring is not implemented yet.");
+            return 2;
+        }
         if (args.length < 2 || !"test".equals(args[0])) {
             usage(err);
             return 2;

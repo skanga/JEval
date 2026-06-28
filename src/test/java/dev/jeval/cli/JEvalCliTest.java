@@ -93,6 +93,17 @@ class JEvalCliTest {
         assertEquals("", text(out));
     }
 
+    @Test
+    void generateCommandExplainsLibraryApiIsRequiredForNow() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"generate"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Use dev.jeval.synthesizer.Synthesizer"));
+    }
+
     private static PrintStream print(ByteArrayOutputStream bytes) {
         return new PrintStream(bytes, true, StandardCharsets.UTF_8);
     }

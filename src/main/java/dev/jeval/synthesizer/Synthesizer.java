@@ -1,0 +1,145 @@
+package dev.jeval.synthesizer;
+
+import dev.jeval.EvaluationModel;
+import dev.jeval.Golden;
+import dev.jeval.synthesizer.SynthesizerSchemas.SyntheticData;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+
+public final class Synthesizer {
+    private final EvaluationModel model;
+    private final StylingConfig stylingConfig;
+    private final EvolutionConfig evolutionConfig;
+
+    public Synthesizer(EvaluationModel model) {
+        this(model, null, new EvolutionConfig());
+    }
+
+    public Synthesizer(EvaluationModel model, StylingConfig stylingConfig) {
+        this(model, stylingConfig, new EvolutionConfig());
+    }
+
+    public Synthesizer(EvaluationModel model, StylingConfig stylingConfig, EvolutionConfig evolutionConfig) {
+        this.model = Objects.requireNonNull(model, "model");
+        this.stylingConfig = stylingConfig;
+        this.evolutionConfig = evolutionConfig == null ? new EvolutionConfig() : evolutionConfig;
+    }
+
+    public List<Golden> generateGoldensFromContexts(List<List<String>> contexts) {
+        return generateGoldensFromContexts(contexts, true, 2, null);
+    }
+
+    public List<Golden> generateGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<String> sourceFiles) {
+        var goldens = new ArrayList<Golden>();
+        for (var i = 0; i < contexts.size(); i++) {
+            var context = List.copyOf(contexts.get(i));
+            var sourceFile = sourceFiles != null && i < sourceFiles.size() ? sourceFiles.get(i) : null;
+            for (SyntheticData data : SynthesizerSchemas.parseSyntheticData(
+                    model.generate(SynthesizerPrompts.generateSyntheticInputs(
+                            context, maxGoldensPerContext, includeExpectedOutput)))) {
+                goldens.add(golden(data, context, sourceFile, includeExpectedOutput, goldens.size()));
+            }
+        }
+        return List.copyOf(goldens);
+    }
+
+    public List<Golden> generateGoldensFromScratch(int numGoldens) {
+        if (stylingConfig == null) {
+            throw new IllegalStateException("StylingConfig is required for scratch generation");
+        }
+        var data = SynthesizerSchemas.parseSyntheticData(model.generate(
+                SynthesizerPrompts.generateSyntheticInputsFromScratch(
+                        stylingConfig.scenario(), stylingConfig.task(), stylingConfig.inputFormat(), numGoldens)));
+        var goldens = new ArrayList<Golden>();
+        for (var item : data) {
+            goldens.add(golden(item, null, null, false, goldens.size()));
+        }
+        return List.copyOf(goldens);
+    }
+
+    public List<Golden> generateGoldensFromGoldens(
+            List<Golden> goldens,
+            int maxGoldensPerGolden,
+            boolean includeExpectedOutput) {
+        var contexts = new ArrayList<List<String>>();
+        var sourceFiles = new ArrayList<String>();
+        var inputs = new ArrayList<String>();
+        for (var golden : goldens) {
+            if (golden.context() != null && !golden.context().isEmpty()) {
+                contexts.add(golden.context());
+                sourceFiles.add(golden.sourceFile());
+            } else {
+                inputs.add(golden.input());
+            }
+        }
+        var generated = new ArrayList<Golden>();
+        if (!contexts.isEmpty()) {
+            generated.addAll(generateGoldensFromContexts(contexts, includeExpectedOutput, maxGoldensPerGolden, sourceFiles));
+        }
+        if (!inputs.isEmpty()) {
+            var data = SynthesizerSchemas.parseSyntheticData(model.generate(
+                    SynthesizerPrompts.generateSyntheticInputsFromGoldens(
+                            inputs, inputs.size() * maxGoldensPerGolden, includeExpectedOutput)));
+            for (var item : data) {
+                generated.add(golden(item, null, null, includeExpectedOutput, generated.size()));
+            }
+        }
+        return List.copyOf(generated);
+    }
+
+    private Golden golden(
+            SyntheticData data,
+            List<String> context,
+            String sourceFile,
+            boolean includeExpectedOutput,
+            int goldenIndex) {
+        var evolutions = new ArrayList<String>();
+        var input = data.input();
+        for (var i = 0; i < evolutionConfig.numEvolutions(); i++) {
+            var evolution = evolution(goldenIndex + i);
+            input = SynthesizerSchemas.parseRewrittenInput(model.generate(SynthesizerPrompts.evolveInput(input, evolution)));
+            evolutions.add(evolution.value());
+        }
+        var expectedOutput = includeExpectedOutput ? expectedOutput(data, context, input) : null;
+        return Golden.builder(input)
+                .expectedOutput(expectedOutput)
+                .context(context)
+                .sourceFile(sourceFile)
+                .additionalMetadata(metadata(evolutions, data, sourceFile))
+                .build();
+    }
+
+    private String expectedOutput(SyntheticData data, List<String> context, String input) {
+        if (data.expectedOutput() != null || context == null) {
+            return data.expectedOutput();
+        }
+        return model.generate(SynthesizerPrompts.generateExpectedOutput(
+                context, input, stylingConfig == null ? null : stylingConfig.expectedOutputFormat()));
+    }
+
+    private Evolution evolution(int index) {
+        var evolutions = evolutionConfig.evolutions();
+        return evolutions.get(index % evolutions.size());
+    }
+
+    private static LinkedHashMap<String, Object> metadata(
+            List<String> evolutions,
+            SyntheticData data,
+            String sourceFile) {
+        var metadata = new LinkedHashMap<String, Object>();
+        metadata.put("evolutions", List.copyOf(evolutions));
+        if (sourceFile != null) {
+            metadata.put("context_source_files", List.of(sourceFile));
+        }
+        if (data.usedSourceFiles() != null) {
+            metadata.put("used_source_files", data.usedSourceFiles());
+        }
+        return metadata;
+    }
+}
