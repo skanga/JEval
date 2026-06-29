@@ -539,6 +539,48 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunVerboseFlagIsAccepted() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "verbose-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--verbose"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("Summary: total=1 passed=1 failed=0"));
+    }
+
+    @Test
+    void testRunVerboseShortAliasIsAccepted() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "verbose-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-v", "--quiet"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals("", text(out));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
