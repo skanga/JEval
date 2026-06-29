@@ -283,7 +283,7 @@ final class GenerateCommand {
             Path file) throws IOException {
         var maxContexts = integer(args, "--max-contexts-per-document", 3);
         var count = 0;
-        for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
+        for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 1024))) {
             if (count++ >= maxContexts) {
                 break;
             }

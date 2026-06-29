@@ -1247,6 +1247,34 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateDocsUsesDeepEvalDefaultChunkSize() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, """
+                one two three four five six seven eight nine ten
+                eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty
+                twentyone twentytwo twentythree twentyfour twentyfive twentysix twentyseven twentyeight twentynine thirty
+                """);
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"Question one?","expected_output":"Answer one"}]}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--document-path", document.toString(),
+                "--responses-file", responses.toString(), "--output-dir", output.toString(),
+                "--file-name", "docs-default-chunk"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("docs-default-chunk.json"));
+        assertTrue(generated.contains("Question one?"));
+    }
+
+    @Test
     void generateConversationalDocsHonorsMaxContextsPerDocumentLikeDeepEval() throws Exception {
         var document = tempDir.resolve("policy.md");
         Files.writeString(document, "alpha beta gamma delta epsilon zeta");
