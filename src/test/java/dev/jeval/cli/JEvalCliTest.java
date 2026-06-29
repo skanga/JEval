@@ -99,6 +99,32 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunSupportsDeepEvalIdentifierAlias() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "spec-name",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var output = tempDir.resolve("reports");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "test", "run", file.toString(), "-id", "release-smoke",
+                "--format", "markdown", "--output", output.toString()
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("release-smoke"));
+        assertTrue(Files.readString(output.resolve("release-smoke.md")).contains("release-smoke"));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
