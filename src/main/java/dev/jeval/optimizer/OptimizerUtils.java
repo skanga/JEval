@@ -1,5 +1,6 @@
 package dev.jeval.optimizer;
 
+import dev.jeval.DeepEvalException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -21,6 +22,74 @@ public final class OptimizerUtils {
             snapshots.put(entry.getKey(), new PromptConfigSnapshot(config.parent(), config.prompts()));
         }
         return Collections.unmodifiableMap(snapshots);
+    }
+
+    public static Object validateInstance(
+            String component,
+            String paramName,
+            Object value,
+            boolean allowNull,
+            Class<?>... expectedTypes) {
+        if (value == null && allowNull) {
+            return null;
+        }
+        for (var expectedType : expectedTypes) {
+            if (expectedType.isInstance(value)) {
+                return value;
+            }
+        }
+        throw new DeepEvalException(component + " expected `" + paramName + "` to be an instance of "
+                + formatTypeNames(expectedTypes) + ", but received "
+                + (value == null ? "null" : value.getClass().getSimpleName()) + " instead.");
+    }
+
+    public static List<?> validateSequenceOf(
+            String component,
+            String paramName,
+            Object value,
+            boolean allowNull,
+            Class<?>... expectedItemTypes) {
+        if (value == null && allowNull) {
+            return null;
+        }
+        if (!(value instanceof List<?> list)) {
+            throw new DeepEvalException(component + " expected `" + paramName + "` to be a List of "
+                    + formatTypeNames(expectedItemTypes) + ", but received "
+                    + (value == null ? "null" : value.getClass().getSimpleName()) + " instead.");
+        }
+        for (var i = 0; i < list.size(); i++) {
+            var item = list.get(i);
+            if (!matchesAny(item, expectedItemTypes)) {
+                throw new DeepEvalException(component + " expected all elements of `" + paramName
+                        + "` to be instances of " + formatTypeNames(expectedItemTypes)
+                        + ", but element at index " + i + " has type "
+                        + (item == null ? "null" : item.getClass().getSimpleName()) + ".");
+            }
+        }
+        return list;
+    }
+
+    public static Object validateCallback(String component, Object modelCallback) {
+        if (modelCallback == null) {
+            throw new DeepEvalException(component + " requires a `model_callback`.\n\n"
+                    + "Supply a custom callable via `modelCallback` that performs generation and returns the model output.");
+        }
+        return modelCallback;
+    }
+
+    public static int validateIntInRange(
+            String component,
+            String paramName,
+            int value,
+            Integer minInclusive,
+            Integer maxExclusive) {
+        if (minInclusive != null && value < minInclusive) {
+            throw rangeError(component, paramName, value, minInclusive, maxExclusive);
+        }
+        if (maxExclusive != null && value >= maxExclusive) {
+            throw rangeError(component, paramName, value, minInclusive, maxExclusive);
+        }
+        return value;
     }
 
     public static <T> GoldenSplit<T> splitGoldens(List<T> goldens, int paretoSize, Random randomState) {
@@ -62,5 +131,47 @@ public final class OptimizerUtils {
             feedback = List.copyOf(Objects.requireNonNull(feedback, "feedback"));
             pareto = List.copyOf(Objects.requireNonNull(pareto, "pareto"));
         }
+    }
+
+    private static boolean matchesAny(Object value, Class<?>[] expectedTypes) {
+        for (var expectedType : expectedTypes) {
+            if (expectedType.isInstance(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static DeepEvalException rangeError(
+            String component,
+            String paramName,
+            int value,
+            Integer minInclusive,
+            Integer maxExclusive) {
+        if (minInclusive != null && maxExclusive != null) {
+            return new DeepEvalException(component + " expected `" + paramName + "` to be between "
+                    + minInclusive + " and " + (maxExclusive - 1) + " (inclusive), but received " + value
+                    + " instead.");
+        }
+        if (minInclusive != null) {
+            return new DeepEvalException(component + " expected `" + paramName + "` to be >= "
+                    + minInclusive + ", but received " + value + " instead.");
+        }
+        return new DeepEvalException(component + " expected `" + paramName + "` to be < "
+                + maxExclusive + ", but received " + value + " instead.");
+    }
+
+    private static String formatTypeNames(Class<?>[] types) {
+        var names = new ArrayList<String>();
+        for (var type : types) {
+            names.add(type.getSimpleName());
+        }
+        if (names.size() == 1) {
+            return names.getFirst();
+        }
+        if (names.size() == 2) {
+            return names.get(0) + " or " + names.get(1);
+        }
+        return String.join(", ", names.subList(0, names.size() - 1)) + ", or " + names.getLast();
     }
 }

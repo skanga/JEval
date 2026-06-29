@@ -1,9 +1,12 @@
 package dev.jeval.optimizer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.jeval.DeepEvalException;
 import dev.jeval.prompt.Prompt;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -81,6 +84,61 @@ class OptimizerUtilsTest {
 
         assertEquals(1, split.feedback().size());
         assertEquals(2, split.pareto().size());
+    }
+
+    @Test
+    void validateInstanceReturnsMatchingValueAndAllowsNullWhenRequested() {
+        assertEquals("value", OptimizerUtils.validateInstance(
+                "PromptOptimizer.optimize", "prompt", "value", false, String.class));
+        assertNull(OptimizerUtils.validateInstance(
+                "PromptOptimizer.optimize", "prompt", null, true, String.class));
+    }
+
+    @Test
+    void validateInstanceRejectsWrongTypeWithDeepEvalStyleMessage() {
+        var error = assertThrows(DeepEvalException.class, () -> OptimizerUtils.validateInstance(
+                "PromptOptimizer.optimize", "prompt", 3, false, String.class));
+
+        assertTrue(error.getMessage().contains("PromptOptimizer.optimize expected `prompt`"));
+        assertTrue(error.getMessage().contains("String"));
+        assertTrue(error.getMessage().contains("Integer"));
+    }
+
+    @Test
+    void validateSequenceOfReturnsListAndValidatesEachItem() {
+        var values = List.of("a", "b");
+
+        assertSame(values, OptimizerUtils.validateSequenceOf(
+                "Scorer", "goldens", values, false, String.class));
+
+        var error = assertThrows(DeepEvalException.class, () -> OptimizerUtils.validateSequenceOf(
+                "Scorer", "goldens", List.of("a", 1), false, String.class));
+        assertTrue(error.getMessage().contains("element at index 1"));
+        assertTrue(error.getMessage().contains("Integer"));
+    }
+
+    @Test
+    void validateCallbackRequiresCallbackValue() {
+        var callback = new Object();
+
+        assertSame(callback, OptimizerUtils.validateCallback("Scorer", callback));
+
+        var error = assertThrows(DeepEvalException.class,
+                () -> OptimizerUtils.validateCallback("Scorer", null));
+        assertTrue(error.getMessage().contains("Scorer requires a `model_callback`"));
+    }
+
+    @Test
+    void validateIntInRangeReturnsValueAndRejectsBounds() {
+        assertEquals(3, OptimizerUtils.validateIntInRange("GEPA", "pareto_size", 3, 1, 5));
+
+        var low = assertThrows(DeepEvalException.class,
+                () -> OptimizerUtils.validateIntInRange("GEPA", "pareto_size", 0, 1, 5));
+        var high = assertThrows(DeepEvalException.class,
+                () -> OptimizerUtils.validateIntInRange("GEPA", "pareto_size", 5, 1, 5));
+
+        assertTrue(low.getMessage().contains("between 1 and 4"));
+        assertTrue(high.getMessage().contains("between 1 and 4"));
     }
 
     private static Set<String> union(OptimizerUtils.GoldenSplit<String> split) {
