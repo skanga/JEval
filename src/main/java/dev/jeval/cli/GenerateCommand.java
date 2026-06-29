@@ -27,7 +27,11 @@ final class GenerateCommand {
 
     static int run(String[] args, PrintStream out, PrintStream err) {
         var method = lowerOption(args, "--method", null);
-        var variation = lowerOption(args, "--variation", "single-turn");
+        var variation = lowerOption(args, "--variation", null);
+        if (variation == null) {
+            err.println("--variation is required");
+            return 2;
+        }
         if (!"single-turn".equals(variation) && !"multi-turn".equals(variation)) {
             err.println("Only --variation single-turn and multi-turn are implemented in JEval CLI generate.");
             return 2;

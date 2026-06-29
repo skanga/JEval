@@ -1096,6 +1096,24 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRequiresVariationLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("--variation is required"));
+    }
+
+    @Test
     void generateContextsRejectsNonListContextsFileLikeDeepEval() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "{\"context\":[\"Paris is in France.\"]}");
