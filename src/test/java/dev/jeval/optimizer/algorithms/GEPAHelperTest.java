@@ -2,11 +2,13 @@ package dev.jeval.optimizer.algorithms;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.Golden;
 import dev.jeval.optimizer.AcceptedIteration;
 import dev.jeval.optimizer.PromptConfiguration;
+import dev.jeval.optimizer.ScorerDiagnosisResult;
 import dev.jeval.optimizer.policies.TieBreaker;
 import dev.jeval.prompt.Prompt;
 import dev.jeval.prompt.PromptInterpolationType;
@@ -95,6 +97,34 @@ class GEPAHelperTest {
         assertEquals(rewritten, child.prompts().get("answer"));
         assertEquals(judge, child.prompts().get("judge"));
         assertEquals(List.of("answer", "judge"), child.prompts().keySet().stream().toList());
+    }
+
+    @Test
+    void generateChildPromptUsesConfiguredRewriterCallback() {
+        var gepa = new GEPA(1, 2, 1, 7, 1, TieBreaker.PREFER_CHILD,
+                prompt -> "{\"revised_prompt\":\"Answer with a cited fact\"}");
+        var parent = PromptConfiguration.create(new LinkedHashMap<>(
+                Map.of("answer", new Prompt("answer", "Answer briefly"))));
+        var diagnosis = new ScorerDiagnosisResult(
+                "missing citation",
+                "correct topic",
+                "needs stronger grounding",
+                List.of("one failed result"));
+
+        var childPrompt = gepa.generateChildPrompt(parent, "answer", diagnosis);
+
+        assertEquals("Answer with a cited fact", childPrompt.textTemplate());
+    }
+
+    @Test
+    void generateChildPromptReturnsNullForEquivalentRewrite() {
+        var gepa = new GEPA(1, 2, 1, 7, 1, TieBreaker.PREFER_CHILD,
+                prompt -> "{\"revised_prompt\":\" Answer briefly\\n\"}");
+        var parent = PromptConfiguration.create(new LinkedHashMap<>(
+                Map.of("answer", new Prompt("answer", "Answer briefly"))));
+        var diagnosis = new ScorerDiagnosisResult("failure", "success", "analysis", List.of("result"));
+
+        assertNull(gepa.generateChildPrompt(parent, "answer", diagnosis));
     }
 
     @Test

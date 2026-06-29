@@ -8,8 +8,10 @@ import dev.jeval.optimizer.OptimizerScorer;
 import dev.jeval.optimizer.OptimizerUtils;
 import dev.jeval.optimizer.PromptConfiguration;
 import dev.jeval.optimizer.PromptOptimizationAlgorithm;
+import dev.jeval.optimizer.ScorerDiagnosisResult;
 import dev.jeval.optimizer.policies.OptimizerPolicies;
 import dev.jeval.optimizer.policies.TieBreaker;
+import dev.jeval.optimizer.rewriter.Rewriter;
 import dev.jeval.prompt.Prompt;
 import dev.jeval.prompt.PromptMessage;
 import dev.jeval.prompt.PromptType;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Function;
 
 public final class GEPA implements PromptOptimizationAlgorithm {
     private static final double MIN_DELTA = 0.0;
@@ -30,6 +33,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
     private final int patience;
     private final TieBreaker tieBreaker;
     private final Random randomState;
+    private final Function<String, String> rewriteCallback;
 
     public GEPA() {
         this(5, 8, 3, null, 3, TieBreaker.PREFER_CHILD);
@@ -45,6 +49,11 @@ public final class GEPA implements PromptOptimizationAlgorithm {
 
     public GEPA(int iterations, int minibatchSize, int paretoSize, Integer randomSeed, int patience,
             TieBreaker tieBreaker) {
+        this(iterations, minibatchSize, paretoSize, randomSeed, patience, tieBreaker, null);
+    }
+
+    public GEPA(int iterations, int minibatchSize, int paretoSize, Integer randomSeed, int patience,
+            TieBreaker tieBreaker, Function<String, String> rewriteCallback) {
         if (iterations < 1) {
             throw new IllegalArgumentException("iterations must be >= 1");
         }
@@ -61,6 +70,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         this.patience = patience;
         this.tieBreaker = tieBreaker == null ? TieBreaker.PREFER_CHILD : tieBreaker;
         this.randomState = new Random(this.randomSeed);
+        this.rewriteCallback = rewriteCallback;
     }
 
     public int iterations() {
@@ -117,6 +127,21 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         var prompts = new LinkedHashMap<>(parent.prompts());
         prompts.put(moduleId, rewrittenPrompt);
         return PromptConfiguration.create(prompts, parent.id());
+    }
+
+    Prompt generateChildPrompt(
+            PromptConfiguration parent,
+            String moduleId,
+            ScorerDiagnosisResult feedbackDiagnosis) {
+        if (rewriteCallback == null) {
+            return null;
+        }
+        var original = parent.prompts().get(moduleId);
+        if (original == null) {
+            return null;
+        }
+        var rewritten = new Rewriter(rewriteCallback).rewrite(original, feedbackDiagnosis);
+        return isEquivalentPrompt(original, rewritten) ? null : rewritten;
     }
 
     boolean acceptChild(
