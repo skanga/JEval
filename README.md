@@ -46,6 +46,7 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -v
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -m smoke
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -o
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --color no --durations 5 -w -n 2
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -X -W
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json::case-name --quiet
 ```
 

@@ -215,6 +215,29 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunExitOnFirstFailureNegativeAliasIsAccepted() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "exit-first-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "bad", "input": "q", "actualOutput": "a", "expectedOutput": "b"},
+                    {"name": "also-bad", "input": "q", "actualOutput": "a", "expectedOutput": "c"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-X"}, out, err);
+
+        assertEquals(1, exit);
+        assertTrue(text(out).contains("total=2"));
+        assertTrue(text(out).contains("### also-bad"));
+    }
+
+    @Test
     void testRunDisplayFiltersReportedCases() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
@@ -291,6 +314,28 @@ class JEvalCliTest {
 
         assertEquals(1, exit, text(err));
         assertTrue(text(out).contains("Summary: total=1 passed=0 failed=1"));
+        assertEquals("", text(err));
+    }
+
+    @Test
+    void testRunShowWarningsNegativeAliasIsAccepted() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "warnings-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-W", "--quiet"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals("", text(out));
         assertEquals("", text(err));
     }
 
