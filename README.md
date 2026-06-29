@@ -143,6 +143,7 @@ external datasets:
 import dev.jeval.Golden;
 import dev.jeval.benchmarks.ARC;
 import dev.jeval.benchmarks.BoolQ;
+import dev.jeval.benchmarks.HellaSwag;
 import java.util.List;
 import java.util.Map;
 
@@ -153,6 +154,7 @@ var benchmark = new BoolQ(List.of(
 
 var result = benchmark.evaluate(model);
 var arcResult = new ARC(goldens).evaluate(model);
+var hellaswagResult = new HellaSwag(Map.of("Applying sunscreen", goldens)).evaluate(model);
 ```
 
 MMLU-style task scoring is available for task-grouped goldens:
