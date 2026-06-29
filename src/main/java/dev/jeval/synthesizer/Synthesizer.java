@@ -98,8 +98,7 @@ public final class Synthesizer {
         var generated = new ArrayList<Golden>();
         if (!contexts.isEmpty()) {
             generated.addAll(generateGoldensFromContexts(contexts, includeExpectedOutput, maxGoldensPerGolden, sourceFiles));
-        }
-        if (!inputs.isEmpty()) {
+        } else if (!inputs.isEmpty()) {
             var data = SynthesizerSchemas.parseSyntheticData(model.generate(
                     SynthesizerPrompts.generateSyntheticInputsFromGoldens(
                             inputs, inputs.size() * maxGoldensPerGolden, includeExpectedOutput)));
@@ -162,8 +161,7 @@ public final class Synthesizer {
         if (!contexts.isEmpty()) {
             generated.addAll(generateConversationalGoldensFromContexts(
                     contexts, includeExpectedOutcome, maxGoldensPerGolden, null));
-        }
-        if (!scenarios.isEmpty()) {
+        } else if (!scenarios.isEmpty()) {
             var data = SynthesizerSchemas.parseConversationalData(model.generate(
                     SynthesizerPrompts.generateSyntheticConversationalScenariosFromGoldens(
                             scenarios, scenarios.size() * maxGoldensPerGolden, includeExpectedOutcome)));

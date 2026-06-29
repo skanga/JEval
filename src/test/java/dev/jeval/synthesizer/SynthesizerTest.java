@@ -142,11 +142,10 @@ class SynthesizerTest {
     }
 
     @Test
-    void generatesFromMixedExistingGoldens() {
+    void generateGoldensFromMixedExistingGoldensUsesContextBranchLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"Context question\"}]}",
-                "Context answer",
-                "{\"data\":[{\"input\":\"Plain question\",\"expected_output\":\"Plain answer\"}]}"));
+                "Context answer"));
         var synthesizer = new Synthesizer(model);
         var contextual = Golden.builder("old context")
                 .context(List.of("context"))
@@ -156,13 +155,11 @@ class SynthesizerTest {
 
         var goldens = synthesizer.generateGoldensFromGoldens(List.of(contextual, plain), 1, true);
 
-        assertEquals(2, goldens.size());
+        assertEquals(1, goldens.size());
         assertEquals("Context question", goldens.get(0).input());
         assertEquals(List.of("context"), goldens.get(0).context());
         assertEquals("Context answer", goldens.get(0).expectedOutput());
-        assertEquals("Plain question", goldens.get(1).input());
-        assertEquals("Plain answer", goldens.get(1).expectedOutput());
-        assertEquals(true, model.prompts().get(2).contains("expected_output"));
+        assertEquals(2, model.prompts().size());
     }
 
     @Test
@@ -282,6 +279,28 @@ class SynthesizerTest {
         assertEquals("flight change request", goldens.getFirst().scenario());
         assertEquals("user", goldens.getFirst().turns().getFirst().role());
         assertEquals(true, model.prompts().getFirst().contains("traveler wants to rebook a flight"));
+    }
+
+    @Test
+    void generateConversationalGoldensFromMixedExistingGoldensUsesContextBranchLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"context scenario","turns":[
+                  {"role":"user","content":"Ask about context"}
+                ],"expected_outcome":"Context explained"}]}
+                """));
+        var synthesizer = new Synthesizer(model);
+        var contextual = ConversationalGolden.builder("old context")
+                .context(List.of("context"))
+                .build();
+        var plain = ConversationalGolden.builder("old plain").build();
+
+        var goldens = synthesizer.generateConversationalGoldensFromGoldens(List.of(contextual, plain), 1, true);
+
+        assertEquals(1, goldens.size());
+        assertEquals("context scenario", goldens.getFirst().scenario());
+        assertEquals(List.of("context"), goldens.getFirst().context());
+        assertEquals(1, model.prompts().size());
     }
 
     private static final class ScriptedModel implements EvaluationModel {
