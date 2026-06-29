@@ -60,8 +60,8 @@ final class GenerateCommand {
             }
             var dataset = new EvaluationDataset(goldens);
             var file = dataset.saveAs(option(args, "--file-type", "json"),
-                    Path.of(option(args, "--output-dir", ".")),
-                    option(args, "--file-name", "generated"));
+                    Path.of(option(args, "--output-dir", "synthetic_data")),
+                    option(args, "--file-name", null));
             out.println(file);
             return 0;
         } catch (IOException | IllegalArgumentException | IllegalStateException error) {

@@ -790,6 +790,40 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateUsesDeepEvalDefaultOutputDirectoryAndTimestampedFileName() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+        try {
+            var exit = run(new String[] {
+                    "generate", "--method", "contexts", "--variation", "single-turn",
+                    "--contexts-file", contexts.toString(), "--responses-file", responses.toString()
+            }, out, err);
+
+            assertEquals(0, exit, text(err));
+            var generatedPath = Path.of(text(out).trim());
+            assertEquals(Path.of("synthetic_data"), generatedPath.getParent());
+            assertTrue(generatedPath.getFileName().toString().matches("\\d{8}_\\d{6}\\.json"));
+            assertTrue(Files.readString(generatedPath).contains("\"input\" : \"Capital?\""));
+        } finally {
+            Files.deleteIfExists(Path.of("generated.json"));
+            try (var files = Files.exists(Path.of("synthetic_data"))
+                    ? Files.walk(Path.of("synthetic_data"))
+                    : java.util.stream.Stream.<Path>empty()) {
+                files.sorted(java.util.Comparator.reverseOrder()).forEach(path -> {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (java.io.IOException ignored) {
+                    }
+                });
+            }
+        }
+    }
+
+    @Test
     void generateSupportsDeepEvalNoIncludeExpectedAlias() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");
