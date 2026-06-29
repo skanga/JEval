@@ -145,6 +145,7 @@ import dev.jeval.benchmarks.ARC;
 import dev.jeval.benchmarks.BBQ;
 import dev.jeval.benchmarks.BoolQ;
 import dev.jeval.benchmarks.DROP;
+import dev.jeval.benchmarks.EquityMedQA;
 import dev.jeval.benchmarks.GSM8K;
 import dev.jeval.benchmarks.HellaSwag;
 import dev.jeval.benchmarks.HumanEval;
@@ -167,6 +168,7 @@ var result = benchmark.evaluate(model);
 var arcResult = new ARC(goldens).evaluate(model);
 var bbq = new BBQ(Map.of("Age", goldens)).evaluate(model);
 var drop = new DROP(Map.of("history", goldens)).evaluate(model);
+var equityMedQA = new EquityMedQA(Map.of("EHAI", goldens), biasMetric).evaluate(model);
 var gsm8k = new GSM8K(goldens).evaluate(model);
 var hellaswagResult = new HellaSwag(Map.of("Applying sunscreen", goldens)).evaluate(model);
 var humanEval = new HumanEval(
