@@ -63,13 +63,14 @@ class GEPAExecutionTest {
                 1.0,
                 testCase.expectedOutput().equals(testCase.actualOutput()),
                 null);
+        var gepa = new GEPA(1, 1, 1, 123, 1, TieBreaker.PREFER_CHILD,
+                rewritePrompt -> "{\"revised_prompt\":\"Answer with a cited fact\"}");
         var optimizer = new PromptOptimizer(
                 (callbackPrompt, golden) -> callbackPrompt.textTemplate().contains("cited")
                         ? ((Golden) golden).expectedOutput()
                         : "wrong",
                 List.of(metric),
-                new GEPA(1, 1, 1, 123, 1, TieBreaker.PREFER_CHILD,
-                        rewritePrompt -> "{\"revised_prompt\":\"Answer with a cited fact\"}"));
+                gepa);
 
         var bestPrompt = optimizer.optimize(prompt, goldens);
         var report = optimizer.optimizationReport();
@@ -81,6 +82,13 @@ class GEPAExecutionTest {
         assertEquals(0.0, accepted.before());
         assertEquals(1.0, accepted.after());
         assertEquals(report.bestId(), accepted.child());
+        assertEquals(1, gepa.iterationLog().size());
+        var log = gepa.iterationLog().getFirst();
+        assertEquals(0, log.iteration());
+        assertEquals("accepted", log.outcome());
+        assertEquals("Accepted by Pareto non-domination", log.reason());
+        assertEquals(0.0, log.before());
+        assertEquals(1.0, log.after());
     }
 
     @Test

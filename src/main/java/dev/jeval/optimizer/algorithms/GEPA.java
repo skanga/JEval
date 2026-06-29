@@ -2,6 +2,7 @@ package dev.jeval.optimizer.algorithms;
 
 import dev.jeval.DeepEvalException;
 import dev.jeval.optimizer.AcceptedIteration;
+import dev.jeval.optimizer.IterationLogEntry;
 import dev.jeval.optimizer.OptimizationReport;
 import dev.jeval.optimizer.OptimizationResult;
 import dev.jeval.optimizer.OptimizerScorer;
@@ -34,6 +35,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
     private final TieBreaker tieBreaker;
     private final Random randomState;
     private final Function<String, String> rewriteCallback;
+    private final List<IterationLogEntry> iterationLog = new ArrayList<>();
 
     public GEPA() {
         this(5, 8, 3, null, 3, TieBreaker.PREFER_CHILD);
@@ -99,6 +101,10 @@ public final class GEPA implements PromptOptimizationAlgorithm {
 
     public Random randomState() {
         return randomState;
+    }
+
+    public List<IterationLogEntry> iterationLog() {
+        return List.copyOf(iterationLog);
     }
 
     <T> List<T> drawMinibatch(List<T> goldens) {
@@ -190,6 +196,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         if (goldens.size() < 2) {
             throw new DeepEvalException("GEPA requires at least 2 goldens to optimize.");
         }
+        iterationLog.clear();
         var optimizationId = UUID.randomUUID().toString();
         var prompts = new LinkedHashMap<String, Prompt>();
         prompts.put(OptimizerScorer.DEFAULT_MODULE_ID, prompt);
@@ -219,22 +226,55 @@ public final class GEPA implements PromptOptimizationAlgorithm {
             var child = childConfiguration(parent, OptimizerScorer.DEFAULT_MODULE_ID, childPrompt);
             var childMinibatchScore = scorer.scoreMinibatch(child, minibatch);
             if (childMinibatchScore <= parentMinibatchScore) {
+                iterationLog.add(new IterationLogEntry(
+                        i,
+                        "skipped",
+                        "Skipped (minibatch score did not improve)",
+                        0.0,
+                        average(paretoScores.get(parent.id())),
+                        childMinibatchScore));
                 continue;
             }
+            var childParetoScores = scorer.scorePareto(child, paretoGoldens);
+            var parentParetoScores = paretoScores.get(parent.id());
+            var parentAggregate = average(parentParetoScores);
+            var childAggregate = average(childParetoScores);
             var accepted = acceptChild(
                     parent,
                     child,
                     OptimizerScorer.DEFAULT_MODULE_ID,
-                    paretoScores.get(parent.id()),
-                    scorer.scorePareto(child, paretoGoldens),
+                    parentParetoScores,
+                    childParetoScores,
                     paretoScores,
                     parents,
                     promptConfigurations,
                     acceptedIterations);
             if (accepted) {
                 consecutiveRejections = 0;
+                iterationLog.add(new IterationLogEntry(
+                        i,
+                        "accepted",
+                        "Accepted by Pareto non-domination",
+                        0.0,
+                        parentAggregate,
+                        childAggregate));
             } else if (++consecutiveRejections >= patience) {
+                iterationLog.add(new IterationLogEntry(
+                        i,
+                        "rejected",
+                        "early stop (patience=" + patience + ")",
+                        0.0,
+                        parentAggregate,
+                        childAggregate));
                 break;
+            } else {
+                iterationLog.add(new IterationLogEntry(
+                        i,
+                        "rejected",
+                        "Rejected (consecutive rejections: " + consecutiveRejections + "/" + patience + ")",
+                        0.0,
+                        parentAggregate,
+                        childAggregate));
             }
         }
 
