@@ -13,7 +13,9 @@ import dev.jeval.optimizer.algorithms.GEPA;
 import dev.jeval.optimizer.policies.TieBreaker;
 import dev.jeval.prompt.Prompt;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class GEPAExecutionTest {
@@ -79,6 +81,40 @@ class GEPAExecutionTest {
         assertEquals(0.0, accepted.before());
         assertEquals(1.0, accepted.after());
         assertEquals(report.bestId(), accepted.child());
+    }
+
+    @Test
+    void executeStopsAfterPatienceConsecutiveParetoRejections() {
+        var prompt = new Prompt("answer", "Answer briefly");
+        var goldens = List.of(
+                Golden.builder("q1").expectedOutput("a").build(),
+                Golden.builder("q2").expectedOutput("b").build(),
+                Golden.builder("q3").expectedOutput("c").build());
+        var paretoGolden = OptimizerUtils.splitGoldens(goldens, 1, new Random(123)).pareto().getFirst();
+        Metric metric = testCase -> new MetricResult(
+                "exact",
+                testCase.expectedOutput().equals(testCase.actualOutput()) ? 1.0 : 0.0,
+                1.0,
+                testCase.expectedOutput().equals(testCase.actualOutput()),
+                null);
+        var rewrites = new AtomicInteger();
+        var optimizer = new PromptOptimizer(
+                (callbackPrompt, golden) -> {
+                    var isPareto = golden == paretoGolden;
+                    var isChild = callbackPrompt.textTemplate().contains("cited");
+                    return isPareto == isChild ? "wrong" : ((Golden) golden).expectedOutput();
+                },
+                List.of(metric),
+                new GEPA(5, 1, 1, 123, 2, TieBreaker.PREFER_CHILD,
+                        rewritePrompt -> "{\"revised_prompt\":\"Answer with a cited fact "
+                                + rewrites.incrementAndGet() + "\"}"));
+
+        var bestPrompt = optimizer.optimize(prompt, goldens);
+        var report = optimizer.optimizationReport();
+
+        assertSame(prompt, bestPrompt);
+        assertEquals(2, rewrites.get());
+        assertEquals(List.of(), report.acceptedIterations());
     }
 
     @Test

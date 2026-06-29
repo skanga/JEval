@@ -205,6 +205,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         var promptConfigurations = new LinkedHashMap<String, PromptConfiguration>();
         promptConfigurations.put(rootConfig.id(), rootConfig);
         var acceptedIterations = new ArrayList<AcceptedIteration>();
+        var consecutiveRejections = 0;
 
         for (var i = 0; i < iterations && !split.feedback().isEmpty(); i++) {
             var parent = bestByAggregate(paretoScores, parents, promptConfigurations);
@@ -220,7 +221,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
             if (childMinibatchScore <= parentMinibatchScore) {
                 continue;
             }
-            acceptChild(
+            var accepted = acceptChild(
                     parent,
                     child,
                     OptimizerScorer.DEFAULT_MODULE_ID,
@@ -230,6 +231,11 @@ public final class GEPA implements PromptOptimizationAlgorithm {
                     parents,
                     promptConfigurations,
                     acceptedIterations);
+            if (accepted) {
+                consecutiveRejections = 0;
+            } else if (++consecutiveRejections >= patience) {
+                break;
+            }
         }
 
         var best = bestByAggregate(paretoScores, parents, promptConfigurations);
