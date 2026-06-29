@@ -57,9 +57,9 @@ public final class JEvalCli {
             usage(err);
             return 2;
         }
-        var path = Path.of(args[pathIndex]);
-        if (!Files.isRegularFile(path) && !Files.isDirectory(path)) {
-            err.println(path + " is neither a valid file nor a directory");
+        var target = target(args[pathIndex]);
+        if (!Files.isRegularFile(target.path()) && !Files.isDirectory(target.path())) {
+            err.println(target.path() + " is neither a valid file nor a directory");
             return 2;
         }
         var options = options(args, pathIndex + 1, err);
@@ -67,7 +67,7 @@ public final class JEvalCli {
             return 2;
         }
         try {
-            var result = new TestRunner().run(path);
+            var result = new TestRunner().run(target.path(), target.selector());
             if (options.identifier() != null) {
                 result = withName(result, options.identifier());
             }
@@ -235,6 +235,14 @@ public final class JEvalCli {
         return name.replaceAll("[^A-Za-z0-9._-]+", "-") + (format.equals("html") ? ".html" : ".md");
     }
 
+    private static TestTarget target(String value) {
+        var selectorStart = value.indexOf("::");
+        if (selectorStart < 0) {
+            return new TestTarget(Path.of(value), null);
+        }
+        return new TestTarget(Path.of(value.substring(0, selectorStart)), value.substring(selectorStart + 2));
+    }
+
     private static void usage(PrintStream err) {
         err.println("Usage: jeval test [run] <file-or-directory> [--identifier name] [--format markdown|html] [--output dir] [--quiet]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
@@ -249,5 +257,8 @@ public final class JEvalCli {
     }
 
     private record InspectOptions(Path path, Path folder, String format) {
+    }
+
+    private record TestTarget(Path path, String selector) {
     }
 }

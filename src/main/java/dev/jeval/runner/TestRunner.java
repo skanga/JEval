@@ -25,7 +25,14 @@ public final class TestRunner {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     public TestRunResult run(Path path) throws IOException {
+        return run(path, null);
+    }
+
+    public TestRunResult run(Path path, String selector) throws IOException {
         if (Files.isDirectory(path)) {
+            if (selector != null) {
+                throw new IllegalArgumentException("Test selectors are only supported for files: " + path);
+            }
             var results = new ArrayList<TestCaseResult>();
             try (var files = Files.walk(path)) {
                 for (var file : files
@@ -38,10 +45,14 @@ public final class TestRunner {
             }
             return summarize(path.getFileName().toString(), results);
         }
-        return runFile(path);
+        return runFile(path, selector);
     }
 
     private TestRunResult runFile(Path path) throws IOException {
+        return runFile(path, null);
+    }
+
+    private TestRunResult runFile(Path path, String selector) throws IOException {
         var spec = JSON.readValue(path.toFile(), EvaluationSpec.class);
         if (spec.metrics() == null || spec.metrics().isEmpty()) {
             throw new IllegalArgumentException("Evaluation spec must define at least one metric: " + path);
@@ -53,10 +64,23 @@ public final class TestRunner {
         var testCases = spec.dataset() == null
                 ? spec.cases().stream().map(TestRunner::testCase).toList()
                 : dataset(path.getParent(), spec.dataset());
+        if (selector != null) {
+            testCases = selectedCases(testCases, selector);
+        }
         var results = testCases.stream()
                 .map(testCase -> runCase(testCase, metrics))
                 .toList();
         return summarize(spec.name() == null ? stripExtension(path.getFileName().toString()) : spec.name(), results);
+    }
+
+    private static List<LlmTestCase> selectedCases(List<LlmTestCase> testCases, String selector) {
+        var selected = testCases.stream()
+                .filter(testCase -> selector.equals(testCase.name()))
+                .toList();
+        if (selected.isEmpty()) {
+            throw new IllegalArgumentException("No test case matched selector: " + selector);
+        }
+        return selected;
     }
 
     private static LlmTestCase testCase(CaseSpec spec) {

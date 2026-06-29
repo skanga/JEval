@@ -36,6 +36,7 @@ Package the jar, then run JSON evaluations with the `test` command:
 mvn -q -DskipTests package
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test path\to\eval.json --format markdown --output reports
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --identifier release-smoke --format markdown --output reports
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json::case-name --quiet
 ```
 
 Each run writes DeepEval-style local artifacts to `.deepeval/.latest_run_full.json`

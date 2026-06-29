@@ -99,6 +99,30 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "selector-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"},
+                    {"name": "bad", "input": "q", "actualOutput": "a", "expectedOutput": "b"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file + "::good"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("total=1"));
+        assertTrue(text(out).contains("passed=1"));
+        assertEquals(false, text(out).contains("bad"));
+    }
+
+    @Test
     void inspectPrintsLatestDeepEvalStyleRun() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
