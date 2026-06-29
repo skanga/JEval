@@ -1220,6 +1220,60 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateDocsHonorsMaxContextsPerDocumentLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta epsilon zeta");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"Question one?","expected_output":"Answer one"}]}
+                {"data":[{"input":"Question two?","expected_output":"Answer two"}]}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--document-path", document.toString(), "--chunk-size", "1",
+                "--max-contexts-per-document", "2",
+                "--responses-file", responses.toString(), "--output-dir", output.toString(),
+                "--file-name", "docs-limited"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("docs-limited.json"));
+        assertTrue(generated.contains("Question one?"));
+        assertTrue(generated.contains("Question two?"));
+    }
+
+    @Test
+    void generateConversationalDocsHonorsMaxContextsPerDocumentLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta epsilon zeta");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"scenario":"Scenario one","turns":[{"role":"user","content":"Question one?"}],"expected_outcome":"Outcome one"}]}
+                {"data":[{"scenario":"Scenario two","turns":[{"role":"user","content":"Question two?"}],"expected_outcome":"Outcome two"}]}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "multi-turn",
+                "--document-path", document.toString(), "--chunk-size", "1",
+                "--max-contexts-per-document", "2", "--max-goldens-per-context", "1",
+                "--responses-file", responses.toString(), "--output-dir", output.toString(),
+                "--file-name", "docs-limited-conv"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("docs-limited-conv.json"));
+        assertTrue(generated.contains("Scenario one"));
+        assertTrue(generated.contains("Scenario two"));
+    }
+
+    @Test
     void generateDocsRequiresDocumentPath() {
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();

@@ -245,10 +245,7 @@ final class GenerateCommand {
         var sourceFiles = new ArrayList<String>();
         for (var path : paths) {
             for (var file : documentFiles(path)) {
-                for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
-                    contexts.add(List.of(chunk));
-                    sourceFiles.add(file.getFileName().toString());
-                }
+                addDocumentContexts(args, contexts, sourceFiles, file);
             }
         }
         return synthesizer.generateGoldensFromContexts(contexts,
@@ -270,16 +267,29 @@ final class GenerateCommand {
         var sourceFiles = new ArrayList<String>();
         for (var path : paths) {
             for (var file : documentFiles(path)) {
-                for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
-                    contexts.add(List.of(chunk));
-                    sourceFiles.add(file.getFileName().toString());
-                }
+                addDocumentContexts(args, contexts, sourceFiles, file);
             }
         }
         return synthesizer.generateConversationalGoldensFromContexts(contexts,
                 includeExpected(args),
                 integer(args, "--max-goldens-per-context", 2),
                 sourceFiles);
+    }
+
+    private static void addDocumentContexts(
+            String[] args,
+            List<List<String>> contexts,
+            List<String> sourceFiles,
+            Path file) throws IOException {
+        var maxContexts = integer(args, "--max-contexts-per-document", 3);
+        var count = 0;
+        for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
+            if (count++ >= maxContexts) {
+                break;
+            }
+            contexts.add(List.of(chunk));
+            sourceFiles.add(file.getFileName().toString());
+        }
     }
 
     private static void loadGoldens(EvaluationDataset dataset, Path file) {
