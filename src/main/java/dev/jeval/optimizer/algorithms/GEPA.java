@@ -143,6 +143,23 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         return true;
     }
 
+    PromptConfiguration bestByAggregate(
+            Map<String, List<Double>> paretoScores,
+            Map<String, String> parents,
+            Map<String, PromptConfiguration> promptConfigurations) {
+        var totals = new LinkedHashMap<String, Double>();
+        for (var entry : paretoScores.entrySet()) {
+            totals.put(entry.getKey(), average(entry.getValue()));
+        }
+        var chosen = OptimizerPolicies.pickBestWithTies(
+                totals,
+                parents,
+                randomState,
+                1e-9,
+                tieBreaker);
+        return promptConfigurations.get(chosen.chosenId());
+    }
+
     @Override
     public OptimizationResult execute(Prompt prompt, List<?> goldens, OptimizerScorer scorer) {
         if (goldens.size() < 2) {
@@ -162,15 +179,16 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         parents.put(rootConfig.id(), null);
         var promptConfigurations = new LinkedHashMap<String, PromptConfiguration>();
         promptConfigurations.put(rootConfig.id(), rootConfig);
+        var best = bestByAggregate(paretoScores, parents, promptConfigurations);
 
         var report = new OptimizationReport(
                 optimizationId,
-                rootConfig.id(),
+                best.id(),
                 List.of(),
                 paretoScores,
                 parents,
                 OptimizerUtils.buildPromptConfigSnapshots(promptConfigurations));
-        return new OptimizationResult(prompt, report);
+        return new OptimizationResult(best.prompts().get(OptimizerScorer.DEFAULT_MODULE_ID), report);
     }
 
     private static boolean equivalentMessages(List<PromptMessage> original, List<PromptMessage> rewritten) {

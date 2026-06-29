@@ -160,4 +160,44 @@ class GEPAHelperTest {
         assertEquals(parent.id(), parents.get(child.id()));
         assertEquals(child, configs.get(child.id()));
     }
+
+    @Test
+    void bestByAggregateChoosesHighestAverageScore() {
+        var gepa = new GEPA(1, 2, 1, 7, 1, TieBreaker.PREFER_CHILD);
+        var root = PromptConfiguration.create(new LinkedHashMap<>(
+                Map.of("answer", new Prompt("answer", "Root"))));
+        var child = gepa.childConfiguration(root, "answer", new Prompt("answer", "Child"));
+        var scores = new LinkedHashMap<String, List<Double>>();
+        var parents = new LinkedHashMap<String, String>();
+        var configs = new LinkedHashMap<String, PromptConfiguration>();
+        scores.put(root.id(), List.of(0.4, 0.6));
+        scores.put(child.id(), List.of(0.9, 0.7));
+        parents.put(root.id(), null);
+        parents.put(child.id(), root.id());
+        configs.put(root.id(), root);
+        configs.put(child.id(), child);
+
+        assertEquals(child, gepa.bestByAggregate(scores, parents, configs));
+    }
+
+    @Test
+    void bestByAggregateUsesTieBreakerPolicy() {
+        var rootFirst = new GEPA(1, 2, 1, 7, 1, TieBreaker.PREFER_ROOT);
+        var childFirst = new GEPA(1, 2, 1, 7, 1, TieBreaker.PREFER_CHILD);
+        var root = PromptConfiguration.create(new LinkedHashMap<>(
+                Map.of("answer", new Prompt("answer", "Root"))));
+        var child = childFirst.childConfiguration(root, "answer", new Prompt("answer", "Child"));
+        var scores = new LinkedHashMap<String, List<Double>>();
+        var parents = new LinkedHashMap<String, String>();
+        var configs = new LinkedHashMap<String, PromptConfiguration>();
+        scores.put(root.id(), List.of(0.7, 0.7));
+        scores.put(child.id(), List.of(0.7, 0.7));
+        parents.put(root.id(), null);
+        parents.put(child.id(), root.id());
+        configs.put(root.id(), root);
+        configs.put(child.id(), child);
+
+        assertEquals(root, rootFirst.bestByAggregate(scores, parents, configs));
+        assertEquals(child, childFirst.bestByAggregate(scores, parents, configs));
+    }
 }
