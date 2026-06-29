@@ -9,6 +9,7 @@ import dev.jeval.EvaluationModel;
 import dev.jeval.Golden;
 import dev.jeval.Utils;
 import dev.jeval.synthesizer.ConversationalStylingConfig;
+import dev.jeval.synthesizer.EvolutionConfig;
 import dev.jeval.synthesizer.StylingConfig;
 import dev.jeval.synthesizer.Synthesizer;
 import java.io.IOException;
@@ -122,23 +123,35 @@ final class GenerateCommand {
                 : new ScriptedModel(Files.readAllLines(Path.of(responses)).stream()
                         .filter(line -> !line.isBlank())
                         .toList());
+        return new Synthesizer(model, stylingConfig(args), conversationalStylingConfig(args), new EvolutionConfig());
+    }
+
+    private static StylingConfig stylingConfig(String[] args) {
         var scenario = option(args, "--scenario", null);
-        if (scenario == null) {
-            var scenarioContext = option(args, "--scenario-context", null);
-            if (scenarioContext == null) {
-                return new Synthesizer(model);
-            }
-            return new Synthesizer(model, new ConversationalStylingConfig(
-                    scenarioContext,
-                    option(args, "--conversational-task", null),
-                    option(args, "--participant-roles", null),
-                    option(args, "--expected-outcome-format", null)));
+        var task = option(args, "--task", null);
+        var inputFormat = option(args, "--input-format", null);
+        var expectedOutputFormat = option(args, "--expected-output-format", null);
+        if (!any(scenario, task, inputFormat, expectedOutputFormat)) {
+            return null;
         }
-        return new Synthesizer(model, new StylingConfig(
-                scenario,
-                option(args, "--task", ""),
-                option(args, "--input-format", ""),
-                option(args, "--expected-output-format", null)));
+        return new StylingConfig(scenario, task, inputFormat, expectedOutputFormat);
+    }
+
+    private static ConversationalStylingConfig conversationalStylingConfig(String[] args) {
+        var scenarioContext = option(args, "--scenario-context", null);
+        var conversationalTask = option(args, "--conversational-task", null);
+        var participantRoles = option(args, "--participant-roles", null);
+        var scenarioFormat = option(args, "--scenario-format", null);
+        var expectedOutcomeFormat = option(args, "--expected-outcome-format", null);
+        if (!any(scenarioContext, conversationalTask, participantRoles, scenarioFormat, expectedOutcomeFormat)) {
+            return null;
+        }
+        return new ConversationalStylingConfig(
+                scenarioContext,
+                conversationalTask,
+                participantRoles,
+                scenarioFormat,
+                expectedOutcomeFormat);
     }
 
     private static List<Golden> fromContexts(String[] args, Synthesizer synthesizer, PrintStream err) throws IOException {
@@ -439,6 +452,15 @@ final class GenerateCommand {
         if (option(args, option, null) == null) {
             missing.add(option);
         }
+    }
+
+    private static boolean any(String... values) {
+        for (var value : values) {
+            if (value != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean has(String[] args, String name) {

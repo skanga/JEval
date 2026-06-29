@@ -36,4 +36,16 @@ class SynthesizerSchemasTest {
         assertTrue(prompt.contains("\"input\""));
         assertTrue(prompt.contains("2"));
     }
+
+    @Test
+    void conversationalExpectedOutcomePromptIncludesConfiguredFormat() {
+        var prompt = SynthesizerPrompts.generateConversationalExpectedOutcome(
+                "refund support",
+                List.of("Refunds take 5 days."),
+                "Return a numbered checklist.");
+
+        assertTrue(prompt.contains("refund support"));
+        assertTrue(prompt.contains("Refunds take 5 days."));
+        assertTrue(prompt.contains("Expected outcome format: Return a numbered checklist."));
+    }
 }

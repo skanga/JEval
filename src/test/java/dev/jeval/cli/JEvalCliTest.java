@@ -1452,6 +1452,28 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateCreatesConversationalStylingFromExpectedOutcomeFormatOnlyLikeDeepEval() throws Exception {
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[]}");
+        var method = GenerateCommand.class.getDeclaredMethod("synthesizer", String[].class);
+        method.setAccessible(true);
+
+        var synthesizer = method.invoke(null, (Object) new String[] {
+                "generate", "--method", "contexts", "--variation", "multi-turn",
+                "--contexts-file", tempDir.resolve("contexts.json").toString(),
+                "--expected-outcome-format", "Return a numbered checklist.",
+                "--responses-file", responses.toString()
+        });
+        var field = synthesizer.getClass().getDeclaredField("conversationalStylingConfig");
+        field.setAccessible(true);
+        var stylingConfig = field.get(synthesizer);
+
+        assertTrue(stylingConfig instanceof dev.jeval.synthesizer.ConversationalStylingConfig);
+        assertEquals("Return a numbered checklist.",
+                ((dev.jeval.synthesizer.ConversationalStylingConfig) stylingConfig).expectedOutcomeFormat());
+    }
+
+    @Test
     void generateMultiTurnScratchUsesConversationalStyling() throws Exception {
         var responses = tempDir.resolve("responses.txt");
         Files.writeString(responses,
