@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.ConversationalMetric;
 import dev.jeval.DeepEvalException;
+import dev.jeval.Golden;
 import dev.jeval.Metric;
 import dev.jeval.MetricResult;
 import dev.jeval.prompt.Prompt;
@@ -171,6 +172,19 @@ class OptimizerUtilsTest {
 
         assertTrue(error.getMessage().contains("Scorer expected all elements of `metrics`"));
         assertTrue(error.getMessage().contains("String"));
+    }
+
+    @Test
+    void invokeModelCallbackPassesPromptAndGoldenToCallback() {
+        var prompt = new Prompt("answer", "Answer {question}");
+        var golden = Golden.builder("question").expectedOutput("answer").build();
+        ModelCallback callback = (givenPrompt, givenGolden) -> {
+            assertSame(prompt, givenPrompt);
+            assertSame(golden, givenGolden);
+            return "actual answer";
+        };
+
+        assertEquals("actual answer", OptimizerUtils.invokeModelCallback(callback, prompt, golden));
     }
 
     private static Set<String> union(OptimizerUtils.GoldenSplit<String> split) {

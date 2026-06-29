@@ -79,6 +79,10 @@ public final class OptimizerUtils {
         return modelCallback;
     }
 
+    public static String invokeModelCallback(ModelCallback modelCallback, dev.jeval.prompt.Prompt prompt, Object golden) {
+        return modelCallback.generate(prompt, golden);
+    }
+
     public static List<?> validateMetrics(String component, Object metrics) {
         if (!(metrics instanceof List<?> list) || list.isEmpty()) {
             throw new DeepEvalException(component + " requires a `metrics`.\n\n"
