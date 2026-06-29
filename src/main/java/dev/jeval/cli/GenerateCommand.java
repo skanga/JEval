@@ -282,17 +282,38 @@ final class GenerateCommand {
             List<String> sourceFiles,
             Path file) throws IOException {
         var maxContexts = integer(args, "--max-contexts-per-document", 3);
-        var count = 0;
-        for (var chunk : Utils.chunkText(
+        var minContexts = integer(args, "--min-contexts-per-document", 1);
+        var chunks = Utils.chunkText(
                 Files.readString(file),
                 integer(args, "--chunk-size", 1024),
-                integer(args, "--chunk-overlap", 0))) {
+                integer(args, "--chunk-overlap", 0));
+        validateMinContexts(chunks.size(), minContexts);
+        var count = 0;
+        for (var chunk : chunks) {
             if (count++ >= maxContexts) {
                 break;
             }
             contexts.add(List.of(chunk));
             sourceFiles.add(file.getFileName().toString());
         }
+    }
+
+    private static void validateMinContexts(int numChunks, int minContexts) {
+        if (numChunks >= minContexts) {
+            return;
+        }
+        var message = new StringBuilder()
+                .append("Impossible to generate ")
+                .append(minContexts)
+                .append(" contexts from a document with ")
+                .append(numChunks)
+                .append(" chunks.\nYou have the following options:");
+        if (numChunks > 0) {
+            message.append("\n1. Adjust the `min_contexts_per_document` to no more than ")
+                    .append(numChunks)
+                    .append(".");
+        }
+        throw new IllegalArgumentException(message.toString());
     }
 
     private static void loadGoldens(EvaluationDataset dataset, Path file) {

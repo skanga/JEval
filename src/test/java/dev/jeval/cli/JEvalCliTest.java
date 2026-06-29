@@ -1301,6 +1301,29 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateDocsValidatesMinContextsPerDocumentLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"Question one?","expected_output":"Answer one"}]}
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--document-path", document.toString(), "--chunk-size", "10",
+                "--min-contexts-per-document", "2",
+                "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Impossible to generate 2 contexts from a document with 1 chunks."));
+        assertTrue(text(err).contains("Adjust the `min_contexts_per_document` to no more than 1."));
+    }
+
+    @Test
     void generateConversationalDocsHonorsMaxContextsPerDocumentLikeDeepEval() throws Exception {
         var document = tempDir.resolve("policy.md");
         Files.writeString(document, "alpha beta gamma delta epsilon zeta");
