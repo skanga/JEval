@@ -159,7 +159,8 @@ public final class SIMBA implements PromptOptimizationAlgorithm {
                         .max(Comparator.comparingDouble(CandidateScore::score))
                         .map(CandidateScore::configuration)
                         .orElseThrow();
-                if (iteration % minibatchFullEvalSteps == 0 || iteration == iterations) {
+                if (iteration == iterations
+                        || (minibatchFullEvalSteps > 0 && iteration % minibatchFullEvalSteps == 0)) {
                     var fullScores = scorer.scorePareto(bestBatchConfig, goldens);
                     var fullScore = average(fullScores);
                     paretoScores.put(bestBatchConfig.id(), fullScores);

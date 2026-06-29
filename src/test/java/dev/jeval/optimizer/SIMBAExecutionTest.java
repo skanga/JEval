@@ -103,6 +103,35 @@ class SIMBAExecutionTest {
     }
 
     @Test
+    void executeTreatsZeroFullEvalStepAsFinalIterationOnly() {
+        var prompt = new Prompt("answer", "Answer {{input}}");
+        var goldens = List.of(
+                Golden.builder("q1").expectedOutput("a").build(),
+                Golden.builder("q2").expectedOutput("b").build());
+        Metric metric = testCase -> new MetricResult(
+                "exact",
+                testCase.expectedOutput().equals(testCase.actualOutput()) ? 1.0 : 0.0,
+                1.0,
+                testCase.expectedOutput().equals(testCase.actualOutput()),
+                null);
+        var responses = new ArrayDeque<>(List.of(
+                "{\"discussion\":\"ok\",\"revised_prompt\":\"Answer {{input}} with evidence\"}"));
+        var simba = new SIMBA(1, 2, 1, 1, 0, 123, promptText -> responses.removeFirst());
+        var optimizer = new PromptOptimizer(
+                (callbackPrompt, golden) -> callbackPrompt.textTemplate().contains("evidence")
+                        ? ((Golden) golden).expectedOutput()
+                        : "wrong",
+                List.of(metric),
+                simba);
+
+        var bestPrompt = optimizer.optimize(prompt, goldens);
+
+        assertEquals("Answer {{input}} with evidence", bestPrompt.textTemplate());
+        assertEquals(1, simba.iterationLog().size());
+        assertEquals("accepted", simba.iterationLog().getFirst().outcome());
+    }
+
+    @Test
     void iterationLogIsClearedBetweenRunsAndReturnedAsImmutableCopy() {
         var prompt = new Prompt("answer", "Answer {{input}}");
         var firstGoldens = List.of(Golden.builder("q1").expectedOutput("a").build());
