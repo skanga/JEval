@@ -72,7 +72,7 @@ public final class JEvalCli {
                 result = withName(result, options.identifier());
             }
             new LocalRunStore(storeRoot).write(result);
-            var report = report(result, options.format());
+            var report = report(displayed(result, options.display()), options.format());
             if (options.output() != null) {
                 Files.createDirectories(options.output());
                 Files.writeString(options.output().resolve(fileName(result.name(), options.format())), report);
@@ -188,6 +188,7 @@ public final class JEvalCli {
         String identifier = null;
         var repeat = 1;
         var exitOnFirstFailure = false;
+        var display = "all";
         for (var i = start; i < args.length; i++) {
             switch (args[i]) {
                 case "--quiet" -> quiet = true;
@@ -224,6 +225,13 @@ public final class JEvalCli {
                         return null;
                     }
                 }
+                case "-d", "--display" -> {
+                    if (++i == args.length) {
+                        usage(err);
+                        return null;
+                    }
+                    display = args[i].toLowerCase(Locale.ROOT);
+                }
                 default -> {
                     usage(err);
                     return null;
@@ -234,7 +242,11 @@ public final class JEvalCli {
             err.println("Unsupported format: " + format);
             return null;
         }
-        return new Options(format, output, quiet, identifier, repeat, exitOnFirstFailure);
+        if (!display.equals("all") && !display.equals("passing") && !display.equals("failing")) {
+            err.println("Unsupported display: " + display);
+            return null;
+        }
+        return new Options(format, output, quiet, identifier, repeat, exitOnFirstFailure, display);
     }
 
     private static String report(dev.jeval.runner.TestRunResult result, String format) {
@@ -243,6 +255,16 @@ public final class JEvalCli {
 
     private static TestRunResult withName(TestRunResult result, String name) {
         return new TestRunResult(name, result.results(), result.summary(), result.aggregates());
+    }
+
+    private static TestRunResult displayed(TestRunResult result, String display) {
+        if ("all".equals(display)) {
+            return result;
+        }
+        var results = result.results().stream()
+                .filter(testCase -> "passing".equals(display) == testCase.success())
+                .toList();
+        return new TestRunResult(result.name(), results, result.summary(), result.aggregates());
     }
 
     private static String fileName(String name, String format) {
@@ -258,7 +280,7 @@ public final class JEvalCli {
     }
 
     private static void usage(PrintStream err) {
-        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|--exit-on-first-failure] [--format markdown|html] [--output dir] [--quiet]");
+        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|--exit-on-first-failure] [-d|--display all|passing|failing] [--format markdown|html] [--output dir] [--quiet]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
         err.println("       jeval settings -u key=value|-U key|-l [filter] [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv:.env] [-q|--quiet]");
@@ -273,7 +295,8 @@ public final class JEvalCli {
             boolean quiet,
             String identifier,
             int repeat,
-            boolean exitOnFirstFailure) {
+            boolean exitOnFirstFailure,
+            String display) {
     }
 
     private record InspectOptions(Path path, Path folder, String format) {

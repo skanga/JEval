@@ -38,6 +38,7 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar test path\to\eval.json --format markdo
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -id release-smoke --format markdown --output reports
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -r 3 --quiet
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -x
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -d failing
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json::case-name --quiet
 ```
 

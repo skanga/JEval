@@ -215,6 +215,39 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunDisplayFiltersReportedCases() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "display-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"},
+                    {"name": "bad", "input": "q", "actualOutput": "a", "expectedOutput": "b"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--display", "failing"}, out, err);
+
+        assertEquals(1, exit);
+        assertTrue(text(out).contains("Summary: total=2"));
+        assertEquals(false, text(out).contains("### good"));
+        assertTrue(text(out).contains("### bad"));
+
+        out.reset();
+        err.reset();
+        exit = run(new String[] {"test", "run", file.toString(), "-d", "passing"}, out, err);
+
+        assertEquals(1, exit);
+        assertTrue(text(out).contains("Summary: total=2"));
+        assertTrue(text(out).contains("### good"));
+        assertEquals(false, text(out).contains("### bad"));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
