@@ -110,6 +110,24 @@ class OptimizerScorerTest {
     }
 
     @Test
+    void evaluateGeneratedMeasuresProvidedOutputWithoutCallingModelAgain() {
+        var scorer = new OptimizerScorer(
+                (ignored, golden) -> {
+                    throw new AssertionError("model callback should not be called");
+                },
+                List.of(actualEqualsExpectedMetric(), scoringMetric(1.0)));
+
+        var evaluation = scorer.evaluateGenerated(
+                Golden.builder("q").expectedOutput("expected").build(),
+                "expected");
+
+        assertEquals("expected", evaluation.actual());
+        assertEquals(2, evaluation.metricResults().size());
+        assertEquals(1.0, evaluation.score());
+        assertTrue(evaluation.success());
+    }
+
+    @Test
     void getMinibatchFeedbackBuildsDiagnosisFromMetricResults() {
         var prompt = new Prompt("answer", "Answer {question}");
         var config = new PromptConfiguration("root", null, new LinkedHashMap<>(

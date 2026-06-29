@@ -33,6 +33,10 @@ public final class OptimizerScorer {
                 .toList();
     }
 
+    public ScorerEvaluationResult evaluateGenerated(Object golden, String actual) {
+        return measureGenerated(golden, actual);
+    }
+
     public double scoreMinibatch(PromptConfiguration promptConfiguration, List<?> minibatch) {
         if (minibatch.isEmpty()) {
             return 0.0;
@@ -86,8 +90,12 @@ public final class OptimizerScorer {
         return measureOne(promptConfiguration, golden).score();
     }
 
-    private ScoreTrace measureOne(PromptConfiguration promptConfiguration, Object golden) {
+    private ScorerEvaluationResult measureOne(PromptConfiguration promptConfiguration, Object golden) {
         var actual = generate(promptConfiguration.prompts(), golden);
+        return measureGenerated(golden, actual);
+    }
+
+    private ScorerEvaluationResult measureGenerated(Object golden, String actual) {
         var metricResults = new ArrayList<MetricResult>();
         for (var metric : metrics) {
             if (golden instanceof Golden singleTurnGolden && metric instanceof Metric singleTurnMetric) {
@@ -99,7 +107,7 @@ public final class OptimizerScorer {
         }
         var score = metricResults.stream().mapToDouble(MetricResult::score).average().orElse(0.0);
         var success = !metricResults.isEmpty() && metricResults.stream().allMatch(MetricResult::success);
-        return new ScoreTrace(actual, metricResults, score, success);
+        return new ScorerEvaluationResult(actual, metricResults, score, success);
     }
 
     private LlmTestCase testCase(Golden golden, String actual) {
@@ -196,6 +204,4 @@ public final class OptimizerScorer {
         return count == 1 ? "" : "s";
     }
 
-    private record ScoreTrace(String actual, List<MetricResult> metricResults, double score, boolean success) {
-    }
 }

@@ -1,6 +1,10 @@
 package dev.jeval.optimizer.algorithms;
 
+import dev.jeval.ConversationalGolden;
 import dev.jeval.DeepEvalException;
+import dev.jeval.Golden;
+import dev.jeval.Turn;
+import dev.jeval.optimizer.OptimizerScorer;
 import dev.jeval.prompt.Prompt;
 import dev.jeval.prompt.PromptMessage;
 import dev.jeval.prompt.PromptType;
@@ -8,10 +12,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
 public final class MIPROV2Bootstrapper {
+    private final OptimizerScorer scorer;
     private final int maxBootstrappedDemonstrations;
     private final int maxLabeledDemonstrations;
     private final int numDemonstrationSets;
@@ -22,10 +28,73 @@ public final class MIPROV2Bootstrapper {
             int maxLabeledDemonstrations,
             int numDemonstrationSets,
             Random randomState) {
+        this(null, maxBootstrappedDemonstrations, maxLabeledDemonstrations, numDemonstrationSets, randomState);
+    }
+
+    public MIPROV2Bootstrapper(
+            OptimizerScorer scorer,
+            int maxBootstrappedDemonstrations,
+            int maxLabeledDemonstrations,
+            int numDemonstrationSets,
+            Random randomState) {
+        this.scorer = scorer;
         this.maxBootstrappedDemonstrations = maxBootstrappedDemonstrations;
         this.maxLabeledDemonstrations = maxLabeledDemonstrations;
         this.numDemonstrationSets = numDemonstrationSets;
         this.randomState = randomState == null ? new Random() : randomState;
+    }
+
+    public List<MIPROV2DemonstrationSet> bootstrap(Prompt prompt, List<?> goldens) {
+        if (scorer == null) {
+            throw new DeepEvalException("MIPROv2 bootstrapper requires an OptimizerScorer to bootstrap demonstrations.");
+        }
+        var allDemonstrations = new ArrayList<MIPROV2Demonstration>();
+        var labeledDemonstrations = new ArrayList<MIPROV2Demonstration>();
+        var items = List.copyOf(Objects.requireNonNull(goldens, "goldens"));
+        var shuffledIndices = new ArrayList<Integer>();
+        for (var i = 0; i < items.size(); i++) {
+            shuffledIndices.add(i);
+        }
+        Collections.shuffle(shuffledIndices, randomState);
+
+        var maxAttempts = Math.min(items.size(), maxBootstrappedDemonstrations * 3);
+        var prompts = Map.of(OptimizerScorer.DEFAULT_MODULE_ID, prompt);
+
+        for (var idx : shuffledIndices.subList(0, maxAttempts)) {
+            var golden = items.get(idx);
+            var inputText = extractInput(golden);
+            var expected = extractExpectedOutput(golden);
+
+            if (!expected.isBlank()
+                    && labeledDemonstrations.size() < maxLabeledDemonstrations * numDemonstrationSets) {
+                labeledDemonstrations.add(new MIPROV2Demonstration(inputText, expected, idx));
+            }
+
+            if (allDemonstrations.size() < maxBootstrappedDemonstrations * numDemonstrationSets) {
+                try {
+                    var actual = scorer.generate(prompts, golden);
+                    var evaluation = scorer.evaluateGenerated(golden, actual);
+                    if (evaluation.success()) {
+                        allDemonstrations.add(new MIPROV2Demonstration(inputText, actual, idx));
+                    }
+                } catch (RuntimeException ignored) {
+                    // DeepEval skips failed generation/evaluation attempts during bootstrap.
+                }
+            }
+
+            if (allDemonstrations.size() >= maxBootstrappedDemonstrations * numDemonstrationSets
+                    && labeledDemonstrations.size() >= maxLabeledDemonstrations * numDemonstrationSets) {
+                break;
+            }
+        }
+
+        var demoSets = createDemonstrationSets(allDemonstrations, labeledDemonstrations);
+        if (demoSets.isEmpty() || demoSets.stream().allMatch(set -> set.demonstrations().isEmpty())) {
+            throw new DeepEvalException(
+                    "Bootstrapper failed to generate any demonstrations. "
+                            + "Please ensure your goldens contain an 'expected_output' for labeled demonstrations.");
+        }
+        return demoSets;
     }
 
     public List<MIPROV2DemonstrationSet> createDemonstrationSets(
@@ -133,5 +202,45 @@ public final class MIPROV2Bootstrapper {
         var shuffled = new ArrayList<>(demonstrations);
         Collections.shuffle(shuffled, randomState);
         return shuffled.subList(0, Math.max(0, size));
+    }
+
+    private static String extractInput(Object golden) {
+        if (golden instanceof Golden singleTurnGolden) {
+            if (singleTurnGolden.input() == null || singleTurnGolden.input().isBlank()) {
+                throw new DeepEvalException("Golden must have a valid 'input' for MIPROv2 bootstrapping.");
+            }
+            return singleTurnGolden.input();
+        }
+        if (golden instanceof ConversationalGolden conversationalGolden) {
+            var userTurns = (conversationalGolden.turns() == null ? List.<Turn>of() : conversationalGolden.turns())
+                    .stream()
+                    .filter(turn -> "user".equals(turn.role()))
+                    .map(Turn::content)
+                    .toList();
+            if (userTurns.isEmpty()) {
+                throw new DeepEvalException(
+                        "ConversationalGolden must have at least one 'user' turn for MIPROv2 bootstrapping.");
+            }
+            return String.join("\n", userTurns);
+        }
+        throw new DeepEvalException("MIPROv2 bootstrapper expected Golden or ConversationalGolden.");
+    }
+
+    private static String extractExpectedOutput(Object golden) {
+        if (golden instanceof Golden singleTurnGolden) {
+            if (singleTurnGolden.expectedOutput() == null || singleTurnGolden.expectedOutput().isBlank()) {
+                throw new DeepEvalException(
+                        "Golden must have a valid 'expected_output' for MIPROv2 bootstrapping.");
+            }
+            return singleTurnGolden.expectedOutput();
+        }
+        if (golden instanceof ConversationalGolden conversationalGolden) {
+            if (conversationalGolden.expectedOutcome() == null || conversationalGolden.expectedOutcome().isBlank()) {
+                throw new DeepEvalException(
+                        "ConversationalGolden must have a valid 'expected_outcome' for MIPROv2 bootstrapping.");
+            }
+            return conversationalGolden.expectedOutcome();
+        }
+        throw new DeepEvalException("MIPROv2 bootstrapper expected Golden or ConversationalGolden.");
     }
 }

@@ -2,7 +2,17 @@ package dev.jeval.optimizer.algorithms;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.jeval.ConversationalGolden;
+import dev.jeval.ConversationalMetric;
+import dev.jeval.DeepEvalException;
+import dev.jeval.Golden;
+import dev.jeval.Metric;
+import dev.jeval.MetricResult;
+import dev.jeval.Turn;
+import dev.jeval.optimizer.OptimizerScorer;
 import dev.jeval.prompt.Prompt;
 import dev.jeval.prompt.PromptInterpolationType;
 import dev.jeval.prompt.PromptMessage;
@@ -148,7 +158,82 @@ class MIPROV2BootstrapperTest {
         assertEquals(List.of(bootstrapped), sets.get(1).demonstrations());
     }
 
+    @Test
+    void bootstrapIncludesExpectedOutputAsLabeledDemonstration() {
+        var scorer = new OptimizerScorer((prompt, golden) -> "wrong", List.of(failingMetric()));
+        var bootstrapper = new MIPROV2Bootstrapper(scorer, 1, 1, 1, new Random(1));
+
+        var sets = bootstrapper.bootstrap(new Prompt("answer", "Answer"), List.of(
+                Golden.builder("q").expectedOutput("expected").build()));
+
+        assertEquals("0-shot", sets.get(0).id());
+        assertTrue(sets.stream().flatMap(set -> set.demonstrations().stream())
+                .anyMatch(demo -> demo.inputText().equals("q")
+                        && demo.outputText().equals("expected")
+                        && demo.goldenIndex() == 0));
+    }
+
+    @Test
+    void bootstrapKeepsGeneratedOutputOnlyWhenMetricsSucceed() {
+        var scorer = new OptimizerScorer(
+                (prompt, golden) -> ((Golden) golden).input().equals("q1") ? "a1" : "wrong",
+                List.of(actualEqualsExpectedMetric()));
+        var bootstrapper = new MIPROV2Bootstrapper(scorer, 2, 0, 1, new Random(1));
+
+        var sets = bootstrapper.bootstrap(new Prompt("answer", "Answer"), List.of(
+                Golden.builder("q1").expectedOutput("a1").build(),
+                Golden.builder("q2").expectedOutput("a2").build()));
+
+        assertTrue(sets.stream().flatMap(set -> set.demonstrations().stream())
+                .anyMatch(demo -> demo.inputText().equals("q1") && demo.outputText().equals("a1")));
+        assertTrue(sets.stream().flatMap(set -> set.demonstrations().stream())
+                .noneMatch(demo -> demo.inputText().equals("q2") && demo.outputText().equals("wrong")));
+    }
+
+    @Test
+    void bootstrapExtractsConversationalInputFromUserTurns() {
+        var scorer = new OptimizerScorer(
+                (prompt, golden) -> "done",
+                List.of((ConversationalMetric) testCase -> new MetricResult("ok", 1.0, 0.5, true, null)));
+        var bootstrapper = new MIPROV2Bootstrapper(scorer, 1, 0, 1, new Random(1));
+
+        var sets = bootstrapper.bootstrap(new Prompt("answer", "Answer"), List.of(
+                ConversationalGolden.builder("support")
+                        .turns(List.of(
+                                new Turn("user", "hello"),
+                                new Turn("assistant", "hi"),
+                                new Turn("user", "need help")))
+                        .expectedOutcome("done")
+                        .build()));
+
+        assertTrue(sets.stream().flatMap(set -> set.demonstrations().stream())
+                .anyMatch(demo -> demo.inputText().equals("hello\nneed help")
+                        && demo.outputText().equals("done")));
+    }
+
+    @Test
+    void bootstrapRejectsGoldensWithoutExpectedOutputWhenNoGeneratedDemoSucceeds() {
+        var scorer = new OptimizerScorer((prompt, golden) -> "wrong", List.of(failingMetric()));
+        var bootstrapper = new MIPROV2Bootstrapper(scorer, 1, 1, 1, new Random(1));
+
+        var exception = assertThrows(DeepEvalException.class,
+                () -> bootstrapper.bootstrap(new Prompt("answer", "Answer"), List.of(Golden.builder("q").build())));
+
+        assertTrue(exception.getMessage().contains("expected_output"));
+    }
+
     private static MIPROV2DemonstrationSet singleDemoSet() {
         return new MIPROV2DemonstrationSet(List.of(new MIPROV2Demonstration("q", "a", 3)));
+    }
+
+    private static Metric actualEqualsExpectedMetric() {
+        return testCase -> {
+            var success = testCase.expectedOutput().equals(testCase.actualOutput());
+            return new MetricResult("exact", success ? 1.0 : 0.0, 0.5, success, null);
+        };
+    }
+
+    private static Metric failingMetric() {
+        return ignored -> new MetricResult("fail", 0.0, 0.5, false, null);
     }
 }
