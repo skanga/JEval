@@ -1,5 +1,6 @@
 package dev.jeval.optimizer.algorithms;
 
+import dev.jeval.DeepEvalException;
 import dev.jeval.optimizer.OptimizationReport;
 import dev.jeval.optimizer.OptimizationResult;
 import dev.jeval.optimizer.OptimizerScorer;
@@ -84,6 +85,9 @@ public final class GEPA implements PromptOptimizationAlgorithm {
 
     @Override
     public OptimizationResult execute(Prompt prompt, List<?> goldens, OptimizerScorer scorer) {
+        if (goldens.size() < 2) {
+            throw new DeepEvalException("GEPA requires at least 2 goldens to optimize.");
+        }
         var optimizationId = UUID.randomUUID().toString();
         var prompts = new LinkedHashMap<String, Prompt>();
         prompts.put(OptimizerScorer.DEFAULT_MODULE_ID, prompt);

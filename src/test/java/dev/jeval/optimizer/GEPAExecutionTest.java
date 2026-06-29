@@ -3,7 +3,9 @@ package dev.jeval.optimizer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import dev.jeval.DeepEvalException;
 import dev.jeval.Golden;
 import dev.jeval.Metric;
 import dev.jeval.MetricResult;
@@ -48,7 +50,7 @@ class GEPAExecutionTest {
     }
 
     @Test
-    void executeUsesSingleGoldenAsParetoSet() {
+    void executeRequiresAtLeastTwoGoldens() {
         var prompt = new Prompt("answer", "Answer");
         var golden = Golden.builder("q1").expectedOutput("a").build();
         var optimizer = new PromptOptimizer(
@@ -56,9 +58,8 @@ class GEPAExecutionTest {
                 List.of((Metric) testCase -> new MetricResult("exact", 0.0, 1.0, false, null)),
                 new GEPA(1, 1, 1, 7, 1, TieBreaker.PREFER_CHILD));
 
-        optimizer.optimize(prompt, List.of(golden));
+        var error = assertThrows(DeepEvalException.class, () -> optimizer.optimize(prompt, List.of(golden)));
 
-        var report = optimizer.optimizationReport();
-        assertEquals(List.of(0.0), report.paretoScores().get(report.bestId()));
+        assertEquals("GEPA requires at least 2 goldens to optimize.", error.getMessage());
     }
 }
