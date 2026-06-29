@@ -149,6 +149,7 @@ import dev.jeval.benchmarks.HellaSwag;
 import dev.jeval.benchmarks.LAMBADA;
 import dev.jeval.benchmarks.LogiQA;
 import dev.jeval.benchmarks.MathQA;
+import dev.jeval.benchmarks.SQuAD;
 import dev.jeval.benchmarks.TruthfulQA;
 import dev.jeval.benchmarks.TruthfulQAMode;
 import dev.jeval.benchmarks.Winogrande;
@@ -168,6 +169,7 @@ var hellaswagResult = new HellaSwag(Map.of("Applying sunscreen", goldens)).evalu
 var lambada = new LAMBADA(goldens).evaluate(model);
 var logiqa = new LogiQA(Map.of("deduction", goldens)).evaluate(model);
 var mathqa = new MathQA(Map.of("general", goldens)).evaluate(model);
+var squad = new SQuAD(Map.of("Apollo_program", goldens), evaluatorModel).evaluate(model);
 var truthful = new TruthfulQA(Map.of("Health", goldens), TruthfulQAMode.MC1).evaluate(model);
 var winogrande = new Winogrande(goldens).evaluate(model);
 ```

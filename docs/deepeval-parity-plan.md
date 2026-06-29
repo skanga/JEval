@@ -77,6 +77,7 @@ Current Java parity:
 - LAMBADA benchmark evaluation over supplied `Golden` rows with DeepEval-style exact-match prediction rows and `overallScore`
 - LogiQA benchmark evaluation over task-grouped supplied `Golden` rows with exact-match task prediction rows, task scores, batch support, and `overallScore`
 - MathQA benchmark evaluation over task-grouped supplied `Golden` rows with lower-case exact-match task prediction rows, task scores, batch support, and `overallScore`
+- SQuAD benchmark evaluation over task-grouped supplied `Golden` rows with evaluator-model answer scoring, task scores, and `overallScore`
 - TruthfulQA benchmark evaluation over task-grouped supplied `Golden` rows with MC1 exact-match scoring, MC2 truth-identification scoring, task scores, batch support, and `overallScore`
 - WinoGrande benchmark evaluation over supplied `Golden` rows with DeepEval-style exact-match prediction rows and `overallScore`
 - `EvaluationModel.batchGenerate(...)` fallback and MMLU batch-size evaluation with DeepEval-style response count validation
