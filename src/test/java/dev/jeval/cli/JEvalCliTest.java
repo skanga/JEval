@@ -168,6 +168,53 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunExitOnFirstFailureStopsAfterFirstFailedCase() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "exit-first-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "bad", "input": "q", "actualOutput": "a", "expectedOutput": "b"},
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--exit-on-first-failure"}, out, err);
+
+        assertEquals(1, exit);
+        assertTrue(text(out).contains("total=1"));
+        assertTrue(text(out).contains("failed=1"));
+        assertEquals(false, text(out).contains("good"));
+    }
+
+    @Test
+    void testRunExitOnFirstFailureSupportsShortAlias() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "exit-first-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"},
+                    {"name": "bad", "input": "q", "actualOutput": "a", "expectedOutput": "b"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-x"}, out, err);
+
+        assertEquals(1, exit);
+        assertTrue(text(out).contains("total=2"));
+        assertTrue(text(out).contains("failed=1"));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

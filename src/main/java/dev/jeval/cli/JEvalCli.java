@@ -67,7 +67,7 @@ public final class JEvalCli {
             return 2;
         }
         try {
-            var result = new TestRunner().run(target.path(), target.selector(), options.repeat());
+            var result = new TestRunner().run(target.path(), target.selector(), options.repeat(), options.exitOnFirstFailure());
             if (options.identifier() != null) {
                 result = withName(result, options.identifier());
             }
@@ -187,9 +187,11 @@ public final class JEvalCli {
         var quiet = false;
         String identifier = null;
         var repeat = 1;
+        var exitOnFirstFailure = false;
         for (var i = start; i < args.length; i++) {
             switch (args[i]) {
                 case "--quiet" -> quiet = true;
+                case "-x", "--exit-on-first-failure" -> exitOnFirstFailure = true;
                 case "--format" -> {
                     if (++i == args.length) {
                         usage(err);
@@ -232,7 +234,7 @@ public final class JEvalCli {
             err.println("Unsupported format: " + format);
             return null;
         }
-        return new Options(format, output, quiet, identifier, repeat);
+        return new Options(format, output, quiet, identifier, repeat, exitOnFirstFailure);
     }
 
     private static String report(dev.jeval.runner.TestRunResult result, String format) {
@@ -256,7 +258,7 @@ public final class JEvalCli {
     }
 
     private static void usage(PrintStream err) {
-        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [--format markdown|html] [--output dir] [--quiet]");
+        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|--exit-on-first-failure] [--format markdown|html] [--output dir] [--quiet]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
         err.println("       jeval settings -u key=value|-U key|-l [filter] [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv:.env] [-q|--quiet]");
@@ -265,7 +267,13 @@ public final class JEvalCli {
         err.println("       jeval generate --method contexts|scratch|goldens --variation single-turn [-s|--save dotenv:.env] ...");
     }
 
-    private record Options(String format, Path output, boolean quiet, String identifier, int repeat) {
+    private record Options(
+            String format,
+            Path output,
+            boolean quiet,
+            String identifier,
+            int repeat,
+            boolean exitOnFirstFailure) {
     }
 
     private record InspectOptions(Path path, Path folder, String format) {

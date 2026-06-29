@@ -33,6 +33,10 @@ public final class TestRunner {
     }
 
     public TestRunResult run(Path path, String selector, int repeat) throws IOException {
+        return run(path, selector, repeat, false);
+    }
+
+    public TestRunResult run(Path path, String selector, int repeat, boolean exitOnFirstFailure) throws IOException {
         if (repeat < 1) {
             throw new IllegalArgumentException("The repeat argument must be at least 1.");
         }
@@ -47,12 +51,15 @@ public final class TestRunner {
                         .filter(TestRunner::isJson)
                         .sorted()
                         .toList()) {
-                    results.addAll(runFile(file, null, repeat).results());
+                    results.addAll(runFile(file, null, repeat, exitOnFirstFailure).results());
+                    if (exitOnFirstFailure && results.stream().anyMatch(result -> !result.success())) {
+                        break;
+                    }
                 }
             }
             return summarize(path.getFileName().toString(), results);
         }
-        return runFile(path, selector, repeat);
+        return runFile(path, selector, repeat, exitOnFirstFailure);
     }
 
     private TestRunResult runFile(Path path) throws IOException {
@@ -64,6 +71,11 @@ public final class TestRunner {
     }
 
     private TestRunResult runFile(Path path, String selector, int repeat) throws IOException {
+        return runFile(path, selector, repeat, false);
+    }
+
+    private TestRunResult runFile(Path path, String selector, int repeat, boolean exitOnFirstFailure)
+            throws IOException {
         var spec = JSON.readValue(path.toFile(), EvaluationSpec.class);
         if (spec.metrics() == null || spec.metrics().isEmpty()) {
             throw new IllegalArgumentException("Evaluation spec must define at least one metric: " + path);
@@ -78,16 +90,24 @@ public final class TestRunner {
         if (selector != null) {
             testCases = selectedCases(testCases, selector);
         }
-        var results = repeatedResults(testCases, metrics, repeat);
+        var results = repeatedResults(testCases, metrics, repeat, exitOnFirstFailure);
         return summarize(spec.name() == null ? stripExtension(path.getFileName().toString()) : spec.name(), results);
     }
 
-    private static List<TestCaseResult> repeatedResults(List<LlmTestCase> testCases, List<Metric> metrics, int repeat) {
+    private static List<TestCaseResult> repeatedResults(
+            List<LlmTestCase> testCases,
+            List<Metric> metrics,
+            int repeat,
+            boolean exitOnFirstFailure) {
         var results = new ArrayList<TestCaseResult>();
         for (var i = 0; i < repeat; i++) {
-            testCases.stream()
-                    .map(testCase -> runCase(testCase, metrics))
-                    .forEach(results::add);
+            for (var testCase : testCases) {
+                var result = runCase(testCase, metrics);
+                results.add(result);
+                if (exitOnFirstFailure && !result.success()) {
+                    return List.copyOf(results);
+                }
+            }
         }
         return List.copyOf(results);
     }
