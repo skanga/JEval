@@ -430,6 +430,57 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunAcceptsPytestCompatibilityOptionsLocally() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "pytest-compat-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "test", "run", file.toString(),
+                "--color", "no",
+                "--durations", "5",
+                "--pdb",
+                "--show-warnings",
+                "--num-processes", "2"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("Summary: total=1 passed=1 failed=0"));
+        assertEquals("", text(err));
+    }
+
+    @Test
+    void testRunAcceptsPytestCompatibilityAliasesLocally() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "pytest-compat-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-w", "-n", "2", "--quiet"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals("", text(out));
+        assertEquals("", text(err));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
