@@ -1,5 +1,6 @@
 package dev.jeval.cli;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ConversationalGolden;
@@ -170,7 +171,15 @@ final class GenerateCommand {
     }
 
     private static List<List<String>> loadContexts(Path file) throws IOException {
-        JsonNode root = JSON.readTree(file.toFile());
+        if (!Files.exists(file)) {
+            throw new IllegalArgumentException("Contexts file not found: " + file);
+        }
+        JsonNode root;
+        try {
+            root = JSON.readTree(file.toFile());
+        } catch (JsonProcessingException error) {
+            throw new IllegalArgumentException("Contexts file must be valid JSON: " + error.getOriginalMessage(), error);
+        }
         if (!root.isArray()) {
             throw new IllegalArgumentException("Contexts file must contain a JSON list of context lists.");
         }

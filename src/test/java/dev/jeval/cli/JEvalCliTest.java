@@ -1031,6 +1031,41 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateContextsReportsMissingContextsFileLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("missing-contexts.json");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Contexts file not found: " + contexts));
+    }
+
+    @Test
+    void generateContextsReportsInvalidJsonContextsFileLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("invalid-contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"],");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Contexts file must be valid JSON:"));
+    }
+
+    @Test
     void generateDocsChunksDocumentAndWritesGoldensFile() throws Exception {
         var document = tempDir.resolve("policy.md");
         Files.writeString(document, "alpha beta gamma delta");
