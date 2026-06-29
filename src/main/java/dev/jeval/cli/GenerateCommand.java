@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.EvaluationDataset;
 import dev.jeval.EvaluationModel;
 import dev.jeval.Golden;
+import dev.jeval.Utils;
 import dev.jeval.synthesizer.StylingConfig;
 import dev.jeval.synthesizer.Synthesizer;
 import java.io.IOException;
@@ -39,16 +40,17 @@ final class GenerateCommand {
             err.println("--goldens-file is required for --method goldens");
             return 2;
         }
+        if ("docs".equals(method) && option(args, "--document-path", null) == null) {
+            err.println("--document-path is required for --method docs");
+            return 2;
+        }
         try {
             var synthesizer = synthesizer(args);
             var goldens = switch (method == null ? "" : method) {
                 case "contexts" -> fromContexts(args, synthesizer, err);
                 case "scratch" -> fromScratch(args, synthesizer, err);
                 case "goldens" -> fromGoldens(args, synthesizer, err);
-                case "docs" -> {
-                    err.println("--method docs is not implemented; use contexts or the Java API.");
-                    yield null;
-                }
+                case "docs" -> fromDocs(args, synthesizer, err);
                 default -> {
                     err.println("Missing or unsupported --method.");
                     yield null;
@@ -120,6 +122,35 @@ final class GenerateCommand {
                 dataset.goldens(),
                 integer(args, "--max-goldens-per-golden", 1),
                 !has(args, "--no-expected-output"));
+    }
+
+    private static List<Golden> fromDocs(String[] args, Synthesizer synthesizer, PrintStream err) throws IOException {
+        var path = option(args, "--document-path", null);
+        if (path == null) {
+            err.println("--document-path is required for --method docs");
+            return null;
+        }
+        var contexts = new ArrayList<List<String>>();
+        var sourceFiles = new ArrayList<String>();
+        for (var file : documentFiles(Path.of(path))) {
+            for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
+                contexts.add(List.of(chunk));
+                sourceFiles.add(file.getFileName().toString());
+            }
+        }
+        return synthesizer.generateGoldensFromContexts(contexts,
+                !has(args, "--no-expected-output"),
+                integer(args, "--max-goldens-per-context", 2),
+                sourceFiles);
+    }
+
+    private static List<Path> documentFiles(Path path) throws IOException {
+        if (Files.isRegularFile(path)) {
+            return List.of(path);
+        }
+        try (var files = Files.walk(path)) {
+            return files.filter(Files::isRegularFile).sorted().toList();
+        }
     }
 
     private static String option(String[] args, String name, String fallback) {

@@ -158,6 +158,44 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateDocsChunksDocumentAndWritesGoldensFile() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"Question one?","expected_output":"Answer one"}]}
+                {"data":[{"input":"Question two?","expected_output":"Answer two"}]}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--document-path", document.toString(), "--chunk-size", "2",
+                "--responses-file", responses.toString(), "--output-dir", output.toString(),
+                "--file-name", "docs"
+        }, out, err);
+
+        assertEquals(0, exit);
+        var generated = Files.readString(output.resolve("docs.json"));
+        assertTrue(generated.contains("Question one?"));
+        assertTrue(generated.contains("Question two?"));
+        assertTrue(generated.contains("policy.md"));
+    }
+
+    @Test
+    void generateDocsRequiresDocumentPath() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"generate", "--method", "docs", "--variation", "single-turn"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("--document-path"));
+    }
+
+    @Test
     void settingsSetUnsetListAndMaskSecretsInDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

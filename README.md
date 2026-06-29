@@ -75,14 +75,16 @@ commands currently persist configuration only.
 
 ## CLI generate
 
-The `generate` command supports single-turn `contexts`, `scratch`, and `goldens`
-generation through JEval's synthesizer. It can use OpenAI/Ollama settings saved
-with provider commands, or deterministic scripted responses with `--responses-file`:
+The `generate` command supports single-turn `contexts`, `docs`, `scratch`, and
+`goldens` generation through JEval's synthesizer. It can use OpenAI/Ollama
+settings saved with provider commands, or deterministic scripted responses with
+`--responses-file`:
 
 ```powershell
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar settings -u openai-api-key=$env:OPENAI_API_KEY --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation single-turn --contexts-file contexts.json --save dotenv:.env --output-dir generated
+java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method docs --variation single-turn --document-path docs\knowledge.md --chunk-size 200 --save dotenv:.env --output-dir generated
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation single-turn --contexts-file contexts.json --responses-file responses.txt --output-dir generated
 ```
 
@@ -105,7 +107,8 @@ var goldens = synthesizer.generateGoldensFromContexts(
         List.of(List.of("Paris is the capital of France.")));
 ```
 
-Document chunking and conversational synthesis are not ported yet.
+Plain-text document chunking is available through the CLI. Conversational
+synthesis is not ported yet.
 
 ## LangChain4j providers
 
