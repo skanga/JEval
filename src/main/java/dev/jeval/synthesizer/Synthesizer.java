@@ -56,10 +56,11 @@ public final class Synthesizer {
         for (var i = 0; i < contexts.size(); i++) {
             var context = List.copyOf(contexts.get(i));
             var sourceFile = sourceFiles != null && i < sourceFiles.size() ? sourceFiles.get(i) : null;
-            for (SyntheticData data : SynthesizerSchemas.parseSyntheticData(
+            var data = SynthesizerSchemas.parseSyntheticData(
                     model.generate(SynthesizerPrompts.generateSyntheticInputs(
-                            context, maxGoldensPerContext, includeExpectedOutput)))) {
-                goldens.add(golden(data, context, sourceFile, includeExpectedOutput, goldens.size()));
+                            context, maxGoldensPerContext, includeExpectedOutput)));
+            for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
+                goldens.add(golden(item, context, sourceFile, includeExpectedOutput, goldens.size()));
             }
         }
         return List.copyOf(goldens);
@@ -121,7 +122,7 @@ public final class Synthesizer {
             var data = SynthesizerSchemas.parseConversationalData(model.generate(
                     SynthesizerPrompts.generateSyntheticConversationalScenarios(
                             context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome)));
-            for (var item : data) {
+            for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
                 goldens.add(conversationalGolden(item, context, sourceFile, includeExpectedOutcome));
             }
         }

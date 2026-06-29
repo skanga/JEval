@@ -51,6 +51,23 @@ class SynthesizerTest {
     }
 
     @Test
+    void capsSyntheticInputsReturnedForContextLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[
+                  {"input":"First question?"},
+                  {"input":"Second question?"}
+                ]}
+                """));
+        var synthesizer = new Synthesizer(model);
+
+        var goldens = synthesizer.generateGoldensFromContexts(
+                List.of(List.of("Paris is in France.")), false, 1, null);
+
+        assertEquals(List.of("First question?"), goldens.stream().map(Golden::input).toList());
+    }
+
+    @Test
     void defaultConfigDoesNotEvolveInputs() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"plain\"}]}"));
@@ -170,6 +187,23 @@ class SynthesizerTest {
         assertEquals(List.of("refund.md"), goldens.getFirst().additionalMetadata().get("used_source_files"));
         assertEquals("user", goldens.getFirst().turns().getFirst().role());
         assertEquals(2, model.prompts().size());
+    }
+
+    @Test
+    void capsConversationalScenariosReturnedForContextLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[
+                  {"scenario":"first scenario","turns":[{"role":"user","content":"One"}]},
+                  {"scenario":"second scenario","turns":[{"role":"user","content":"Two"}]}
+                ]}
+                """));
+        var synthesizer = new Synthesizer(model);
+
+        var goldens = synthesizer.generateConversationalGoldensFromContexts(
+                List.of(List.of("Refunds are available within 30 days.")), false, 1, null);
+
+        assertEquals(List.of("first scenario"), goldens.stream().map(ConversationalGolden::scenario).toList());
     }
 
     @Test
