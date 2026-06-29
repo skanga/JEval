@@ -1,6 +1,7 @@
 package dev.jeval.optimizer.algorithms;
 
 import dev.jeval.DeepEvalException;
+import dev.jeval.optimizer.AcceptedIteration;
 import dev.jeval.optimizer.OptimizationReport;
 import dev.jeval.optimizer.OptimizationResult;
 import dev.jeval.optimizer.OptimizerScorer;
@@ -14,6 +15,7 @@ import dev.jeval.prompt.PromptType;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
@@ -108,6 +110,34 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         return false;
     }
 
+    PromptConfiguration childConfiguration(PromptConfiguration parent, String moduleId, Prompt rewrittenPrompt) {
+        var prompts = new LinkedHashMap<>(parent.prompts());
+        prompts.put(moduleId, rewrittenPrompt);
+        return PromptConfiguration.create(prompts, parent.id());
+    }
+
+    boolean acceptChild(
+            PromptConfiguration parent,
+            PromptConfiguration child,
+            String moduleId,
+            List<Double> parentScores,
+            List<Double> childScores,
+            Map<String, List<Double>> paretoScores,
+            Map<String, String> parents,
+            Map<String, PromptConfiguration> promptConfigurations,
+            List<AcceptedIteration> acceptedIterations) {
+        var before = average(parentScores);
+        var after = average(childScores);
+        if (after <= before) {
+            return false;
+        }
+        paretoScores.put(child.id(), List.copyOf(childScores));
+        parents.put(child.id(), parent.id());
+        promptConfigurations.put(child.id(), child);
+        acceptedIterations.add(new AcceptedIteration(parent.id(), child.id(), moduleId, before, after));
+        return true;
+    }
+
     @Override
     public OptimizationResult execute(Prompt prompt, List<?> goldens, OptimizerScorer scorer) {
         if (goldens.size() < 2) {
@@ -155,5 +185,12 @@ public final class GEPA implements PromptOptimizationAlgorithm {
 
     private static String normalized(String value) {
         return value == null ? "" : value.strip();
+    }
+
+    private static double average(List<Double> scores) {
+        if (scores.isEmpty()) {
+            return 0.0;
+        }
+        return scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     }
 }
