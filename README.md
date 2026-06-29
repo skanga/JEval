@@ -143,6 +143,7 @@ external datasets:
 import dev.jeval.Golden;
 import dev.jeval.benchmarks.ARC;
 import dev.jeval.benchmarks.BoolQ;
+import dev.jeval.benchmarks.GSM8K;
 import dev.jeval.benchmarks.HellaSwag;
 import dev.jeval.benchmarks.LAMBADA;
 import dev.jeval.benchmarks.TruthfulQA;
@@ -158,6 +159,7 @@ var benchmark = new BoolQ(List.of(
 
 var result = benchmark.evaluate(model);
 var arcResult = new ARC(goldens).evaluate(model);
+var gsm8k = new GSM8K(goldens).evaluate(model);
 var hellaswagResult = new HellaSwag(Map.of("Applying sunscreen", goldens)).evaluate(model);
 var lambada = new LAMBADA(goldens).evaluate(model);
 var truthful = new TruthfulQA(Map.of("Health", goldens), TruthfulQAMode.MC1).evaluate(model);
