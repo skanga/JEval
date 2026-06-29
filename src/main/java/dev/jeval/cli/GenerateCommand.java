@@ -35,17 +35,12 @@ final class GenerateCommand {
             err.println("--contexts-file is required for --method contexts");
             return 2;
         }
-        if ("scratch".equals(method)
-                && "single-turn".equals(variation)
-                && option(args, "--scenario", null) == null) {
-            err.println("--scenario is required for --method scratch");
-            return 2;
-        }
-        if ("scratch".equals(method)
-                && "multi-turn".equals(variation)
-                && option(args, "--scenario-context", null) == null) {
-            err.println("--scenario-context is required for --method scratch --variation multi-turn");
-            return 2;
+        if ("scratch".equals(method)) {
+            var scratchValidation = validateScratch(args, variation);
+            if (scratchValidation != null) {
+                err.println(scratchValidation);
+                return 2;
+            }
         }
         if ("goldens".equals(method) && option(args, "--goldens-file", null) == null) {
             err.println("--goldens-file is required for --method goldens");
@@ -165,10 +160,6 @@ final class GenerateCommand {
     }
 
     private static List<Golden> fromScratch(String[] args, Synthesizer synthesizer, PrintStream err) {
-        if (option(args, "--scenario", null) == null) {
-            err.println("--scenario is required for --method scratch");
-            return null;
-        }
         return synthesizer.generateGoldensFromScratch(integer(args, "--num-goldens", 1));
     }
 
@@ -319,6 +310,29 @@ final class GenerateCommand {
             }
         }
         return List.copyOf(paths);
+    }
+
+    private static String validateScratch(String[] args, String variation) {
+        if (option(args, "--num-goldens", null) == null) {
+            return "`--num-goldens` is required when --method is `scratch`.";
+        }
+        var missing = new ArrayList<String>();
+        if ("single-turn".equals(variation)) {
+            addMissing(missing, args, "--scenario");
+            addMissing(missing, args, "--task");
+            addMissing(missing, args, "--input-format");
+        } else {
+            addMissing(missing, args, "--scenario-context");
+            addMissing(missing, args, "--conversational-task");
+            addMissing(missing, args, "--participant-roles");
+        }
+        return missing.isEmpty() ? null : "Scratch generation requires: " + String.join(", ", missing);
+    }
+
+    private static void addMissing(List<String> missing, String[] args, String option) {
+        if (option(args, option, null) == null) {
+            missing.add(option);
+        }
     }
 
     private static boolean has(String[] args, String name) {

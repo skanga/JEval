@@ -729,7 +729,7 @@ class JEvalCliTest {
 
         var exit = run(new String[] {"generate", "--method", "scratch", "--variation", "single-turn",
                 "--scenario", "users", "--task", "answer", "--input-format", "question",
-                "--save", "dotenv:" + env}, out, err);
+                "--num-goldens", "1", "--save", "dotenv:" + env}, out, err);
 
         assertEquals(2, exit);
         assertTrue(text(err).contains("No supported provider"));
@@ -744,7 +744,7 @@ class JEvalCliTest {
 
             var exit = run(new String[] {"generate", "--method", "scratch", "--variation", "single-turn",
                     "--scenario", "users", "--task", "answer", "--input-format", "question",
-                    "--save=dotenv:" + env}, out, err);
+                    "--num-goldens", "1", "--save=dotenv:" + env}, out, err);
 
             assertEquals(2, exit);
             assertTrue(text(err).contains("No supported provider"));
@@ -760,7 +760,7 @@ class JEvalCliTest {
 
             var exit = run(new String[] {"generate", "--method", "scratch", "--variation", "single-turn",
                     "--scenario", "users", "--task", "answer", "--input-format", "question",
-                    "-s", "dotenv:" + env}, out, err);
+                    "--num-goldens", "1", "-s", "dotenv:" + env}, out, err);
 
             assertEquals(2, exit);
             assertTrue(text(err).contains("No supported provider"));
@@ -828,6 +828,57 @@ class JEvalCliTest {
 
         assertEquals(0, exit);
         assertTrue(Files.readString(output.resolve("scratch.json")).contains("Study question?"));
+    }
+
+    @Test
+    void generateScratchRequiresNumGoldensLikeDeepEval() throws Exception {
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Study question?\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "scratch", "--variation", "single-turn",
+                "--scenario", "students", "--task", "study", "--input-format", "question",
+                "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("--num-goldens"));
+    }
+
+    @Test
+    void generateScratchRequiresSingleTurnStylingLikeDeepEval() throws Exception {
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Study question?\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "scratch", "--variation", "single-turn",
+                "--scenario", "students", "--num-goldens", "1", "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Scratch generation requires: --task, --input-format"));
+    }
+
+    @Test
+    void generateScratchRequiresMultiTurnStylingLikeDeepEval() throws Exception {
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"scenario\":\"flight booking\",\"turns\":[{\"role\":\"user\",\"content\":\"Book a flight\"}]}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "scratch", "--variation", "multi-turn",
+                "--scenario-context", "travel support", "--num-goldens", "1",
+                "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Scratch generation requires: --conversational-task, --participant-roles"));
     }
 
     @Test
@@ -988,7 +1039,8 @@ class JEvalCliTest {
         var exit = run(new String[] {
                 "generate", "--method", "scratch", "--variation", "multi-turn",
                 "--scenario-context", "travel support", "--conversational-task", "book flights",
-                "--participant-roles", "traveler and agent", "--responses-file", responses.toString(),
+                "--participant-roles", "traveler and agent", "--num-goldens", "1",
+                "--responses-file", responses.toString(),
                 "--output-dir", output.toString(), "--file-name", "scratch-conversations"
         }, out, err);
 
