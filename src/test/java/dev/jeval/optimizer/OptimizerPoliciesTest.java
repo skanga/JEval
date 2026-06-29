@@ -2,10 +2,13 @@ package dev.jeval.optimizer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.optimizer.policies.OptimizerPolicies;
 import dev.jeval.optimizer.policies.TieBreaker;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -108,5 +111,62 @@ class OptimizerPoliciesTest {
         assertEquals(Set.of("b"), Set.copyOf(strict.tiedIds()));
         assertEquals(Set.of("a", "b"), Set.copyOf(loose.tiedIds()));
         assertEquals("a", loose.chosenId());
+    }
+
+    @Test
+    void dominatedRequiresOtherToBeAtLeastAsGoodAndBetterByDelta() {
+        assertTrue(OptimizerPolicies.isDominated(List.of(0.7, 0.5), List.of(0.8, 0.5), 0.01));
+        assertFalse(OptimizerPolicies.isDominated(List.of(0.7, 0.5), List.of(0.705, 0.5), 0.01));
+        assertFalse(OptimizerPolicies.isDominated(List.of(0.7, 0.5), List.of(0.8, 0.4), 0.01));
+    }
+
+    @Test
+    void paretoFrontierReturnsNonDominatedCandidatesInInputOrder() {
+        var scores = new LinkedHashMap<String, List<Double>>();
+        scores.put("a", List.of(0.8, 0.8));
+        scores.put("b", List.of(0.9, 0.7));
+        scores.put("c", List.of(0.7, 0.7));
+
+        assertEquals(List.of("a", "b"), OptimizerPolicies.paretoFrontier(List.of("a", "b", "c"), scores));
+    }
+
+    @Test
+    void frequencyWeightsCountsPerInstanceWinnersOnGlobalFrontier() {
+        var scores = new LinkedHashMap<String, List<Double>>();
+        scores.put("root", List.of(0.9, 0.4, 0.9));
+        scores.put("child", List.of(0.8, 0.9, 0.9));
+        scores.put("weak", List.of(0.1, 0.1, 0.1));
+
+        var weights = OptimizerPolicies.frequencyWeights(scores);
+
+        assertEquals(2, weights.get("root"));
+        assertEquals(2, weights.get("child"));
+        assertFalse(weights.containsKey("weak"));
+    }
+
+    @Test
+    void sampleByFrequencyRejectsEmptyAndUsesUniformFallbackForZeroWeights() {
+        assertThrows(IllegalArgumentException.class,
+                () -> OptimizerPolicies.sampleByFrequency(Map.of(), new Random(1)));
+
+        var weights = new LinkedHashMap<String, Integer>();
+        weights.put("a", 0);
+        weights.put("b", 0);
+
+        assertEquals(
+                OptimizerPolicies.sampleByFrequency(weights, new Random(3)),
+                OptimizerPolicies.sampleByFrequency(weights, new Random(3)));
+    }
+
+    @Test
+    void selectPromptConfigurationParetoSamplesFromFrequencyWeights() {
+        var scores = new LinkedHashMap<String, List<Double>>();
+        scores.put("root", List.of(0.9, 0.4));
+        scores.put("child", List.of(0.8, 0.9));
+        scores.put("weak", List.of(0.1, 0.1));
+
+        var selected = OptimizerPolicies.selectPromptConfigurationPareto(scores, new Random(7));
+
+        assertTrue(Set.of("root", "child").contains(selected));
     }
 }
