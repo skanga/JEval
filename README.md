@@ -72,13 +72,13 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openrouter --model openai/gpt-4.1 
 java -jar target/jeval-0.1.0-SNAPSHOT.jar unset-openai --save dotenv:.env
 ```
 
-OpenAI and Ollama provider settings can be used by `generate`; other provider
+OpenAI, OpenRouter, and Ollama provider settings can be used by `generate`; other provider
 commands currently persist configuration only.
 
 ## CLI generate
 
 The `generate` command supports single-turn and multi-turn `contexts`, `docs`,
-`scratch`, and `goldens` generation through JEval's synthesizer. It can use OpenAI/Ollama settings saved with provider
+`scratch`, and `goldens` generation through JEval's synthesizer. It can use OpenAI/OpenRouter/Ollama settings saved with provider
 commands, or deterministic scripted responses with `--responses-file`:
 Existing goldens supplied with `--goldens-file` can be JSON, JSONL, or CSV.
 

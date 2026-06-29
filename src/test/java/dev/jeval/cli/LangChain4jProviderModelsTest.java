@@ -47,11 +47,28 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void createsOpenRouterModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_OPENROUTER_MODEL=YES
+                OPENROUTER_MODEL_NAME=openai/gpt-4.1
+                OPENROUTER_API_KEY=sk-or-test
+                OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+                TEMPERATURE=0.2
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void rejectsMissingProviderConfig() throws Exception {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));
 
-        assertEquals("No supported provider is configured; run set-openai or set-ollama, or pass --responses-file.",
+        assertEquals("No supported provider is configured; run set-openai, set-ollama, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
 }

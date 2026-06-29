@@ -16,17 +16,30 @@ final class LangChain4jProviderModels {
         if ("YES".equals(config.get("USE_OPENAI_MODEL"))) {
             return new LangChain4jEvaluationModel(openAi(config));
         }
+        if ("YES".equals(config.get("USE_OPENROUTER_MODEL"))) {
+            return new LangChain4jEvaluationModel(openRouter(config));
+        }
         if ("YES".equals(config.get("USE_LOCAL_MODEL")) && present(config, "OLLAMA_MODEL_NAME")) {
             return new LangChain4jEvaluationModel(ollama(config));
         }
         throw new IllegalArgumentException(
-                "No supported provider is configured; run set-openai or set-ollama, or pass --responses-file.");
+                "No supported provider is configured; run set-openai, set-ollama, or set-openrouter, or pass --responses-file.");
     }
 
     private static OpenAiChatModel openAi(Map<String, String> config) {
         var builder = OpenAiChatModel.builder()
                 .apiKey(required(config, "OPENAI_API_KEY"))
                 .modelName(value(config, "OPENAI_MODEL_NAME", "gpt-4o-mini"));
+        optionalDouble(config, "TEMPERATURE", builder::temperature);
+        optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
+        return builder.build();
+    }
+
+    private static OpenAiChatModel openRouter(Map<String, String> config) {
+        var builder = OpenAiChatModel.builder()
+                .apiKey(required(config, "OPENROUTER_API_KEY"))
+                .modelName(required(config, "OPENROUTER_MODEL_NAME"))
+                .baseUrl(value(config, "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"));
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
         return builder.build();
