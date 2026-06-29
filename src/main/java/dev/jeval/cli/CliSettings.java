@@ -86,12 +86,12 @@ final class CliSettings {
             var updates = new LinkedHashMap<String, String>();
             var removals = new java.util.ArrayList<String>();
             removals.addAll(spec.groupFlags());
-            removals.addAll(spec.keys().values());
+            removals.addAll(spec.unsetKeys());
             if (command.startsWith("unset-")) {
                 removals.add(spec.useKey());
             } else {
                 updates.put(spec.useKey(), "YES");
-                for (var entry : spec.keys().entrySet()) {
+                for (var entry : spec.setKeys().entrySet()) {
                     var value = option(args, entry.getKey(), null);
                     if (value != null) {
                         updates.put(entry.getValue(), value);
@@ -191,10 +191,14 @@ final class CliSettings {
     private record Parsed(List<String> updates, List<String> unsets, String listFilter, boolean quiet, Path save) {
     }
 
-    private record ProviderSpec(String useKey, Map<String, String> keys, List<String> groupFlags) {
+    private record ProviderSpec(
+            String useKey,
+            Map<String, String> setKeys,
+            List<String> groupFlags,
+            List<String> unsetKeys) {
         static ProviderSpec forCommand(String command) {
             return switch (command) {
-                case "set-openai", "unset-openai" -> llm("USE_OPENAI_MODEL", Map.of("--model", "OPENAI_MODEL_NAME"));
+                case "set-openai", "unset-openai" -> openAi();
                 case "set-anthropic", "unset-anthropic" -> llm("USE_ANTHROPIC_MODEL", Map.of("--model", "ANTHROPIC_MODEL_NAME"));
                 case "set-ollama", "unset-ollama" -> llm("USE_LOCAL_MODEL", Map.of("--model", "OLLAMA_MODEL_NAME", "--base-url", "LOCAL_MODEL_BASE_URL"));
                 case "set-local-model", "unset-local-model" -> llm("USE_LOCAL_MODEL", Map.of("--model", "LOCAL_MODEL_NAME", "--base-url", "LOCAL_MODEL_BASE_URL", "--format", "LOCAL_MODEL_FORMAT"));
@@ -213,18 +217,34 @@ final class CliSettings {
             };
         }
 
+        private static ProviderSpec openAi() {
+            var setKeys = Map.of(
+                    "--model", "OPENAI_MODEL_NAME",
+                    "--temperature", "TEMPERATURE",
+                    "--cost-per-input-token", "OPENAI_COST_PER_INPUT_TOKEN",
+                    "--cost-per-output-token", "OPENAI_COST_PER_OUTPUT_TOKEN");
+            return llm("USE_OPENAI_MODEL", setKeys, List.of(
+                    "OPENAI_MODEL_NAME",
+                    "OPENAI_COST_PER_INPUT_TOKEN",
+                    "OPENAI_COST_PER_OUTPUT_TOKEN"));
+        }
+
         private static ProviderSpec llm(String useKey, Map<String, String> keys) {
+            return llm(useKey, keys, List.copyOf(keys.values()));
+        }
+
+        private static ProviderSpec llm(String useKey, Map<String, String> keys, List<String> unsetKeys) {
             var removals = new java.util.ArrayList<String>();
             removals.addAll(LLM_FLAGS);
             removals.addAll(LLM_VALUES);
-            return new ProviderSpec(useKey, keys, removals);
+            return new ProviderSpec(useKey, keys, removals, unsetKeys);
         }
 
         private static ProviderSpec embed(String useKey, Map<String, String> keys) {
             var removals = new java.util.ArrayList<String>();
             removals.addAll(EMBED_FLAGS);
             removals.addAll(EMBED_VALUES);
-            return new ProviderSpec(useKey, keys, removals);
+            return new ProviderSpec(useKey, keys, removals, List.copyOf(keys.values()));
         }
     }
 }

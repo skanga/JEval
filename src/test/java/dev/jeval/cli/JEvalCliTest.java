@@ -389,6 +389,36 @@ class JEvalCliTest {
     }
 
     @Test
+    void openAiProviderPersistsTemperatureAndCostOverrides() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "custom-model",
+                "--temperature", "0.1",
+                "--cost-per-input-token", "0.0005",
+                "--cost-per-output-token", "0.0015",
+                "--save", "dotenv:" + env
+        }, out, err));
+
+        assertDotenv(env, "USE_OPENAI_MODEL", "YES");
+        assertDotenv(env, "OPENAI_MODEL_NAME", "custom-model");
+        assertDotenv(env, "TEMPERATURE", "0.1");
+        assertDotenv(env, "OPENAI_COST_PER_INPUT_TOKEN", "0.0005");
+        assertDotenv(env, "OPENAI_COST_PER_OUTPUT_TOKEN", "0.0015");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-openai", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENAI_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_MODEL_NAME"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_COST_PER_INPUT_TOKEN"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_COST_PER_OUTPUT_TOKEN"));
+        assertDotenv(env, "TEMPERATURE", "0.1");
+    }
+
+    @Test
     void openRouterProviderRoundtripUsesExclusiveFlags() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
