@@ -79,6 +79,7 @@ commands currently persist configuration only.
 The `generate` command supports single-turn and multi-turn `contexts`, `docs`,
 `scratch`, and `goldens` generation through JEval's synthesizer. It can use OpenAI/Ollama settings saved with provider
 commands, or deterministic scripted responses with `--responses-file`:
+Existing goldens supplied with `--goldens-file` can be JSON, JSONL, or CSV.
 
 ```powershell
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save dotenv:.env

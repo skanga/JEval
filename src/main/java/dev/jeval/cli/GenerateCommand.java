@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 final class GenerateCommand {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -178,7 +179,7 @@ final class GenerateCommand {
             return null;
         }
         var dataset = new EvaluationDataset();
-        dataset.addGoldensFromJsonFile(Path.of(file));
+        loadGoldens(dataset, Path.of(file));
         return synthesizer.generateGoldensFromGoldens(
                 dataset.goldens(),
                 integer(args, "--max-goldens-per-golden", 1),
@@ -195,7 +196,7 @@ final class GenerateCommand {
             return null;
         }
         var dataset = new EvaluationDataset();
-        dataset.addGoldensFromJsonFile(Path.of(file));
+        loadGoldens(dataset, Path.of(file));
         return synthesizer.generateConversationalGoldensFromGoldens(
                 dataset.conversationalGoldens(),
                 integer(args, "--max-goldens-per-golden", 1),
@@ -243,6 +244,19 @@ final class GenerateCommand {
                 !has(args, "--no-expected-output"),
                 integer(args, "--max-goldens-per-context", 2),
                 sourceFiles);
+    }
+
+    private static void loadGoldens(EvaluationDataset dataset, Path file) {
+        var name = file.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (name.endsWith(".jsonl")) {
+            dataset.addGoldensFromJsonlFile(file);
+        } else if (name.endsWith(".csv")) {
+            dataset.addGoldensFromCsvFile(file);
+        } else if (name.endsWith(".json")) {
+            dataset.addGoldensFromJsonFile(file);
+        } else {
+            throw new IllegalArgumentException("Unsupported goldens file type: " + file);
+        }
     }
 
     private static List<Path> documentFiles(Path path) throws IOException {

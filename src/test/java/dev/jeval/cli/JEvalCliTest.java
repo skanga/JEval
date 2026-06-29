@@ -147,6 +147,53 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateGoldensAcceptsJsonlSourceFile() throws Exception {
+        var goldens = tempDir.resolve("goldens.jsonl");
+        Files.writeString(goldens, "{\"input\":\"Old question?\",\"expected_output\":\"Old answer\"}");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"New question?\",\"expected_output\":\"New answer\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "goldens", "--variation", "single-turn",
+                "--goldens-file", goldens.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "from-jsonl"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("from-jsonl.json"));
+        assertTrue(generated.contains("\"input\" : \"New question?\""));
+        assertTrue(generated.contains("\"expected_output\" : \"New answer\""));
+    }
+
+    @Test
+    void generateGoldensAcceptsCsvSourceFile() throws Exception {
+        var goldens = tempDir.resolve("goldens.csv");
+        Files.writeString(goldens, """
+                input,expected_output
+                Old question?,Old answer
+                """);
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Csv question?\",\"expected_output\":\"Csv answer\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "goldens", "--variation", "single-turn",
+                "--goldens-file", goldens.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "from-csv"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("from-csv.json"));
+        assertTrue(generated.contains("\"input\" : \"Csv question?\""));
+        assertTrue(generated.contains("\"expected_output\" : \"Csv answer\""));
+    }
+
+    @Test
     void generateRequiresMethodSpecificInput() {
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();
