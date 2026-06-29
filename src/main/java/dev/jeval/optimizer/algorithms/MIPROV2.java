@@ -1,5 +1,6 @@
 package dev.jeval.optimizer.algorithms;
 
+import dev.jeval.optimizer.AcceptedIteration;
 import dev.jeval.optimizer.OptimizationReport;
 import dev.jeval.optimizer.OptimizationResult;
 import dev.jeval.optimizer.OptimizerScorer;
@@ -7,8 +8,10 @@ import dev.jeval.optimizer.OptimizerUtils;
 import dev.jeval.optimizer.PromptConfiguration;
 import dev.jeval.optimizer.PromptOptimizationAlgorithm;
 import dev.jeval.prompt.Prompt;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
@@ -140,22 +143,119 @@ public final class MIPROV2 implements PromptOptimizationAlgorithm {
         var prompts = new LinkedHashMap<String, Prompt>();
         prompts.put(OptimizerScorer.DEFAULT_MODULE_ID, prompt);
         var rootConfig = PromptConfiguration.create(prompts);
-        var scores = scorer.scorePareto(rootConfig, goldens);
 
         var paretoScores = new LinkedHashMap<String, List<Double>>();
-        paretoScores.put(rootConfig.id(), scores);
         var parents = new LinkedHashMap<String, String>();
         parents.put(rootConfig.id(), null);
         var promptConfigurations = new LinkedHashMap<String, PromptConfiguration>();
         promptConfigurations.put(rootConfig.id(), rootConfig);
+        var acceptedIterations = new ArrayList<AcceptedIteration>();
+
+        var candidates = proposeInstructionCandidates(prompt, goldens, scorer);
+        var demoSets = bootstrapDemonstrationSets(prompt, goldens, scorer);
+        var configurationsByPair = new LinkedHashMap<PairKey, PromptConfiguration>();
+
+        var rootScores = scorer.scorePareto(rootConfig, goldens);
+        paretoScores.put(rootConfig.id(), rootScores);
+        var bestConfig = rootConfig;
+        var bestScore = average(rootScores);
+
+        var trialPairs = trialPairs(candidates.size(), demoSets.size());
+        var trials = Math.min(numTrials, trialPairs.size());
+        for (var trialIndex = 0; trialIndex < trials; trialIndex++) {
+            var pair = trialPairs.get(trialIndex);
+            var candidateConfig = configurationsByPair.computeIfAbsent(pair, key -> {
+                var config = promptConfiguration(candidates.get(key.instructionIndex()), demoSets.get(key.demoIndex()));
+                promptConfigurations.put(config.id(), config);
+                parents.put(config.id(), rootConfig.id());
+                return config;
+            });
+
+            var minibatch = sampleMinibatch(goldens);
+            var minibatchScore = scorer.scoreMinibatch(candidateConfig, minibatch);
+            var shouldFullEvaluate = trialIndex == trials - 1
+                    || (minibatchFullEvalSteps > 0 && (trialIndex + 1) % minibatchFullEvalSteps == 0);
+            if (shouldFullEvaluate || minibatchScore > bestScore) {
+                var fullScores = scorer.scorePareto(candidateConfig, goldens);
+                paretoScores.put(candidateConfig.id(), fullScores);
+                var fullScore = average(fullScores);
+                if (fullScore > bestScore) {
+                    acceptedIterations.add(new AcceptedIteration(
+                            bestConfig.id(),
+                            candidateConfig.id(),
+                            OptimizerScorer.DEFAULT_MODULE_ID,
+                            bestScore,
+                            fullScore));
+                    bestConfig = candidateConfig;
+                    bestScore = fullScore;
+                }
+            }
+        }
 
         var report = new OptimizationReport(
                 optimizationId,
-                rootConfig.id(),
-                List.of(),
+                bestConfig.id(),
+                acceptedIterations,
                 paretoScores,
                 parents,
                 OptimizerUtils.buildPromptConfigSnapshots(promptConfigurations));
-        return new OptimizationResult(prompt, report);
+        return new OptimizationResult(bestConfig.prompts().get(OptimizerScorer.DEFAULT_MODULE_ID), report);
+    }
+
+    private List<Prompt> proposeInstructionCandidates(Prompt prompt, List<?> goldens, OptimizerScorer scorer) {
+        if (numCandidates <= 1) {
+            return List.of(prompt);
+        }
+        var proposer = new MIPROV2InstructionProposer(template -> scorer.generate(
+                Map.of(OptimizerScorer.DEFAULT_MODULE_ID, new Prompt("miprov2-proposer", template)),
+                null), randomState);
+        return proposer.propose(prompt, goldens, numCandidates);
+    }
+
+    private List<MIPROV2DemonstrationSet> bootstrapDemonstrationSets(
+            Prompt prompt,
+            List<?> goldens,
+            OptimizerScorer scorer) {
+        if (maxBootstrappedDemonstrations == 0 && maxLabeledDemonstrations == 0) {
+            return List.of(new MIPROV2DemonstrationSet(List.of(), "0-shot"));
+        }
+        var bootstrapper = new MIPROV2Bootstrapper(
+                scorer,
+                maxBootstrappedDemonstrations,
+                maxLabeledDemonstrations,
+                numDemonstrationSets,
+                randomState);
+        return bootstrapper.bootstrap(prompt, goldens);
+    }
+
+    private PromptConfiguration promptConfiguration(Prompt candidate, MIPROV2DemonstrationSet demoSet) {
+        var promptWithDemos = MIPROV2Bootstrapper.renderPromptWithDemonstrations(candidate, demoSet, 8);
+        return PromptConfiguration.create(Map.of(OptimizerScorer.DEFAULT_MODULE_ID, promptWithDemos));
+    }
+
+    private List<?> sampleMinibatch(List<?> goldens) {
+        if (goldens.size() <= minibatchSize) {
+            return goldens;
+        }
+        var shuffled = new ArrayList<>(goldens);
+        java.util.Collections.shuffle(shuffled, randomState);
+        return List.copyOf(shuffled.subList(0, minibatchSize));
+    }
+
+    private static List<PairKey> trialPairs(int candidateCount, int demoSetCount) {
+        var pairs = new ArrayList<PairKey>();
+        for (var instructionIndex = 0; instructionIndex < candidateCount; instructionIndex++) {
+            for (var demoIndex = 0; demoIndex < demoSetCount; demoIndex++) {
+                pairs.add(new PairKey(instructionIndex, demoIndex));
+            }
+        }
+        return pairs;
+    }
+
+    private static double average(List<Double> scores) {
+        return scores.isEmpty() ? 0.0 : scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    }
+
+    private record PairKey(int instructionIndex, int demoIndex) {
     }
 }
