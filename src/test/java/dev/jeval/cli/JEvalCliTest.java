@@ -388,6 +388,36 @@ class JEvalCliTest {
         assertEquals(false, readDotenv(env).containsKey("OLLAMA_MODEL_NAME"));
     }
 
+    @Test
+    void openRouterProviderRoundtripUsesExclusiveFlags() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-openrouter", "--model", "openai/gpt-4.1",
+                "--base-url", "https://openrouter.ai/api/v1", "--save", "dotenv:" + env
+        }, out, err));
+        assertDotenv(env, "USE_OPENROUTER_MODEL", "YES");
+        assertDotenv(env, "OPENROUTER_MODEL_NAME", "openai/gpt-4.1");
+        assertDotenv(env, "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1");
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENAI_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_MODEL_NAME"));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-openrouter", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENROUTER_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENROUTER_MODEL_NAME"));
+        assertEquals(false, readDotenv(env).containsKey("OPENROUTER_BASE_URL"));
+    }
+
     private static PrintStream print(ByteArrayOutputStream bytes) {
         return new PrintStream(bytes, true, StandardCharsets.UTF_8);
     }
