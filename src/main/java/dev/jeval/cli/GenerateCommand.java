@@ -72,6 +72,9 @@ final class GenerateCommand {
             return 2;
         }
         try {
+            if ("docs".equals(method)) {
+                contextConstructionConfig(args);
+            }
             var synthesizer = synthesizer(args);
             var goldens = "multi-turn".equals(variation)
                     ? multiTurnGoldens(method, args, synthesizer, err)

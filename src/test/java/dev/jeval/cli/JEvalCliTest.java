@@ -833,6 +833,36 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRejectsInvalidDocsContextThresholdsLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--documents", document.toString(),
+                "--context-similarity-threshold", "1.5"
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("context_similarity_threshold must be between 0 and 1."));
+        assertFalse(text(err).contains("No supported provider"));
+
+        out.reset();
+        err.reset();
+        exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--documents", document.toString(),
+                "--context-quality-threshold", "-0.1"
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("context_quality_threshold must be between 0 and 1."));
+        assertFalse(text(err).contains("No supported provider"));
+    }
+
+    @Test
     void generateContextsWritesGoldensFile() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");
