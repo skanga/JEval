@@ -112,6 +112,27 @@ Plain-text document chunking is available through the CLI. Multi-turn generation
 expects model JSON with `scenario`, optional `turns`, and optional
 `expected_outcome`.
 
+## Tracing
+
+JEval includes a small local tracer for DeepEval-style agent trace maps. Use
+`Tracer.observe(...)` around agent/tool/LLM calls, then attach `tracer.trace()`
+to `LlmTestCase.trace` for trace metrics:
+
+```java
+import dev.jeval.LlmTestCase;
+import dev.jeval.tracing.Tracer;
+import java.util.Map;
+
+var tracer = new Tracer();
+var answer = tracer.observe("agent", "agent", Map.of("input", "refund"), () ->
+        "answer: " + tracer.observe("lookup", "tool", Map.of("query", "refund"), () -> "policy"));
+
+var testCase = LlmTestCase.builder("refund")
+        .actualOutput(answer)
+        .trace(tracer.trace())
+        .build();
+```
+
 ## LangChain4j providers
 
 JEval can use any LangChain4j `ChatModel` through `LangChain4jEvaluationModel`.
