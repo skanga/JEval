@@ -59,6 +59,45 @@ class MMLUTest {
     }
 
     @Test
+    void evaluateUsesBatchGenerateWhenBatchSizeIsProvided() {
+        var benchmark = new MMLU(Map.of("math", List.of(
+                Golden.builder("one").expectedOutput("A").build(),
+                Golden.builder("two").expectedOutput("B").build(),
+                Golden.builder("three").expectedOutput("C").build())),
+                3);
+        var model = new BatchModel(List.of("A", "B"), List.of("D"));
+
+        var result = benchmark.evaluate(model, 2);
+
+        assertAll(
+                () -> assertEquals(2.0 / 3.0, result.overallAccuracy()),
+                () -> assertEquals(List.of(List.of("one", "two"), List.of("three")), model.batches()),
+                () -> assertEquals(3, benchmark.predictions().size()),
+                () -> assertEquals(0, benchmark.predictions().get(2).correct()));
+    }
+
+    @Test
+    void evaluateRejectsNonPositiveBatchSize() {
+        var benchmark = new MMLU(Map.of("math", List.of(Golden.builder("one").expectedOutput("A").build())));
+
+        var thrown = assertThrows(IllegalArgumentException.class, () -> benchmark.evaluate(prompt -> "A", 0));
+
+        assertTrue(thrown.getMessage().contains("batchSize"));
+    }
+
+    @Test
+    void evaluateRejectsBatchResponseCountMismatch() {
+        var benchmark = new MMLU(Map.of("math", List.of(
+                Golden.builder("one").expectedOutput("A").build(),
+                Golden.builder("two").expectedOutput("B").build())));
+        var model = new BatchModel(List.of("A"));
+
+        var thrown = assertThrows(IllegalArgumentException.class, () -> benchmark.evaluate(model, 2));
+
+        assertTrue(thrown.getMessage().contains("one response per prompt"));
+    }
+
+    @Test
     void constructorRejectsEmptyTaskGoldens() {
         var thrown = assertThrows(IllegalArgumentException.class, () -> new MMLU(Map.of()));
 
@@ -81,6 +120,30 @@ class MMLUTest {
 
         private List<String> prompts() {
             return List.copyOf(prompts);
+        }
+    }
+
+    private static final class BatchModel implements EvaluationModel {
+        private final Queue<List<String>> responses;
+        private final Queue<List<String>> batches = new ArrayDeque<>();
+
+        private BatchModel(List<String>... responses) {
+            this.responses = new ArrayDeque<>(List.of(responses));
+        }
+
+        @Override
+        public String generate(String prompt) {
+            throw new AssertionError("generate should not be called");
+        }
+
+        @Override
+        public List<String> batchGenerate(List<String> prompts) {
+            batches.add(List.copyOf(prompts));
+            return responses.remove();
+        }
+
+        private List<List<String>> batches() {
+            return List.copyOf(batches);
         }
     }
 }

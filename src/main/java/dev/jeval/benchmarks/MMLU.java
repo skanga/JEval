@@ -45,6 +45,16 @@ public final class MMLU {
         if (model == null) {
             throw new IllegalArgumentException("'model' must not be null");
         }
+        return evaluate(model, null);
+    }
+
+    public BenchmarkResult evaluate(EvaluationModel model, Integer batchSize) {
+        if (model == null) {
+            throw new IllegalArgumentException("'model' must not be null");
+        }
+        if (batchSize != null && batchSize < 1) {
+            throw new IllegalArgumentException("'batchSize' must be positive");
+        }
         var rows = new ArrayList<BenchmarkTaskPrediction>();
         var scores = new ArrayList<BenchmarkTaskScore>();
         var totalCorrect = 0;
@@ -52,8 +62,10 @@ public final class MMLU {
         for (var entry : taskGoldens.entrySet()) {
             var goldens = limited(entry.getValue());
             var taskCorrect = 0;
-            for (var golden : goldens) {
-                var prediction = model.generate(golden.input());
+            var taskPredictions = predictions(model, goldens, batchSize);
+            for (var i = 0; i < goldens.size(); i++) {
+                var golden = goldens.get(i);
+                var prediction = taskPredictions.get(i);
                 var score = Scorer.exactMatchScore(golden.expectedOutput(), prediction);
                 taskCorrect += score;
                 totalCorrect += score;
@@ -86,5 +98,22 @@ public final class MMLU {
             return goldens;
         }
         return goldens.subList(0, nProblemsPerTask);
+    }
+
+    private static List<String> predictions(EvaluationModel model, List<Golden> goldens, Integer batchSize) {
+        if (batchSize == null) {
+            return goldens.stream().map(golden -> model.generate(golden.input())).toList();
+        }
+        var predictions = new ArrayList<String>();
+        for (var i = 0; i < goldens.size(); i += batchSize) {
+            var batch = goldens.subList(i, Math.min(i + batchSize, goldens.size()));
+            var prompts = batch.stream().map(Golden::input).toList();
+            var batchPredictions = model.batchGenerate(prompts);
+            if (batchPredictions.size() != batch.size()) {
+                throw new IllegalArgumentException("batchGenerate must return one response per prompt");
+            }
+            predictions.addAll(batchPredictions);
+        }
+        return predictions;
     }
 }

@@ -161,6 +161,7 @@ import java.util.Map;
 
 var mmlu = new MMLU(Map.of("abstract_algebra", goldens));
 var mmluResult = mmlu.evaluate(model);
+var batched = mmlu.evaluate(model, 16);
 ```
 
 ## LangChain4j providers
