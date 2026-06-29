@@ -283,10 +283,10 @@ final class GenerateCommand {
             Path file) throws IOException {
         var maxContexts = integer(args, "--max-contexts-per-document", 3);
         var minContexts = integer(args, "--min-contexts-per-document", 1);
-        var chunks = Utils.chunkText(
-                Files.readString(file),
-                integer(args, "--chunk-size", 1024),
-                integer(args, "--chunk-overlap", 0));
+        var chunkSize = integer(args, "--chunk-size", 1024);
+        var chunkOverlap = integer(args, "--chunk-overlap", 0);
+        validateChunkOverlap(chunkSize, chunkOverlap);
+        var chunks = Utils.chunkText(Files.readString(file), chunkSize, chunkOverlap);
         validateMinContexts(chunks.size(), minContexts);
         var count = 0;
         for (var chunk : chunks) {
@@ -295,6 +295,13 @@ final class GenerateCommand {
             }
             contexts.add(List.of(chunk));
             sourceFiles.add(file.getFileName().toString());
+        }
+    }
+
+    private static void validateChunkOverlap(int chunkSize, int chunkOverlap) {
+        if (chunkOverlap > chunkSize - 1) {
+            throw new IllegalArgumentException(
+                    "`chunk_overlap` must not exceed " + (chunkSize - 1) + " (chunk_size - 1).");
         }
     }
 
