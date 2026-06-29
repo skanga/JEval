@@ -448,6 +448,39 @@ class JEvalCliTest {
         assertEquals(false, readDotenv(env).containsKey("OPENROUTER_BASE_URL"));
     }
 
+    @Test
+    void openRouterProviderPersistsTemperatureAndCostOverrides() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openrouter", "--model", "openai/gpt-4.1",
+                "--base-url", "https://openrouter.ai/api/v1",
+                "--temperature", "0.3",
+                "--cost-per-input-token", "0.0007",
+                "--cost-per-output-token", "0.0021",
+                "--save", "dotenv:" + env
+        }, out, err));
+
+        assertDotenv(env, "USE_OPENROUTER_MODEL", "YES");
+        assertDotenv(env, "OPENROUTER_MODEL_NAME", "openai/gpt-4.1");
+        assertDotenv(env, "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1");
+        assertDotenv(env, "TEMPERATURE", "0.3");
+        assertDotenv(env, "OPENROUTER_COST_PER_INPUT_TOKEN", "0.0007");
+        assertDotenv(env, "OPENROUTER_COST_PER_OUTPUT_TOKEN", "0.0021");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-openrouter", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENROUTER_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENROUTER_MODEL_NAME"));
+        assertEquals(false, readDotenv(env).containsKey("OPENROUTER_BASE_URL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENROUTER_COST_PER_INPUT_TOKEN"));
+        assertEquals(false, readDotenv(env).containsKey("OPENROUTER_COST_PER_OUTPUT_TOKEN"));
+        assertDotenv(env, "TEMPERATURE", "0.3");
+    }
+
     private static PrintStream print(ByteArrayOutputStream bytes) {
         return new PrintStream(bytes, true, StandardCharsets.UTF_8);
     }

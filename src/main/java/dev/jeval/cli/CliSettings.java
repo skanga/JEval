@@ -21,7 +21,8 @@ final class CliSettings {
             "GROK_MODEL_NAME", "MOONSHOT_MODEL_NAME", "DEEPSEEK_MODEL_NAME", "GEMINI_MODEL_NAME",
             "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "LITELLM_MODEL_NAME", "LITELLM_API_BASE",
             "LITELLM_PROXY_API_BASE", "PORTKEY_MODEL_NAME", "PORTKEY_BASE_URL", "PORTKEY_PROVIDER_NAME",
-            "OPENROUTER_MODEL_NAME", "OPENROUTER_BASE_URL");
+            "OPENROUTER_MODEL_NAME", "OPENROUTER_BASE_URL", "OPENROUTER_COST_PER_INPUT_TOKEN",
+            "OPENROUTER_COST_PER_OUTPUT_TOKEN");
     private static final List<String> EMBED_VALUES = List.of(
             "AZURE_EMBEDDING_MODEL_NAME", "AZURE_EMBEDDING_DEPLOYMENT_NAME",
             "LOCAL_EMBEDDING_MODEL_NAME", "LOCAL_EMBEDDING_BASE_URL");
@@ -210,7 +211,7 @@ final class CliSettings {
                 case "set-gemini", "unset-gemini" -> llm("USE_GEMINI_MODEL", Map.of("--model", "GEMINI_MODEL_NAME", "--project", "GOOGLE_CLOUD_PROJECT", "--location", "GOOGLE_CLOUD_LOCATION"));
                 case "set-litellm", "unset-litellm" -> llm("USE_LITELLM", Map.of("--model", "LITELLM_MODEL_NAME", "--base-url", "LITELLM_API_BASE", "--proxy-base-url", "LITELLM_PROXY_API_BASE"));
                 case "set-portkey", "unset-portkey" -> llm("USE_PORTKEY_MODEL", Map.of("--model", "PORTKEY_MODEL_NAME", "--base-url", "PORTKEY_BASE_URL", "--provider", "PORTKEY_PROVIDER_NAME"));
-                case "set-openrouter", "unset-openrouter" -> llm("USE_OPENROUTER_MODEL", Map.of("--model", "OPENROUTER_MODEL_NAME", "--base-url", "OPENROUTER_BASE_URL"));
+                case "set-openrouter", "unset-openrouter" -> openRouter();
                 case "set-azure-openai-embedding", "unset-azure-openai-embedding" -> embed("USE_AZURE_OPENAI_EMBEDDING", Map.of("--model", "AZURE_EMBEDDING_MODEL_NAME", "--deployment-name", "AZURE_EMBEDDING_DEPLOYMENT_NAME"));
                 case "set-local-embeddings", "unset-local-embeddings", "set-ollama-embeddings", "unset-ollama-embeddings" -> embed("USE_LOCAL_EMBEDDINGS", Map.of("--model", "LOCAL_EMBEDDING_MODEL_NAME", "--base-url", "LOCAL_EMBEDDING_BASE_URL"));
                 default -> null;
@@ -227,6 +228,20 @@ final class CliSettings {
                     "OPENAI_MODEL_NAME",
                     "OPENAI_COST_PER_INPUT_TOKEN",
                     "OPENAI_COST_PER_OUTPUT_TOKEN"));
+        }
+
+        private static ProviderSpec openRouter() {
+            var setKeys = Map.of(
+                    "--model", "OPENROUTER_MODEL_NAME",
+                    "--base-url", "OPENROUTER_BASE_URL",
+                    "--temperature", "TEMPERATURE",
+                    "--cost-per-input-token", "OPENROUTER_COST_PER_INPUT_TOKEN",
+                    "--cost-per-output-token", "OPENROUTER_COST_PER_OUTPUT_TOKEN");
+            return llm("USE_OPENROUTER_MODEL", setKeys, List.of(
+                    "OPENROUTER_MODEL_NAME",
+                    "OPENROUTER_BASE_URL",
+                    "OPENROUTER_COST_PER_INPUT_TOKEN",
+                    "OPENROUTER_COST_PER_OUTPUT_TOKEN"));
         }
 
         private static ProviderSpec llm(String useKey, Map<String, String> keys) {
