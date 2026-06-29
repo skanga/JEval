@@ -7,12 +7,49 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import dev.jeval.optimizer.algorithms.COPRO;
 import dev.jeval.optimizer.algorithms.GEPA;
+import dev.jeval.optimizer.algorithms.MIPROV2;
 import dev.jeval.optimizer.algorithms.SIMBA;
 import dev.jeval.optimizer.policies.TieBreaker;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class OptimizerAlgorithmConfigTest {
+
+    @Test
+    void miprov2DefaultsMatchDeepEval() {
+        var algo = new MIPROV2();
+
+        assertEquals(30, algo.numTrials());
+        assertEquals(10, algo.numCandidates());
+        assertEquals(4, algo.maxBootstrappedDemonstrations());
+        assertEquals(4, algo.maxLabeledDemonstrations());
+        assertEquals(5, algo.numDemonstrationSets());
+        assertEquals(25, algo.minibatchSize());
+        assertEquals(10, algo.minibatchFullEvalSteps());
+        assertInstanceOf(Random.class, algo.randomState());
+        assertInstanceOf(Integer.class, algo.seed());
+    }
+
+    @Test
+    void miprov2AcceptsExplicitRandomStateAndSeed() {
+        var random = new Random(321);
+        var withRandom = new MIPROV2(random);
+        var withSeed = new MIPROV2(11);
+
+        assertSame(random, withRandom.randomState());
+        assertEquals(11, withSeed.seed());
+        assertInstanceOf(Random.class, withSeed.randomState());
+    }
+
+    @Test
+    void miprov2AllowsMinimalHyperparameters() {
+        var algo = new MIPROV2(1, 1, 0, 0, 1, 1, 1, 0);
+
+        assertEquals(1, algo.numTrials());
+        assertEquals(1, algo.numCandidates());
+        assertEquals(0, algo.maxBootstrappedDemonstrations());
+        assertEquals(0, algo.maxLabeledDemonstrations());
+    }
 
     @Test
     void simbaDefaultsMatchDeepEval() {
