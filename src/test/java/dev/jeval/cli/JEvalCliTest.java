@@ -295,6 +295,51 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunMarkFiltersCasesByTag() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "mark-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "smoke", "tags": ["smoke"], "input": "q", "actualOutput": "a", "expectedOutput": "a"},
+                    {"name": "slow", "tags": ["slow"], "input": "q", "actualOutput": "a", "expectedOutput": "b"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--mark", "smoke"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("Summary: total=1 passed=1 failed=0"));
+        assertTrue(text(out).contains("### smoke"));
+        assertEquals(false, text(out).contains("### slow"));
+    }
+
+    @Test
+    void testRunMarkAliasRejectsUnmatchedTag() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "mark-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "smoke", "tags": ["smoke"], "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-m", "regression"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("No test case matched mark: regression"));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

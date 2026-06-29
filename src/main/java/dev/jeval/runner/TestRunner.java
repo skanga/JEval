@@ -46,6 +46,16 @@ public final class TestRunner {
             int repeat,
             boolean exitOnFirstFailure,
             boolean ignoreErrors) throws IOException {
+        return run(path, selector, repeat, exitOnFirstFailure, ignoreErrors, null);
+    }
+
+    public TestRunResult run(
+            Path path,
+            String selector,
+            int repeat,
+            boolean exitOnFirstFailure,
+            boolean ignoreErrors,
+            String mark) throws IOException {
         if (repeat < 1) {
             throw new IllegalArgumentException("The repeat argument must be at least 1.");
         }
@@ -60,7 +70,7 @@ public final class TestRunner {
                         .filter(TestRunner::isJson)
                         .sorted()
                         .toList()) {
-                    results.addAll(runFile(file, null, repeat, exitOnFirstFailure, ignoreErrors).results());
+                    results.addAll(runFile(file, null, repeat, exitOnFirstFailure, ignoreErrors, mark).results());
                     if (exitOnFirstFailure && results.stream().anyMatch(result -> !result.success())) {
                         break;
                     }
@@ -68,7 +78,7 @@ public final class TestRunner {
             }
             return summarize(path.getFileName().toString(), results);
         }
-        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors);
+        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, mark);
     }
 
     private TestRunResult runFile(Path path) throws IOException {
@@ -94,6 +104,16 @@ public final class TestRunner {
             int repeat,
             boolean exitOnFirstFailure,
             boolean ignoreErrors) throws IOException {
+        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, null);
+    }
+
+    private TestRunResult runFile(
+            Path path,
+            String selector,
+            int repeat,
+            boolean exitOnFirstFailure,
+            boolean ignoreErrors,
+            String mark) throws IOException {
         var spec = JSON.readValue(path.toFile(), EvaluationSpec.class);
         if (spec.metrics() == null || spec.metrics().isEmpty()) {
             throw new IllegalArgumentException("Evaluation spec must define at least one metric: " + path);
@@ -107,6 +127,9 @@ public final class TestRunner {
                 : dataset(path.getParent(), spec.dataset());
         if (selector != null) {
             testCases = selectedCases(testCases, selector);
+        }
+        if (mark != null) {
+            testCases = markedCases(testCases, mark);
         }
         var results = repeatedResults(testCases, metrics, repeat, exitOnFirstFailure, ignoreErrors);
         return summarize(spec.name() == null ? stripExtension(path.getFileName().toString()) : spec.name(), results);
@@ -155,11 +178,22 @@ public final class TestRunner {
         return selected;
     }
 
+    private static List<LlmTestCase> markedCases(List<LlmTestCase> testCases, String mark) {
+        var selected = testCases.stream()
+                .filter(testCase -> testCase.tags() != null && testCase.tags().contains(mark))
+                .toList();
+        if (selected.isEmpty()) {
+            throw new IllegalArgumentException("No test case matched mark: " + mark);
+        }
+        return selected;
+    }
+
     private static LlmTestCase testCase(CaseSpec spec) {
         return LlmTestCase.builder(spec.input())
                 .actualOutput(spec.actualOutput())
                 .expectedOutput(spec.expectedOutput())
                 .name(spec.name())
+                .tags(spec.tags())
                 .build();
     }
 
@@ -270,6 +304,7 @@ public final class TestRunner {
             String name,
             String input,
             @JsonAlias("actual_output") String actualOutput,
-            @JsonAlias("expected_output") String expectedOutput) {
+            @JsonAlias("expected_output") String expectedOutput,
+            List<String> tags) {
     }
 }

@@ -72,7 +72,8 @@ public final class JEvalCli {
                     target.selector(),
                     options.repeat(),
                     options.exitOnFirstFailure(),
-                    options.ignoreErrors());
+                    options.ignoreErrors(),
+                    options.mark());
             if (options.identifier() != null) {
                 result = withName(result, options.identifier());
             }
@@ -195,6 +196,7 @@ public final class JEvalCli {
         var exitOnFirstFailure = false;
         var display = "all";
         var ignoreErrors = false;
+        String mark = null;
         for (var i = start; i < args.length; i++) {
             switch (args[i]) {
                 case "--quiet" -> quiet = true;
@@ -239,6 +241,13 @@ public final class JEvalCli {
                     }
                     display = args[i].toLowerCase(Locale.ROOT);
                 }
+                case "-m", "--mark" -> {
+                    if (++i == args.length) {
+                        usage(err);
+                        return null;
+                    }
+                    mark = args[i];
+                }
                 default -> {
                     usage(err);
                     return null;
@@ -253,7 +262,7 @@ public final class JEvalCli {
             err.println("Unsupported display: " + display);
             return null;
         }
-        return new Options(format, output, quiet, identifier, repeat, exitOnFirstFailure, display, ignoreErrors);
+        return new Options(format, output, quiet, identifier, repeat, exitOnFirstFailure, display, ignoreErrors, mark);
     }
 
     private static String report(dev.jeval.runner.TestRunResult result, String format) {
@@ -287,7 +296,7 @@ public final class JEvalCli {
     }
 
     private static void usage(PrintStream err) {
-        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|--exit-on-first-failure] [-i|--ignore-errors] [-d|--display all|passing|failing] [--format markdown|html] [--output dir] [--quiet]");
+        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|--exit-on-first-failure] [-i|--ignore-errors] [-d|--display all|passing|failing] [-m|--mark tag] [--format markdown|html] [--output dir] [--quiet]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
         err.println("       jeval settings -u key=value|-U key|-l [filter] [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv:.env] [-q|--quiet]");
@@ -304,7 +313,8 @@ public final class JEvalCli {
             int repeat,
             boolean exitOnFirstFailure,
             String display,
-            boolean ignoreErrors) {
+            boolean ignoreErrors,
+            String mark) {
     }
 
     private record InspectOptions(Path path, Path folder, String format) {
