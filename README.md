@@ -143,6 +143,7 @@ datasets:
 import dev.jeval.Golden;
 import dev.jeval.benchmarks.ARC;
 import dev.jeval.benchmarks.BBQ;
+import dev.jeval.benchmarks.BigBenchHard;
 import dev.jeval.benchmarks.BoolQ;
 import dev.jeval.benchmarks.DROP;
 import dev.jeval.benchmarks.EquityMedQA;
@@ -167,6 +168,7 @@ var benchmark = new BoolQ(List.of(
 var result = benchmark.evaluate(model);
 var arcResult = new ARC(goldens).evaluate(model);
 var bbq = new BBQ(Map.of("Age", goldens)).evaluate(model);
+var bbh = new BigBenchHard(Map.of("boolean_expressions", goldens)).evaluate(model);
 var drop = new DROP(Map.of("history", goldens)).evaluate(model);
 var equityMedQA = new EquityMedQA(Map.of("EHAI", goldens), biasMetric).evaluate(model);
 var gsm8k = new GSM8K(goldens).evaluate(model);
