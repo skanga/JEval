@@ -8,6 +8,7 @@ import dev.jeval.Evaluator;
 import dev.jeval.LlmTestCase;
 import dev.jeval.Metric;
 import dev.jeval.MetricResult;
+import dev.jeval.MissingTestCaseParamsException;
 import dev.jeval.metrics.ExactMatchMetric;
 import dev.jeval.metrics.PatternMatchMetric;
 import dev.jeval.runner.TestRunResult.MetricAggregate;
@@ -56,6 +57,17 @@ public final class TestRunner {
             boolean exitOnFirstFailure,
             boolean ignoreErrors,
             String mark) throws IOException {
+        return run(path, selector, repeat, exitOnFirstFailure, ignoreErrors, false, mark);
+    }
+
+    public TestRunResult run(
+            Path path,
+            String selector,
+            int repeat,
+            boolean exitOnFirstFailure,
+            boolean ignoreErrors,
+            boolean skipOnMissingParams,
+            String mark) throws IOException {
         if (repeat < 1) {
             throw new IllegalArgumentException("The repeat argument must be at least 1.");
         }
@@ -70,7 +82,14 @@ public final class TestRunner {
                         .filter(TestRunner::isJson)
                         .sorted()
                         .toList()) {
-                    results.addAll(runFile(file, null, repeat, exitOnFirstFailure, ignoreErrors, mark).results());
+                    results.addAll(runFile(
+                            file,
+                            null,
+                            repeat,
+                            exitOnFirstFailure,
+                            ignoreErrors,
+                            skipOnMissingParams,
+                            mark).results());
                     if (exitOnFirstFailure && results.stream().anyMatch(result -> !result.success())) {
                         break;
                     }
@@ -78,7 +97,7 @@ public final class TestRunner {
             }
             return summarize(path.getFileName().toString(), results);
         }
-        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, mark);
+        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, skipOnMissingParams, mark);
     }
 
     private TestRunResult runFile(Path path) throws IOException {
@@ -114,6 +133,17 @@ public final class TestRunner {
             boolean exitOnFirstFailure,
             boolean ignoreErrors,
             String mark) throws IOException {
+        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, false, mark);
+    }
+
+    private TestRunResult runFile(
+            Path path,
+            String selector,
+            int repeat,
+            boolean exitOnFirstFailure,
+            boolean ignoreErrors,
+            boolean skipOnMissingParams,
+            String mark) throws IOException {
         var spec = JSON.readValue(path.toFile(), EvaluationSpec.class);
         if (spec.metrics() == null || spec.metrics().isEmpty()) {
             throw new IllegalArgumentException("Evaluation spec must define at least one metric: " + path);
@@ -131,7 +161,7 @@ public final class TestRunner {
         if (mark != null) {
             testCases = markedCases(testCases, mark);
         }
-        var results = repeatedResults(testCases, metrics, repeat, exitOnFirstFailure, ignoreErrors);
+        var results = repeatedResults(testCases, metrics, repeat, exitOnFirstFailure, ignoreErrors, skipOnMissingParams);
         return summarize(spec.name() == null ? stripExtension(path.getFileName().toString()) : spec.name(), results);
     }
 
@@ -140,11 +170,15 @@ public final class TestRunner {
             List<Metric> metrics,
             int repeat,
             boolean exitOnFirstFailure,
-            boolean ignoreErrors) {
+            boolean ignoreErrors,
+            boolean skipOnMissingParams) {
         var results = new ArrayList<TestCaseResult>();
         for (var i = 0; i < repeat; i++) {
             for (var testCase : testCases) {
-                var result = runCase(testCase, metrics, ignoreErrors);
+                var result = runCase(testCase, metrics, ignoreErrors, skipOnMissingParams);
+                if (result == null) {
+                    continue;
+                }
                 results.add(result);
                 if (exitOnFirstFailure && !result.success()) {
                     return List.copyOf(results);
@@ -154,9 +188,24 @@ public final class TestRunner {
         return List.copyOf(results);
     }
 
-    private static TestCaseResult runCase(LlmTestCase testCase, List<Metric> metrics, boolean ignoreErrors) {
+    private static TestCaseResult runCase(
+            LlmTestCase testCase,
+            List<Metric> metrics,
+            boolean ignoreErrors,
+            boolean skipOnMissingParams) {
         try {
             return runCase(testCase, metrics);
+        } catch (MissingTestCaseParamsException error) {
+            if (skipOnMissingParams) {
+                return null;
+            }
+            if (!ignoreErrors) {
+                throw error;
+            }
+            return new TestCaseResult(
+                    testCase.name(),
+                    false,
+                    List.of(new MetricResult("Error", 0.0, 1.0, false, "Evaluation error: " + error.getMessage())));
         } catch (RuntimeException error) {
             if (!ignoreErrors) {
                 throw error;

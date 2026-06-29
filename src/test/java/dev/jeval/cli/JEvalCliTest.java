@@ -295,6 +295,52 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunSkipOnMissingParamsSkipsIncompleteCases() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "skip-missing-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "bad", "input": "q", "actualOutput": "a"},
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--skip-on-missing-params"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("Summary: total=1 passed=1 failed=0"));
+        assertEquals(false, text(out).contains("### bad"));
+        assertTrue(text(out).contains("### good"));
+    }
+
+    @Test
+    void testRunSkipOnMissingParamsSupportsShortAlias() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "skip-missing-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "bad", "input": "q", "actualOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-s"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("Summary: total=0 passed=0 failed=0"));
+        assertEquals("", text(err));
+    }
+
+    @Test
     void testRunMarkFiltersCasesByTag() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
