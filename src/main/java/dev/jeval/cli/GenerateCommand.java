@@ -541,7 +541,7 @@ final class GenerateCommand {
         }
 
         @Override
-        public String generate(String prompt) {
+        public synchronized String generate(String prompt) {
             prompts.add(prompt);
             if (prompts.size() > responses.size()) {
                 throw new IllegalArgumentException("No scripted response for prompt " + prompts.size());

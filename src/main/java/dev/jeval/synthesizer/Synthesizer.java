@@ -9,6 +9,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.function.IntFunction;
 
 public final class Synthesizer {
     private final EvaluationModel model;
@@ -68,15 +72,28 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<String> sourceFiles) {
         var goldens = new ArrayList<Golden>();
-        for (var i = 0; i < contexts.size(); i++) {
-            var context = List.copyOf(contexts.get(i));
-            var sourceFile = sourceFiles != null && i < sourceFiles.size() ? sourceFiles.get(i) : null;
-            var data = SynthesizerSchemas.parseSyntheticData(
-                    model.generate(SynthesizerPrompts.generateSyntheticInputs(
-                            context, maxGoldensPerContext, includeExpectedOutput)));
-            for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
-                goldens.add(golden(item, context, sourceFile, includeExpectedOutput, goldens.size()));
-            }
+        for (var batch : generateContextBatches(contexts.size(),
+                index -> generateGoldensForContext(index, contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles))) {
+            goldens.addAll(batch);
+        }
+        return List.copyOf(goldens);
+    }
+
+    private List<Golden> generateGoldensForContext(
+            int contextIndex,
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<String> sourceFiles) {
+        var goldens = new ArrayList<Golden>();
+        var context = List.copyOf(contexts.get(contextIndex));
+        var sourceFile = sourceFiles != null && contextIndex < sourceFiles.size() ? sourceFiles.get(contextIndex) : null;
+        var data = SynthesizerSchemas.parseSyntheticData(
+                model.generate(SynthesizerPrompts.generateSyntheticInputs(
+                        context, maxGoldensPerContext, includeExpectedOutput)));
+        for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
+            goldens.add(golden(item, context, sourceFile, includeExpectedOutput,
+                    contextIndex * maxGoldensPerContext + goldens.size()));
         }
         return List.copyOf(goldens);
     }
@@ -130,15 +147,28 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<String> sourceFiles) {
         var goldens = new ArrayList<ConversationalGolden>();
-        for (var i = 0; i < contexts.size(); i++) {
-            var context = List.copyOf(contexts.get(i));
-            var sourceFile = sourceFiles != null && i < sourceFiles.size() ? sourceFiles.get(i) : null;
-            var data = SynthesizerSchemas.parseConversationalData(model.generate(
-                    SynthesizerPrompts.generateSyntheticConversationalScenarios(
-                            context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome)));
-            for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
-                goldens.add(conversationalGolden(item, context, sourceFile, includeExpectedOutcome));
-            }
+        for (var batch : generateContextBatches(contexts.size(),
+                index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
+                        maxGoldensPerContext, sourceFiles))) {
+            goldens.addAll(batch);
+        }
+        return List.copyOf(goldens);
+    }
+
+    private List<ConversationalGolden> generateConversationalGoldensForContext(
+            int contextIndex,
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<String> sourceFiles) {
+        var goldens = new ArrayList<ConversationalGolden>();
+        var context = List.copyOf(contexts.get(contextIndex));
+        var sourceFile = sourceFiles != null && contextIndex < sourceFiles.size() ? sourceFiles.get(contextIndex) : null;
+        var data = SynthesizerSchemas.parseConversationalData(model.generate(
+                SynthesizerPrompts.generateSyntheticConversationalScenarios(
+                        context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome)));
+        for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
+            goldens.add(conversationalGolden(item, context, sourceFile, includeExpectedOutcome));
         }
         return List.copyOf(goldens);
     }
@@ -236,6 +266,52 @@ public final class Synthesizer {
         }
         return model.generate(SynthesizerPrompts.generateExpectedOutput(
                 context, input, stylingConfig == null ? null : stylingConfig.expectedOutputFormat()));
+    }
+
+    private <T> List<List<T>> generateContextBatches(int contextCount, IntFunction<List<T>> generator) {
+        if (!options.asyncMode() || contextCount < 2 || options.maxConcurrent() == 1) {
+            var batches = new ArrayList<List<T>>();
+            for (var i = 0; i < contextCount; i++) {
+                batches.add(generator.apply(i));
+            }
+            return List.copyOf(batches);
+        }
+        var semaphore = new Semaphore(options.maxConcurrent());
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            var futures = new ArrayList<java.util.concurrent.Future<List<T>>>();
+            for (var i = 0; i < contextCount; i++) {
+                var index = i;
+                futures.add(executor.submit(() -> {
+                    semaphore.acquire();
+                    try {
+                        return generator.apply(index);
+                    } finally {
+                        semaphore.release();
+                    }
+                }));
+            }
+            var batches = new ArrayList<List<T>>();
+            for (var future : futures) {
+                batches.add(future.get());
+            }
+            return List.copyOf(batches);
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while generating synthetic goldens.", error);
+        } catch (ExecutionException error) {
+            throw taskFailure(error);
+        }
+    }
+
+    private static RuntimeException taskFailure(ExecutionException error) {
+        var cause = error.getCause();
+        if (cause instanceof RuntimeException runtime) {
+            return runtime;
+        }
+        if (cause instanceof Error fatal) {
+            throw fatal;
+        }
+        return new IllegalStateException("Synthetic golden generation failed.", cause);
     }
 
     private Evolution evolution(int index) {

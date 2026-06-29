@@ -8,6 +8,7 @@ import dev.jeval.ConversationalGolden;
 import dev.jeval.Golden;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class SynthesizerTest {
@@ -79,6 +80,27 @@ class SynthesizerTest {
         assertEquals("plain", goldens.getFirst().input());
         assertEquals(List.of(), goldens.getFirst().additionalMetadata().get("evolutions"));
         assertEquals(1, model.prompts().size());
+    }
+
+    @Test
+    void asyncContextGenerationUsesMaxConcurrentAndKeepsContextOrderLikeDeepEval() {
+        var model = new ConcurrentContextModel();
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                new EvolutionConfig(),
+                new SynthesizerOptions(true, 2, false));
+
+        var goldens = synthesizer.generateGoldensFromContexts(
+                List.of(List.of("first context"), List.of("second context"), List.of("third context")),
+                false,
+                1,
+                null);
+
+        assertEquals(List.of("first question", "second question", "third question"),
+                goldens.stream().map(Golden::input).toList());
+        assertEquals(2, model.maxActive());
     }
 
     @Test
@@ -319,6 +341,39 @@ class SynthesizerTest {
 
         List<String> prompts() {
             return prompts;
+        }
+    }
+
+    private static final class ConcurrentContextModel implements EvaluationModel {
+        private final AtomicInteger active = new AtomicInteger();
+        private final AtomicInteger maxActive = new AtomicInteger();
+
+        @Override
+        public String generate(String prompt) {
+            var current = active.incrementAndGet();
+            maxActive.accumulateAndGet(current, Math::max);
+            try {
+                Thread.sleep(100);
+                if (prompt.contains("first context")) {
+                    return "{\"data\":[{\"input\":\"first question\"}]}";
+                }
+                if (prompt.contains("second context")) {
+                    return "{\"data\":[{\"input\":\"second question\"}]}";
+                }
+                if (prompt.contains("third context")) {
+                    return "{\"data\":[{\"input\":\"third question\"}]}";
+                }
+                return "{\"data\":[{\"input\":\"unknown question\"}]}";
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(error);
+            } finally {
+                active.decrementAndGet();
+            }
+        }
+
+        int maxActive() {
+            return maxActive.get();
         }
     }
 }
