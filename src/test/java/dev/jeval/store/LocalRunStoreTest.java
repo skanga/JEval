@@ -33,5 +33,19 @@ class LocalRunStoreTest {
         var content = Files.readString(storeFile);
         assertTrue(content.contains("\"name\" : \"stored\""));
         assertTrue(content.contains("\"passed\" : 1"));
+
+        var rollingFile = tempDir.resolve(".deepeval").resolve(".latest_run_full.json");
+        assertTrue(Files.exists(rollingFile));
+        var rollingContent = Files.readString(rollingFile);
+        assertTrue(rollingContent.contains("\"name\" : \"stored\""));
+        assertTrue(rollingContent.contains("\"passed\" : 1"));
+
+        try (var files = Files.list(tempDir.resolve(".deepeval"))) {
+            var timestamped = files
+                    .filter(path -> path.getFileName().toString().matches("test_run_\\d{8}_\\d{6}(?:_\\d+)?\\.json"))
+                    .toList();
+            assertTrue(timestamped.size() == 1);
+            assertTrue(Files.readString(timestamped.getFirst()).contains("\"name\" : \"stored\""));
+        }
     }
 }
