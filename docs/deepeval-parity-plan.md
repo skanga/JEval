@@ -70,6 +70,7 @@ Current Java parity:
 - Multi-turn synthesizer for contexts, docs, scratch styling, and existing conversational goldens, producing `ConversationalGolden` values with scenario, turns, expected outcome, context, and metadata
 - BoolQ benchmark evaluation over supplied `Golden` rows with DeepEval-style prediction rows and `overallScore`
 - ARC benchmark evaluation over supplied `Golden` rows with DeepEval-style prediction rows, `ARCMode`, and `overallScore`
+- DROP benchmark evaluation over task-grouped supplied `Golden` rows with quasi-contains accepted-answer scoring, task scores, batch support, and `overallScore`
 - GSM8K benchmark evaluation over supplied `Golden` rows with DeepEval-style exact-match prediction rows and `overallScore`
 - MMLU benchmark evaluation over task-grouped supplied `Golden` rows with task prediction rows, task scores, and `overallScore`
 - HellaSwag benchmark evaluation over task-grouped supplied `Golden` rows with task prediction rows, task scores, batch support, and `overallScore`
