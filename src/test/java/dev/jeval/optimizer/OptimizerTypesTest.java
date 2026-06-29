@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import dev.jeval.Golden;
 import dev.jeval.prompt.Prompt;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -82,5 +83,33 @@ class OptimizerTypesTest {
         assertThrows(UnsupportedOperationException.class, () -> report.parents().put("other", "root"));
         assertThrows(UnsupportedOperationException.class,
                 () -> report.promptConfigurations().get("child").prompts().clear());
+    }
+
+    @Test
+    void simbaTraceRecordStoresOutputScoreAndFeedback() {
+        var trace = new SimbaTraceRecord("actual answer", 0.75, "- ExactMatchMetric (0.75): close");
+
+        assertEquals("actual answer", trace.output());
+        assertEquals(0.75, trace.score());
+        assertEquals("- ExactMatchMetric (0.75): close", trace.feedback());
+    }
+
+    @Test
+    void simbaVarianceBucketCopiesTracesAndStoresGolden() {
+        var golden = Golden.builder("question").expectedOutput("answer").build();
+        var traces = new ArrayList<>(List.of(
+                new SimbaTraceRecord("good", 0.9, "good"),
+                new SimbaTraceRecord("bad", 0.2, "bad")));
+
+        var bucket = new SimbaVarianceBucket(golden, traces, 0.35, 0.9, 0.2);
+
+        traces.add(new SimbaTraceRecord("later", 1.0, "later"));
+
+        assertSame(golden, bucket.golden());
+        assertEquals(2, bucket.traces().size());
+        assertEquals(0.35, bucket.maxToAvgGap());
+        assertEquals(0.9, bucket.maxScore());
+        assertEquals(0.2, bucket.minScore());
+        assertThrows(UnsupportedOperationException.class, () -> bucket.traces().clear());
     }
 }
