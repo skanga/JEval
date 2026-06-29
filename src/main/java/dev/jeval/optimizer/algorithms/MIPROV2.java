@@ -1,6 +1,7 @@
 package dev.jeval.optimizer.algorithms;
 
 import dev.jeval.optimizer.AcceptedIteration;
+import dev.jeval.optimizer.IterationLogEntry;
 import dev.jeval.optimizer.OptimizationReport;
 import dev.jeval.optimizer.OptimizationResult;
 import dev.jeval.optimizer.OptimizerScorer;
@@ -25,6 +26,7 @@ public final class MIPROV2 implements PromptOptimizationAlgorithm {
     private final int minibatchFullEvalSteps;
     private final int seed;
     private final Random randomState;
+    private final List<IterationLogEntry> iterationLog = new ArrayList<>();
 
     public MIPROV2() {
         this(30, 10, 4, 4, 5, 25, 10, (Random) null);
@@ -137,8 +139,13 @@ public final class MIPROV2 implements PromptOptimizationAlgorithm {
         return randomState;
     }
 
+    public List<IterationLogEntry> iterationLog() {
+        return List.copyOf(iterationLog);
+    }
+
     @Override
     public OptimizationResult execute(Prompt prompt, List<?> goldens, OptimizerScorer scorer) {
+        iterationLog.clear();
         var optimizationId = UUID.randomUUID().toString();
         var prompts = new LinkedHashMap<String, Prompt>();
         prompts.put(OptimizerScorer.DEFAULT_MODULE_ID, prompt);
@@ -163,6 +170,7 @@ public final class MIPROV2 implements PromptOptimizationAlgorithm {
         var trialPairs = trialPairs(candidates.size(), demoSets.size());
         var trials = Math.min(numTrials, trialPairs.size());
         for (var trialIndex = 0; trialIndex < trials; trialIndex++) {
+            var trialStart = System.nanoTime();
             var pair = trialPairs.get(trialIndex);
             var candidateConfig = configurationsByPair.computeIfAbsent(pair, key -> {
                 var config = promptConfiguration(candidates.get(key.instructionIndex()), demoSets.get(key.demoIndex()));
@@ -175,10 +183,14 @@ public final class MIPROV2 implements PromptOptimizationAlgorithm {
             var minibatchScore = scorer.scoreMinibatch(candidateConfig, minibatch);
             var shouldFullEvaluate = trialIndex == trials - 1
                     || (minibatchFullEvalSteps > 0 && (trialIndex + 1) % minibatchFullEvalSteps == 0);
+            var before = bestScore;
+            var after = minibatchScore;
+            var accepted = false;
             if (shouldFullEvaluate || minibatchScore > bestScore) {
                 var fullScores = scorer.scorePareto(candidateConfig, goldens);
                 paretoScores.put(candidateConfig.id(), fullScores);
                 var fullScore = average(fullScores);
+                after = fullScore;
                 if (fullScore > bestScore) {
                     acceptedIterations.add(new AcceptedIteration(
                             bestConfig.id(),
@@ -188,8 +200,16 @@ public final class MIPROV2 implements PromptOptimizationAlgorithm {
                             fullScore));
                     bestConfig = candidateConfig;
                     bestScore = fullScore;
+                    accepted = true;
                 }
             }
+            iterationLog.add(new IterationLogEntry(
+                    trialIndex + 1,
+                    accepted ? "accepted" : "rejected",
+                    "TPE Sample -> Instruction: " + pair.instructionIndex() + ", DemoSet: " + pair.demoIndex(),
+                    elapsedSeconds(trialStart),
+                    before,
+                    after));
         }
 
         var report = new OptimizationReport(
@@ -254,6 +274,10 @@ public final class MIPROV2 implements PromptOptimizationAlgorithm {
 
     private static double average(List<Double> scores) {
         return scores.isEmpty() ? 0.0 : scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    }
+
+    private static double elapsedSeconds(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000_000.0;
     }
 
     private record PairKey(int instructionIndex, int demoIndex) {

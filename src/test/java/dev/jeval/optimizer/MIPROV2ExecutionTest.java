@@ -3,6 +3,7 @@ package dev.jeval.optimizer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.Golden;
@@ -59,6 +60,7 @@ class MIPROV2ExecutionTest {
             var success = testCase.actualOutput().equals(testCase.expectedOutput());
             return new MetricResult("exact", success ? 1.0 : 0.0, 1.0, success, null);
         };
+        var miprov2 = new MIPROV2(3, 2, 0, 0, 1, 2, 1, 123);
         var optimizer = new PromptOptimizer(
                 (callbackPrompt, golden) -> {
                     if (golden == null) {
@@ -74,7 +76,7 @@ class MIPROV2ExecutionTest {
                             : "wrong";
                 },
                 List.of(metric),
-                new MIPROV2(3, 2, 0, 0, 1, 2, 1, 123));
+                miprov2);
 
         var bestPrompt = optimizer.optimize(prompt, goldens);
         var report = optimizer.optimizationReport();
@@ -87,6 +89,17 @@ class MIPROV2ExecutionTest {
                         .textTemplate()
                         .equals("Always answer from the expected output.")));
         assertEquals(List.of(1.0, 1.0), report.paretoScores().get(report.bestId()));
+        assertEquals(2, miprov2.iterationLog().size());
+        var accepted = miprov2.iterationLog().stream()
+                .filter(entry -> entry.outcome().equals("accepted"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(2, accepted.iteration());
+        assertTrue(accepted.reason().contains("Instruction: 1"));
+        assertTrue(accepted.reason().contains("DemoSet: 0"));
+        assertTrue(accepted.elapsed() > 0.0);
+        assertEquals(0.0, accepted.before());
+        assertEquals(1.0, accepted.after());
     }
 
     @Test
@@ -130,5 +143,24 @@ class MIPROV2ExecutionTest {
         var bestPrompt = optimizer.optimize(prompt, goldens);
 
         assertSame(prompt, bestPrompt);
+    }
+
+    @Test
+    void iterationLogIsClearedBetweenRunsAndReturnedAsImmutableCopy() {
+        var prompt = new Prompt("answer", "Answer");
+        var firstGoldens = List.of(Golden.builder("q1").expectedOutput("a").build());
+        var secondGoldens = List.of(Golden.builder("q2").expectedOutput("a").build());
+        Metric metric = testCase -> new MetricResult("exact", 1.0, 1.0, true, null);
+        var miprov2 = new MIPROV2(1, 1, 0, 0, 1, 1, 1, 123);
+        var optimizer = new PromptOptimizer((callbackPrompt, golden) -> "a", List.of(metric), miprov2);
+
+        optimizer.optimize(prompt, firstGoldens);
+        assertEquals(1, miprov2.iterationLog().size());
+        assertThrows(UnsupportedOperationException.class, () -> miprov2.iterationLog().clear());
+
+        optimizer.optimize(prompt, secondGoldens);
+
+        assertEquals(1, miprov2.iterationLog().size());
+        assertEquals(1, miprov2.iterationLog().getFirst().iteration());
     }
 }
