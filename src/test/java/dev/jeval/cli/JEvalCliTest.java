@@ -790,6 +790,24 @@ class JEvalCliTest {
     }
 
     @Test
+    void generatePassesAsyncConcurrencyAndCostOptionsToSynthesizerLikeDeepEval() throws Exception {
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[]}");
+        var method = GenerateCommand.class.getDeclaredMethod("synthesizer", String[].class);
+        method.setAccessible(true);
+
+        var synthesizer = (dev.jeval.synthesizer.Synthesizer) method.invoke(null, (Object) new String[] {
+                "generate", "--method", "scratch", "--variation", "single-turn",
+                "--responses-file", responses.toString(),
+                "--sync-mode", "--max-concurrent", "7", "--cost-tracking"
+        });
+
+        assertEquals(false, synthesizer.options().asyncMode());
+        assertEquals(7, synthesizer.options().maxConcurrent());
+        assertEquals(true, synthesizer.options().costTracking());
+    }
+
+    @Test
     void generateContextsWritesGoldensFile() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");

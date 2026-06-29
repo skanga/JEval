@@ -15,6 +15,7 @@ public final class Synthesizer {
     private final StylingConfig stylingConfig;
     private final ConversationalStylingConfig conversationalStylingConfig;
     private final EvolutionConfig evolutionConfig;
+    private final SynthesizerOptions options;
 
     public Synthesizer(EvaluationModel model) {
         this(model, null, null, new EvolutionConfig());
@@ -37,10 +38,24 @@ public final class Synthesizer {
             StylingConfig stylingConfig,
             ConversationalStylingConfig conversationalStylingConfig,
             EvolutionConfig evolutionConfig) {
+        this(model, stylingConfig, conversationalStylingConfig, evolutionConfig, SynthesizerOptions.DEFAULT);
+    }
+
+    public Synthesizer(
+            EvaluationModel model,
+            StylingConfig stylingConfig,
+            ConversationalStylingConfig conversationalStylingConfig,
+            EvolutionConfig evolutionConfig,
+            SynthesizerOptions options) {
         this.model = Objects.requireNonNull(model, "model");
         this.stylingConfig = stylingConfig;
         this.conversationalStylingConfig = conversationalStylingConfig;
         this.evolutionConfig = evolutionConfig == null ? new EvolutionConfig() : evolutionConfig;
+        this.options = options == null ? SynthesizerOptions.DEFAULT : options;
+    }
+
+    public SynthesizerOptions options() {
+        return options;
     }
 
     public List<Golden> generateGoldensFromContexts(List<List<String>> contexts) {

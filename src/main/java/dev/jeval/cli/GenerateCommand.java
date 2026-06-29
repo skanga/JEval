@@ -12,6 +12,7 @@ import dev.jeval.synthesizer.ConversationalStylingConfig;
 import dev.jeval.synthesizer.EvolutionConfig;
 import dev.jeval.synthesizer.StylingConfig;
 import dev.jeval.synthesizer.Synthesizer;
+import dev.jeval.synthesizer.SynthesizerOptions;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -136,7 +137,19 @@ final class GenerateCommand {
                 : new ScriptedModel(Files.readAllLines(Path.of(responses)).stream()
                         .filter(line -> !line.isBlank())
                         .toList());
-        return new Synthesizer(model, stylingConfig(args), conversationalStylingConfig(args), new EvolutionConfig());
+        return new Synthesizer(
+                model,
+                stylingConfig(args),
+                conversationalStylingConfig(args),
+                new EvolutionConfig(),
+                synthesizerOptions(args));
+    }
+
+    private static SynthesizerOptions synthesizerOptions(String[] args) {
+        return new SynthesizerOptions(
+                booleanPair(args, "--async-mode", "--sync-mode", true),
+                integer(args, "--max-concurrent", 100),
+                has(args, "--cost-tracking"));
     }
 
     private static StylingConfig stylingConfig(String[] args) {
@@ -434,6 +447,18 @@ final class GenerateCommand {
 
     private static boolean includeExpected(String[] args) {
         return !has(args, "--no-expected-output") && !has(args, "--no-include-expected");
+    }
+
+    private static boolean booleanPair(String[] args, String positiveName, String negativeName, boolean fallback) {
+        var value = fallback;
+        for (var arg : args) {
+            if (positiveName.equals(arg)) {
+                value = true;
+            } else if (negativeName.equals(arg)) {
+                value = false;
+            }
+        }
+        return value;
     }
 
     private static List<Path> documentPaths(String[] args) {
