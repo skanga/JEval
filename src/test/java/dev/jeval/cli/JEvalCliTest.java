@@ -790,6 +790,27 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateAcceptsCaseInsensitiveMethodAndVariationLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "CONTEXTS", "--variation", "SINGLE-TURN",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "case-insensitive"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("case-insensitive.json"));
+        assertTrue(generated.contains("\"input\" : \"Capital?\""));
+    }
+
+    @Test
     void generateUsesDeepEvalDefaultOutputDirectoryAndTimestampedFileName() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");

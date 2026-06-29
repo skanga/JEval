@@ -26,8 +26,8 @@ final class GenerateCommand {
     }
 
     static int run(String[] args, PrintStream out, PrintStream err) {
-        var method = option(args, "--method", null);
-        var variation = option(args, "--variation", "single-turn");
+        var method = lowerOption(args, "--method", null);
+        var variation = lowerOption(args, "--variation", "single-turn");
         if (!"single-turn".equals(variation) && !"multi-turn".equals(variation)) {
             err.println("Only --variation single-turn and multi-turn are implemented in JEval CLI generate.");
             return 2;
@@ -326,6 +326,11 @@ final class GenerateCommand {
             }
         }
         return fallback;
+    }
+
+    private static String lowerOption(String[] args, String name, String fallback) {
+        var value = option(args, name, fallback);
+        return value == null ? null : value.toLowerCase(Locale.ROOT);
     }
 
     private static Path savePath(String[] args) {
