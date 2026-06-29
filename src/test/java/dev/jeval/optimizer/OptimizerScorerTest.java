@@ -3,6 +3,7 @@ package dev.jeval.optimizer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.Golden;
 import dev.jeval.Metric;
@@ -87,6 +88,46 @@ class OptimizerScorerTest {
                 Map.of(OptimizerScorer.DEFAULT_MODULE_ID, new Prompt("answer", "Answer"))));
 
         assertEquals(0.0, scorer.scoreMinibatch(config, List.of()));
+    }
+
+    @Test
+    void getMinibatchFeedbackBuildsDiagnosisFromMetricResults() {
+        var prompt = new Prompt("answer", "Answer {question}");
+        var config = new PromptConfiguration("root", null, new LinkedHashMap<>(
+                Map.of(OptimizerScorer.DEFAULT_MODULE_ID, prompt)));
+        var scorer = new OptimizerScorer(
+                (ignored, golden) -> ((Golden) golden).input().equals("q1") ? "wrong" : "a2",
+                List.of((Metric) testCase -> {
+                    var success = testCase.expectedOutput().equals(testCase.actualOutput());
+                    return new MetricResult("exact", success ? 1.0 : 0.0, 0.5, success,
+                            success ? "matched expected" : "did not match expected");
+                }));
+
+        var diagnosis = scorer.getMinibatchFeedback(config, OptimizerScorer.DEFAULT_MODULE_ID, List.of(
+                Golden.builder("q1").expectedOutput("a1").build(),
+                Golden.builder("q2").expectedOutput("a2").build()));
+
+        assertEquals(2, diagnosis.results().size());
+        assertTrue(diagnosis.failures().contains("q1"));
+        assertTrue(diagnosis.failures().contains("did not match expected"));
+        assertTrue(diagnosis.successes().contains("q2"));
+        assertTrue(diagnosis.successes().contains("matched expected"));
+        assertTrue(diagnosis.analysis().contains("1 failure"));
+        assertTrue(diagnosis.analysis().contains("1 success"));
+        assertTrue(diagnosis.results().getFirst().contains("[Input]: q1"));
+        assertTrue(diagnosis.results().getFirst().contains("[Expected]: a1"));
+        assertTrue(diagnosis.results().getFirst().contains("[Actual Model Output]: wrong"));
+        assertTrue(diagnosis.results().getFirst().contains("- exact (Score: 0.0): did not match expected"));
+    }
+
+    @Test
+    void getMinibatchFeedbackReturnsEmptyDiagnosisForEmptyInput() {
+        var scorer = new OptimizerScorer((prompt, golden) -> "answer", List.of(scoringMetric(1.0)));
+        var config = new PromptConfiguration("root", null, new LinkedHashMap<>(
+                Map.of(OptimizerScorer.DEFAULT_MODULE_ID, new Prompt("answer", "Answer"))));
+
+        assertEquals(new ScorerDiagnosisResult("", "", "", List.of()),
+                scorer.getMinibatchFeedback(config, OptimizerScorer.DEFAULT_MODULE_ID, List.of()));
     }
 
     private static Metric actualEqualsExpectedMetric() {

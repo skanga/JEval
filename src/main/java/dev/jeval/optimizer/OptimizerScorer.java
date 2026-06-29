@@ -43,7 +43,41 @@ public final class OptimizerScorer {
                 .orElse(0.0);
     }
 
+    public ScorerDiagnosisResult getMinibatchFeedback(
+            PromptConfiguration promptConfiguration,
+            String module,
+            List<?> minibatch) {
+        if (minibatch.isEmpty()) {
+            return new ScorerDiagnosisResult("", "", "", List.of());
+        }
+        var failures = new ArrayList<String>();
+        var successes = new ArrayList<String>();
+        var results = new ArrayList<String>();
+        for (var golden : minibatch) {
+            var trace = measureOne(promptConfiguration, golden);
+            var block = evaluationResultsBlock(golden, trace.actual(), trace.metricResults());
+            results.add(block);
+            if (trace.success()) {
+                successes.add(block);
+            } else {
+                failures.add(block);
+            }
+        }
+        var analysis = failures.size() + " failure" + plural(failures.size())
+                + ", " + successes.size() + " success" + plural(successes.size())
+                + " for module `" + module + "`.";
+        return new ScorerDiagnosisResult(
+                String.join("\n\n---\n\n", failures),
+                String.join("\n\n---\n\n", successes),
+                analysis,
+                results);
+    }
+
     private double scoreOne(PromptConfiguration promptConfiguration, Object golden) {
+        return measureOne(promptConfiguration, golden).score();
+    }
+
+    private ScoreTrace measureOne(PromptConfiguration promptConfiguration, Object golden) {
         var actual = generate(promptConfiguration.prompts(), golden);
         var metricResults = new ArrayList<MetricResult>();
         for (var metric : metrics) {
@@ -54,7 +88,9 @@ public final class OptimizerScorer {
                 metricResults.add(conversationalMetric.measure(testCase(conversationalGolden, actual)));
             }
         }
-        return metricResults.stream().mapToDouble(MetricResult::score).average().orElse(0.0);
+        var score = metricResults.stream().mapToDouble(MetricResult::score).average().orElse(0.0);
+        var success = !metricResults.isEmpty() && metricResults.stream().allMatch(MetricResult::success);
+        return new ScoreTrace(actual, metricResults, score, success);
     }
 
     private LlmTestCase testCase(Golden golden, String actual) {
@@ -107,5 +143,50 @@ public final class OptimizerScorer {
             return defaultPrompt;
         }
         return promptsByModule.values().iterator().next();
+    }
+
+    private static String evaluationResultsBlock(Object golden, String actual, List<MetricResult> metricResults) {
+        var input = input(golden);
+        var expected = expected(golden);
+        var reasons = metricResults.stream()
+                .map(result -> "- " + result.name() + " (Score: " + result.score() + "): "
+                        + (result.reason() == null ? "" : result.reason()))
+                .toList();
+        return "[Input]: " + input + "\n"
+                + "[Expected]: " + expected + "\n"
+                + "[Actual Model Output]: " + actual + "\n"
+                + "[Evaluation Reasons]:\n" + String.join("\n", reasons);
+    }
+
+    private static String input(Object golden) {
+        if (golden instanceof Golden singleTurnGolden) {
+            return singleTurnGolden.input();
+        }
+        if (golden instanceof ConversationalGolden conversationalGolden) {
+            var turns = conversationalGolden.turns() == null ? List.<Turn>of() : conversationalGolden.turns();
+            return String.join("\n", turns.stream()
+                    .filter(turn -> "user".equals(turn.role()))
+                    .map(Turn::content)
+                    .toList());
+        }
+        return String.valueOf(golden);
+    }
+
+    private static String expected(Object golden) {
+        if (golden instanceof Golden singleTurnGolden) {
+            return singleTurnGolden.expectedOutput() == null ? "None provided" : singleTurnGolden.expectedOutput();
+        }
+        if (golden instanceof ConversationalGolden conversationalGolden) {
+            return conversationalGolden.expectedOutcome() == null ? "None provided"
+                    : conversationalGolden.expectedOutcome();
+        }
+        return "None provided";
+    }
+
+    private static String plural(int count) {
+        return count == 1 ? "" : "s";
+    }
+
+    private record ScoreTrace(String actual, List<MetricResult> metricResults, double score, boolean success) {
     }
 }
