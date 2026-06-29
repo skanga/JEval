@@ -42,6 +42,13 @@ Each run writes DeepEval-style local artifacts to `.deepeval/.latest_run_full.js
 and `.deepeval/test_run_<YYYYMMDD_HHMMSS>.json`; JEval also keeps the legacy
 `.jeval/.jeval` snapshot.
 
+Inspect the latest local run or a folder of timestamped runs:
+
+```powershell
+java -jar target/jeval-0.1.0-SNAPSHOT.jar inspect
+java -jar target/jeval-0.1.0-SNAPSHOT.jar inspect .deepeval
+```
+
 Evaluation files can use any file name and contain a name, metrics, and cases:
 
 ```json

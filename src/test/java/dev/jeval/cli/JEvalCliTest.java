@@ -99,6 +99,56 @@ class JEvalCliTest {
     }
 
     @Test
+    void inspectPrintsLatestDeepEvalStyleRun() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "inspectable",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+        assertEquals(0, run(new String[] {"test", "run", file.toString(), "--quiet"}, out, err));
+
+        out.reset();
+        err.reset();
+        var exit = run(new String[] {"inspect"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("JEval Evaluation Results"));
+        assertTrue(text(out).contains("inspectable"));
+        assertTrue(text(out).contains("passed=1"));
+    }
+
+    @Test
+    void inspectFolderUsesLatestTimestampedRunFile() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "folder-inspect",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+        assertEquals(0, run(new String[] {"test", "run", file.toString(), "--quiet"}, out, err));
+
+        out.reset();
+        err.reset();
+        var exit = run(new String[] {"inspect", tempDir.resolve(".deepeval").toString()}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("folder-inspect"));
+    }
+
+    @Test
     void quietSuppressesConsoleReportButStillRunsDirectory() throws Exception {
         var dir = tempDir.resolve("cases");
         Files.createDirectories(dir);

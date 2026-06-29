@@ -1,5 +1,6 @@
 package dev.jeval.cli;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.report.EvaluationReportWriter;
 import dev.jeval.runner.TestRunner;
 import dev.jeval.runner.TestRunResult;
@@ -8,9 +9,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Locale;
 
 public final class JEvalCli {
+    private static final ObjectMapper JSON = new ObjectMapper();
+
     private JEvalCli() {
     }
 
@@ -37,6 +41,9 @@ public final class JEvalCli {
         }
         if (args.length > 0 && "generate".equals(args[0])) {
             return GenerateCommand.run(args, out, err);
+        }
+        if (args.length > 0 && "inspect".equals(args[0])) {
+            return inspect(args, out, err, storeRoot);
         }
         if (args.length < 2 || !"test".equals(args[0])) {
             usage(err);
@@ -74,6 +81,100 @@ public final class JEvalCli {
         } catch (IOException | IllegalArgumentException error) {
             err.println(error.getMessage());
             return 2;
+        }
+    }
+
+    private static int inspect(String[] args, PrintStream out, PrintStream err, Path storeRoot) {
+        var options = inspectOptions(args, err);
+        if (options == null) {
+            return 2;
+        }
+        try {
+            var target = inspectTarget(options, storeRoot);
+            if (target == null) {
+                err.println("No test_run_*.json file found. Run an eval first, or pass a path or folder.");
+                return 2;
+            }
+            var result = JSON.readValue(target.toFile(), TestRunResult.class);
+            out.print(report(result, options.format()));
+            return 0;
+        } catch (IOException | IllegalArgumentException error) {
+            err.println(error.getMessage());
+            return 2;
+        }
+    }
+
+    private static InspectOptions inspectOptions(String[] args, PrintStream err) {
+        var format = "markdown";
+        Path path = null;
+        Path folder = null;
+        for (var i = 1; i < args.length; i++) {
+            switch (args[i]) {
+                case "--format" -> {
+                    if (++i == args.length) {
+                        usage(err);
+                        return null;
+                    }
+                    format = args[i].toLowerCase(Locale.ROOT);
+                }
+                case "-f", "--folder" -> {
+                    if (++i == args.length) {
+                        usage(err);
+                        return null;
+                    }
+                    folder = Path.of(args[i]);
+                }
+                default -> {
+                    if (path != null) {
+                        usage(err);
+                        return null;
+                    }
+                    path = Path.of(args[i]);
+                }
+            }
+        }
+        if (!format.equals("markdown") && !format.equals("html")) {
+            err.println("Unsupported format: " + format);
+            return null;
+        }
+        return new InspectOptions(path, folder, format);
+    }
+
+    private static Path inspectTarget(InspectOptions options, Path storeRoot) throws IOException {
+        if (options.path() != null) {
+            if (Files.isRegularFile(options.path())) {
+                return options.path();
+            }
+            if (Files.isDirectory(options.path())) {
+                return latestTimestampedRun(options.path());
+            }
+            throw new IllegalArgumentException("Path not found: " + options.path());
+        }
+        if (options.folder() != null) {
+            return Files.isDirectory(options.folder()) ? latestTimestampedRun(options.folder()) : null;
+        }
+        var rolling = storeRoot.resolve(".deepeval").resolve(".latest_run_full.json");
+        return Files.isRegularFile(rolling) ? rolling : null;
+    }
+
+    private static Path latestTimestampedRun(Path folder) throws IOException {
+        try (var files = Files.list(folder)) {
+            return files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().matches("test_run_\\d{8}_\\d{6}(?:_\\d+)?\\.json"))
+                    .max(Comparator.comparing(path -> {
+                        try {
+                            return Files.getLastModifiedTime(path);
+                        } catch (IOException error) {
+                            throw new IllegalStateException(error);
+                        }
+                    }))
+                    .orElse(null);
+        } catch (IllegalStateException error) {
+            if (error.getCause() instanceof IOException ioError) {
+                throw ioError;
+            }
+            throw error;
         }
     }
 
@@ -133,11 +234,15 @@ public final class JEvalCli {
 
     private static void usage(PrintStream err) {
         err.println("Usage: jeval test [run] <file-or-directory> [--identifier name] [--format markdown|html] [--output dir] [--quiet]");
+        err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
         err.println("       jeval settings -u key=value|-U key|-l filter [--save dotenv:.env] [--quiet]");
         err.println("       jeval set-openai|set-ollama|set-anthropic ... [--save dotenv:.env]");
         err.println("       jeval generate --method contexts|scratch|goldens --variation single-turn ...");
     }
 
     private record Options(String format, Path output, boolean quiet, String identifier) {
+    }
+
+    private record InspectOptions(Path path, Path folder, String format) {
     }
 }
