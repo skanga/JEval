@@ -146,6 +146,7 @@ import dev.jeval.benchmarks.BoolQ;
 import dev.jeval.benchmarks.HellaSwag;
 import dev.jeval.benchmarks.TruthfulQA;
 import dev.jeval.benchmarks.TruthfulQAMode;
+import dev.jeval.benchmarks.Winogrande;
 import java.util.List;
 import java.util.Map;
 
@@ -158,6 +159,7 @@ var result = benchmark.evaluate(model);
 var arcResult = new ARC(goldens).evaluate(model);
 var hellaswagResult = new HellaSwag(Map.of("Applying sunscreen", goldens)).evaluate(model);
 var truthful = new TruthfulQA(Map.of("Health", goldens), TruthfulQAMode.MC1).evaluate(model);
+var winogrande = new Winogrande(goldens).evaluate(model);
 ```
 
 MMLU-style task scoring is available for task-grouped goldens:

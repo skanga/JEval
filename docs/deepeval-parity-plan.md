@@ -73,6 +73,7 @@ Current Java parity:
 - MMLU benchmark evaluation over task-grouped supplied `Golden` rows with task prediction rows, task scores, and `overallScore`
 - HellaSwag benchmark evaluation over task-grouped supplied `Golden` rows with task prediction rows, task scores, batch support, and `overallScore`
 - TruthfulQA benchmark evaluation over task-grouped supplied `Golden` rows with MC1 exact-match scoring, MC2 truth-identification scoring, task scores, batch support, and `overallScore`
+- WinoGrande benchmark evaluation over supplied `Golden` rows with DeepEval-style exact-match prediction rows and `overallScore`
 - `EvaluationModel.batchGenerate(...)` fallback and MMLU batch-size evaluation with DeepEval-style response count validation
 - `ExactMatchMetric` with DeepEval-required input, actual output, and expected output validation
 - `JsonCorrectnessMetric` deterministic schema-validation path with DeepEval-required input and actual output validation, including local success/failure reasons when enabled
