@@ -142,6 +142,7 @@ external datasets:
 ```java
 import dev.jeval.Golden;
 import dev.jeval.benchmarks.ARC;
+import dev.jeval.benchmarks.BBQ;
 import dev.jeval.benchmarks.BoolQ;
 import dev.jeval.benchmarks.DROP;
 import dev.jeval.benchmarks.GSM8K;
@@ -163,6 +164,7 @@ var benchmark = new BoolQ(List.of(
 
 var result = benchmark.evaluate(model);
 var arcResult = new ARC(goldens).evaluate(model);
+var bbq = new BBQ(Map.of("Age", goldens)).evaluate(model);
 var drop = new DROP(Map.of("history", goldens)).evaluate(model);
 var gsm8k = new GSM8K(goldens).evaluate(model);
 var hellaswagResult = new HellaSwag(Map.of("Applying sunscreen", goldens)).evaluate(model);

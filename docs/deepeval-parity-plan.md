@@ -68,6 +68,7 @@ Current Java parity:
 - `EvaluationDataset.addGoldensFromCsvFile(...)` custom column names for conversational CSV scenario, turns, outcome, user description, comments, name, context, metadata, and custom columns
 - Single-turn synthesizer for contexts, docs, scratch styling, and existing goldens, with CLI generation and OpenAI/Ollama LangChain4j provider wiring
 - Multi-turn synthesizer for contexts, docs, scratch styling, and existing conversational goldens, producing `ConversationalGolden` values with scenario, turns, expected outcome, context, and metadata
+- BBQ benchmark evaluation over task-grouped supplied `Golden` rows with exact-match task prediction rows, task scores, batch support, and `overallScore`
 - BoolQ benchmark evaluation over supplied `Golden` rows with DeepEval-style prediction rows and `overallScore`
 - ARC benchmark evaluation over supplied `Golden` rows with DeepEval-style prediction rows, `ARCMode`, and `overallScore`
 - DROP benchmark evaluation over task-grouped supplied `Golden` rows with quasi-contains accepted-answer scoring, task scores, batch support, and `overallScore`
