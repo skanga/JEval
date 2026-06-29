@@ -1321,6 +1321,32 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateDocsAcceptsDocumentsEqualsFormLikeDeepEvalTyper() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"Question one?","expected_output":"Answer one"}]}
+                {"data":[{"input":"Question two?","expected_output":"Answer two"}]}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--documents=" + document, "--chunk-size", "2",
+                "--responses-file", responses.toString(), "--output-dir", output.toString(),
+                "--file-name", "docs-equals-alias"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("docs-equals-alias.json"));
+        assertTrue(generated.contains("Question one?"));
+        assertTrue(generated.contains("policy.md"));
+    }
+
+    @Test
     void generateDocsHonorsMaxContextsPerDocumentLikeDeepEval() throws Exception {
         var document = tempDir.resolve("policy.md");
         Files.writeString(document, "alpha beta gamma delta epsilon zeta");

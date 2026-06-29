@@ -442,6 +442,11 @@ final class GenerateCommand {
                 paths.add(Path.of(args[i + 1]));
             }
         }
+        for (var arg : args) {
+            if (arg.startsWith("--documents=")) {
+                paths.add(Path.of(arg.substring("--documents=".length())));
+            }
+        }
         return List.copyOf(paths);
     }
 
