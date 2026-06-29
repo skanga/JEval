@@ -207,20 +207,62 @@ final class CliSettings {
         static ProviderSpec forCommand(String command) {
             return switch (command) {
                 case "set-openai", "unset-openai" -> openAi();
-                case "set-anthropic", "unset-anthropic" -> llm("USE_ANTHROPIC_MODEL", Map.of("--model", "ANTHROPIC_MODEL_NAME"));
-                case "set-ollama", "unset-ollama" -> llm("USE_LOCAL_MODEL", Map.of("--model", "OLLAMA_MODEL_NAME", "--base-url", "LOCAL_MODEL_BASE_URL"));
-                case "set-local-model", "unset-local-model" -> llm("USE_LOCAL_MODEL", Map.of("--model", "LOCAL_MODEL_NAME", "--base-url", "LOCAL_MODEL_BASE_URL", "--format", "LOCAL_MODEL_FORMAT"));
-                case "set-azure-openai", "unset-azure-openai" -> llm("USE_AZURE_OPENAI", Map.of("--model", "AZURE_MODEL_NAME", "--deployment-name", "AZURE_DEPLOYMENT_NAME", "--base-url", "AZURE_OPENAI_ENDPOINT", "--api-version", "OPENAI_API_VERSION"));
-                case "set-bedrock", "unset-bedrock" -> llm("USE_AWS_BEDROCK_MODEL", Map.of("--model", "AWS_BEDROCK_MODEL_NAME", "--region", "AWS_BEDROCK_REGION"));
-                case "set-grok", "unset-grok" -> llm("USE_GROK_MODEL", Map.of("--model", "GROK_MODEL_NAME"));
-                case "set-moonshot", "unset-moonshot" -> llm("USE_MOONSHOT_MODEL", Map.of("--model", "MOONSHOT_MODEL_NAME"));
-                case "set-deepseek", "unset-deepseek" -> llm("USE_DEEPSEEK_MODEL", Map.of("--model", "DEEPSEEK_MODEL_NAME"));
+                case "set-anthropic", "unset-anthropic" -> llmWithSecrets(
+                        "USE_ANTHROPIC_MODEL",
+                        Map.of("--model", "ANTHROPIC_MODEL_NAME"),
+                        "ANTHROPIC_API_KEY");
+                case "set-ollama", "unset-ollama" -> llmWithSecrets(
+                        "USE_LOCAL_MODEL",
+                        Map.of("--model", "OLLAMA_MODEL_NAME", "--base-url", "LOCAL_MODEL_BASE_URL"),
+                        "LOCAL_MODEL_API_KEY");
+                case "set-local-model", "unset-local-model" -> llmWithSecrets(
+                        "USE_LOCAL_MODEL",
+                        Map.of("--model", "LOCAL_MODEL_NAME", "--base-url", "LOCAL_MODEL_BASE_URL",
+                                "--format", "LOCAL_MODEL_FORMAT"),
+                        "LOCAL_MODEL_API_KEY");
+                case "set-azure-openai", "unset-azure-openai" -> llmWithSecrets(
+                        "USE_AZURE_OPENAI",
+                        Map.of("--model", "AZURE_MODEL_NAME", "--deployment-name", "AZURE_DEPLOYMENT_NAME",
+                                "--base-url", "AZURE_OPENAI_ENDPOINT", "--api-version", "OPENAI_API_VERSION"),
+                        "AZURE_OPENAI_API_KEY");
+                case "set-bedrock", "unset-bedrock" -> llmWithSecrets(
+                        "USE_AWS_BEDROCK_MODEL",
+                        Map.of("--model", "AWS_BEDROCK_MODEL_NAME", "--region", "AWS_BEDROCK_REGION"),
+                        "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY");
+                case "set-grok", "unset-grok" -> llmWithSecrets(
+                        "USE_GROK_MODEL",
+                        Map.of("--model", "GROK_MODEL_NAME"),
+                        "GROK_API_KEY");
+                case "set-moonshot", "unset-moonshot" -> llmWithSecrets(
+                        "USE_MOONSHOT_MODEL",
+                        Map.of("--model", "MOONSHOT_MODEL_NAME"),
+                        "MOONSHOT_API_KEY");
+                case "set-deepseek", "unset-deepseek" -> llmWithSecrets(
+                        "USE_DEEPSEEK_MODEL",
+                        Map.of("--model", "DEEPSEEK_MODEL_NAME"),
+                        "DEEPSEEK_API_KEY");
                 case "set-gemini", "unset-gemini" -> gemini();
-                case "set-litellm", "unset-litellm" -> llm("USE_LITELLM", Map.of("--model", "LITELLM_MODEL_NAME", "--base-url", "LITELLM_API_BASE", "--proxy-base-url", "LITELLM_PROXY_API_BASE"));
-                case "set-portkey", "unset-portkey" -> llm("USE_PORTKEY_MODEL", Map.of("--model", "PORTKEY_MODEL_NAME", "--base-url", "PORTKEY_BASE_URL", "--provider", "PORTKEY_PROVIDER_NAME"));
+                case "set-litellm", "unset-litellm" -> llmWithSecrets(
+                        "USE_LITELLM",
+                        Map.of("--model", "LITELLM_MODEL_NAME", "--base-url", "LITELLM_API_BASE",
+                                "--proxy-base-url", "LITELLM_PROXY_API_BASE"),
+                        "LITELLM_API_KEY", "LITELLM_PROXY_API_KEY");
+                case "set-portkey", "unset-portkey" -> llmWithSecrets(
+                        "USE_PORTKEY_MODEL",
+                        Map.of("--model", "PORTKEY_MODEL_NAME", "--base-url", "PORTKEY_BASE_URL",
+                                "--provider", "PORTKEY_PROVIDER_NAME"),
+                        "PORTKEY_API_KEY");
                 case "set-openrouter", "unset-openrouter" -> openRouter();
-                case "set-azure-openai-embedding", "unset-azure-openai-embedding" -> embed("USE_AZURE_OPENAI_EMBEDDING", Map.of("--model", "AZURE_EMBEDDING_MODEL_NAME", "--deployment-name", "AZURE_EMBEDDING_DEPLOYMENT_NAME"));
-                case "set-local-embeddings", "unset-local-embeddings", "set-ollama-embeddings", "unset-ollama-embeddings" -> embed("USE_LOCAL_EMBEDDINGS", Map.of("--model", "LOCAL_EMBEDDING_MODEL_NAME", "--base-url", "LOCAL_EMBEDDING_BASE_URL"));
+                case "set-azure-openai-embedding", "unset-azure-openai-embedding" -> embed(
+                        "USE_AZURE_OPENAI_EMBEDDING",
+                        Map.of("--model", "AZURE_EMBEDDING_MODEL_NAME",
+                                "--deployment-name", "AZURE_EMBEDDING_DEPLOYMENT_NAME"));
+                case "set-local-embeddings", "unset-local-embeddings",
+                        "set-ollama-embeddings", "unset-ollama-embeddings" -> embed(
+                                "USE_LOCAL_EMBEDDINGS",
+                                Map.of("--model", "LOCAL_EMBEDDING_MODEL_NAME",
+                                        "--base-url", "LOCAL_EMBEDDING_BASE_URL"),
+                                List.of("LOCAL_EMBEDDING_API_KEY"));
                 default -> null;
             };
         }
@@ -248,7 +290,7 @@ final class CliSettings {
                     "OPENROUTER_MODEL_NAME",
                     "OPENROUTER_BASE_URL",
                     "OPENROUTER_COST_PER_INPUT_TOKEN",
-                    "OPENROUTER_COST_PER_OUTPUT_TOKEN"));
+                    "OPENROUTER_COST_PER_OUTPUT_TOKEN"), List.of("OPENROUTER_API_KEY"));
         }
 
         private static ProviderSpec gemini() {
@@ -260,7 +302,7 @@ final class CliSettings {
                     "GEMINI_MODEL_NAME",
                     "GOOGLE_CLOUD_PROJECT",
                     "GOOGLE_CLOUD_LOCATION",
-                    "GOOGLE_GENAI_USE_VERTEXAI"));
+                    "GOOGLE_GENAI_USE_VERTEXAI"), List.of("GOOGLE_API_KEY", "GOOGLE_SERVICE_ACCOUNT_KEY"));
         }
 
         Map<String, String> derivedUpdates(String[] args) throws IOException {
@@ -288,6 +330,13 @@ final class CliSettings {
             return llm(useKey, keys, unsetKeys, List.of());
         }
 
+        private static ProviderSpec llmWithSecrets(
+                String useKey,
+                Map<String, String> keys,
+                String... secretKeys) {
+            return llm(useKey, keys, List.copyOf(keys.values()), List.of(secretKeys));
+        }
+
         private static ProviderSpec llm(
                 String useKey,
                 Map<String, String> keys,
@@ -300,10 +349,14 @@ final class CliSettings {
         }
 
         private static ProviderSpec embed(String useKey, Map<String, String> keys) {
+            return embed(useKey, keys, List.of());
+        }
+
+        private static ProviderSpec embed(String useKey, Map<String, String> keys, List<String> secretKeys) {
             var removals = new java.util.ArrayList<String>();
             removals.addAll(EMBED_FLAGS);
             removals.addAll(EMBED_VALUES);
-            return new ProviderSpec(useKey, keys, removals, List.copyOf(keys.values()), List.of());
+            return new ProviderSpec(useKey, keys, removals, List.copyOf(keys.values()), secretKeys);
         }
     }
 }

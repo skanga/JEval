@@ -575,6 +575,34 @@ class JEvalCliTest {
     }
 
     @Test
+    void providerUnsetClearSecretsRemovesProviderSecrets() throws Exception {
+        assertProviderSecretClearing(
+                "anthropic-api-key",
+                "ANTHROPIC_API_KEY",
+                "set-anthropic",
+                new String[] {"--model", "claude-3-5-sonnet"},
+                "unset-anthropic");
+        assertProviderSecretClearing(
+                "openrouter-api-key",
+                "OPENROUTER_API_KEY",
+                "set-openrouter",
+                new String[] {"--model", "openai/gpt-4.1"},
+                "unset-openrouter");
+        assertProviderSecretClearing(
+                "google-api-key",
+                "GOOGLE_API_KEY",
+                "set-gemini",
+                new String[] {"--model", "gemini-2.5-flash"},
+                "unset-gemini");
+        assertProviderSecretClearing(
+                "aws-secret-access-key",
+                "AWS_SECRET_ACCESS_KEY",
+                "set-bedrock",
+                new String[] {"--model", "anthropic.claude", "--region", "us-east-1"},
+                "unset-bedrock");
+    }
+
+    @Test
     void openRouterProviderRoundtripUsesExclusiveFlags() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
@@ -691,6 +719,45 @@ class JEvalCliTest {
 
     private int run(String[] args, ByteArrayOutputStream out, ByteArrayOutputStream err) {
         return JEvalCli.run(args, print(out), print(err), tempDir);
+    }
+
+    private void assertProviderSecretClearing(
+            String settingName,
+            String envKey,
+            String setCommand,
+            String[] setArgs,
+            String unsetCommand) throws Exception {
+        var env = tempDir.resolve(settingName + ".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "settings", "-u", settingName + "=secret-value", "--save", "dotenv:" + env
+        }, out, err));
+        out.reset();
+        err.reset();
+        assertEquals(0, run(providerArgs(setCommand, setArgs, env), out, err));
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {unsetCommand, "--save", "dotenv:" + env}, out, err));
+        assertDotenv(env, envKey, "secret-value");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(providerArgs(setCommand, setArgs, env), out, err));
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {unsetCommand, "--clear-secrets", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey(envKey));
+    }
+
+    private static String[] providerArgs(String command, String[] setArgs, Path env) {
+        var args = new java.util.ArrayList<String>();
+        args.add(command);
+        args.addAll(java.util.List.of(setArgs));
+        args.add("--save");
+        args.add("dotenv:" + env);
+        return args.toArray(String[]::new);
     }
 
     private static String text(ByteArrayOutputStream bytes) {
