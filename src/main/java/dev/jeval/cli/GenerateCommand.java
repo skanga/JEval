@@ -58,10 +58,16 @@ final class GenerateCommand {
             if (goldens == null) {
                 return 2;
             }
+            var fileName = option(args, "--file-name", null);
+            if (fileName != null && fileName.contains(".")) {
+                err.println("file_name should not contain periods or file extensions. "
+                        + "The file extension will be added based on the file_type parameter.");
+                return 2;
+            }
             var dataset = new EvaluationDataset(goldens);
             var file = dataset.saveAs(option(args, "--file-type", "json"),
                     Path.of(option(args, "--output-dir", "synthetic_data")),
-                    option(args, "--file-name", null));
+                    fileName);
             out.println(file);
             return 0;
         } catch (IOException | IllegalArgumentException | IllegalStateException error) {

@@ -824,6 +824,27 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRejectsFileNameWithExtensionLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "goldens.json"
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("file_name should not contain periods or file extensions"));
+        assertEquals(false, Files.exists(output.resolve("goldens.json.json")));
+    }
+
+    @Test
     void generateSupportsDeepEvalNoIncludeExpectedAlias() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");
