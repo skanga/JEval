@@ -1,8 +1,13 @@
 package dev.jeval.optimizer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ConversationalMetric;
 import dev.jeval.DeepEvalException;
 import dev.jeval.Metric;
+import dev.jeval.prompt.Prompt;
+import dev.jeval.prompt.PromptMessage;
+import dev.jeval.prompt.PromptType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -13,6 +18,8 @@ import java.util.Objects;
 import java.util.Random;
 
 public final class OptimizerUtils {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private OptimizerUtils() {
     }
 
@@ -81,6 +88,50 @@ public final class OptimizerUtils {
 
     public static String invokeModelCallback(ModelCallback modelCallback, dev.jeval.prompt.Prompt prompt, Object golden) {
         return modelCallback.generate(prompt, golden);
+    }
+
+    public static String parsePrompt(Prompt prompt) {
+        var value = Objects.requireNonNull(prompt, "prompt");
+        if (value.type() == PromptType.TEXT) {
+            return value.textTemplate();
+        }
+        if (value.type() == PromptType.LIST) {
+            try {
+                return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(value.messagesTemplate());
+            } catch (JsonProcessingException exception) {
+                throw new DeepEvalException("Failed to parse prompt messages.", exception);
+            }
+        }
+        throw new DeepEvalException("Unsupported prompt type: " + value.type());
+    }
+
+    public static Prompt createPrompt(Prompt oldPrompt, String newContent) {
+        var value = Objects.requireNonNull(oldPrompt, "oldPrompt");
+        if (value.type() == PromptType.TEXT) {
+            return new Prompt(
+                    value.alias(),
+                    newContent,
+                    null,
+                    value.modelSettings(),
+                    value.outputType(),
+                    value.outputSchema(),
+                    value.interpolationType(),
+                    value.confidentApiKey(),
+                    value.branch());
+        }
+        if (value.type() == PromptType.LIST) {
+            return new Prompt(
+                    value.alias(),
+                    null,
+                    parseMessages(newContent),
+                    value.modelSettings(),
+                    value.outputType(),
+                    value.outputSchema(),
+                    value.interpolationType(),
+                    value.confidentApiKey(),
+                    value.branch());
+        }
+        throw new DeepEvalException("Unsupported prompt type: " + value.type());
     }
 
     public static List<?> validateMetrics(String component, Object metrics) {
@@ -155,6 +206,28 @@ public final class OptimizerUtils {
             }
         }
         return false;
+    }
+
+    private static List<PromptMessage> parseMessages(String content) {
+        try {
+            var node = MAPPER.readTree(content);
+            if (!node.isArray()) {
+                throw new DeepEvalException("Expected prompt messages JSON to be an array.");
+            }
+            var messages = new ArrayList<PromptMessage>();
+            for (var item : node) {
+                var role = item.get("role");
+                var messageContent = item.get("content");
+                if (role == null || messageContent == null || !role.isTextual() || !messageContent.isTextual()) {
+                    throw new DeepEvalException(
+                            "Expected each prompt message to contain textual `role` and `content` fields.");
+                }
+                messages.add(new PromptMessage(role.asText(), messageContent.asText()));
+            }
+            return messages;
+        } catch (JsonProcessingException exception) {
+            throw new DeepEvalException("Failed to parse prompt messages JSON.", exception);
+        }
     }
 
     private static DeepEvalException rangeError(

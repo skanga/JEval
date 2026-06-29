@@ -6,12 +6,24 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ConversationalMetric;
 import dev.jeval.DeepEvalException;
 import dev.jeval.Golden;
 import dev.jeval.Metric;
 import dev.jeval.MetricResult;
+import dev.jeval.prompt.ModelProvider;
+import dev.jeval.prompt.ModelSettings;
+import dev.jeval.prompt.OutputSchema;
+import dev.jeval.prompt.OutputSchemaField;
+import dev.jeval.prompt.OutputType;
 import dev.jeval.prompt.Prompt;
+import dev.jeval.prompt.PromptInterpolationType;
+import dev.jeval.prompt.PromptMessage;
+import dev.jeval.prompt.PromptType;
+import dev.jeval.prompt.ReasoningEffort;
+import dev.jeval.prompt.SchemaDataType;
+import dev.jeval.prompt.Verbosity;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
@@ -21,6 +33,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class OptimizerUtilsTest {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Test
     void buildPromptConfigSnapshotsCopiesStoredPromptConfigurations() {
@@ -185,6 +198,101 @@ class OptimizerUtilsTest {
         };
 
         assertEquals("actual answer", OptimizerUtils.invokeModelCallback(callback, prompt, golden));
+    }
+
+    @Test
+    void parsePromptReturnsTextTemplate() {
+        var prompt = new Prompt("answer", "Answer {question}");
+
+        assertEquals("Answer {question}", OptimizerUtils.parsePrompt(prompt));
+    }
+
+    @Test
+    void parsePromptSerializesMessageTemplate() throws Exception {
+        var prompt = new Prompt("chat", List.of(
+                new PromptMessage("system", "Be direct"),
+                new PromptMessage("user", "{question}")),
+                PromptInterpolationType.FSTRING);
+
+        var parsed = MAPPER.readTree(OptimizerUtils.parsePrompt(prompt));
+
+        assertTrue(parsed.isArray());
+        assertEquals("system", parsed.get(0).get("role").asText());
+        assertEquals("Be direct", parsed.get(0).get("content").asText());
+        assertEquals("user", parsed.get(1).get("role").asText());
+        assertEquals("{question}", parsed.get(1).get("content").asText());
+    }
+
+    @Test
+    void createPromptRewritesTextAndPreservesSettings() {
+        var settings = new ModelSettings(
+                ModelProvider.OPEN_AI,
+                "gpt-4.1",
+                0.2,
+                512,
+                0.9,
+                0.1,
+                0.0,
+                List.of("END"),
+                ReasoningEffort.LOW,
+                Verbosity.MEDIUM);
+        var schema = new OutputSchema("schema-1", List.of(new OutputSchemaField(
+                "field-1", SchemaDataType.STRING, "answer", "Final answer", true, null)), "Answer");
+        var oldPrompt = new Prompt(
+                "answer",
+                "Old {question}",
+                null,
+                settings,
+                OutputType.SCHEMA,
+                schema,
+                PromptInterpolationType.JINJA,
+                "api-key",
+                "main");
+
+        var rewritten = OptimizerUtils.createPrompt(oldPrompt, "New {{ question }}");
+
+        assertEquals("answer", rewritten.alias());
+        assertEquals("New {{ question }}", rewritten.textTemplate());
+        assertEquals(PromptType.TEXT, rewritten.type());
+        assertNull(rewritten.messagesTemplate());
+        assertSame(settings, rewritten.modelSettings());
+        assertSame(schema, rewritten.outputSchema());
+        assertEquals(OutputType.SCHEMA, rewritten.outputType());
+        assertEquals(PromptInterpolationType.JINJA, rewritten.interpolationType());
+        assertEquals("api-key", rewritten.confidentApiKey());
+        assertEquals("main", rewritten.branch());
+    }
+
+    @Test
+    void createPromptRewritesMessagesFromJson() {
+        var oldPrompt = new Prompt("chat", List.of(new PromptMessage("system", "Old")),
+                PromptInterpolationType.MUSTACHE);
+
+        var rewritten = OptimizerUtils.createPrompt(
+                oldPrompt,
+                """
+                [
+                  {"role": "system", "content": "New"},
+                  {"role": "user", "content": "{{question}}"}
+                ]
+                """);
+
+        assertEquals(PromptType.LIST, rewritten.type());
+        assertNull(rewritten.textTemplate());
+        assertEquals(List.of(
+                new PromptMessage("system", "New"),
+                new PromptMessage("user", "{{question}}")), rewritten.messagesTemplate());
+        assertEquals(PromptInterpolationType.MUSTACHE, rewritten.interpolationType());
+    }
+
+    @Test
+    void createPromptRejectsInvalidMessageJson() {
+        var oldPrompt = new Prompt("chat", List.of(new PromptMessage("system", "Old")),
+                PromptInterpolationType.FSTRING);
+
+        assertThrows(DeepEvalException.class, () -> OptimizerUtils.createPrompt(oldPrompt, "not json"));
+        assertThrows(DeepEvalException.class, () -> OptimizerUtils.createPrompt(
+                oldPrompt, "[{\"role\":\"system\",\"body\":\"missing content\"}]"));
     }
 
     private static Set<String> union(OptimizerUtils.GoldenSplit<String> split) {
