@@ -68,6 +68,7 @@ Current Java parity:
 - `EvaluationDataset.addGoldensFromCsvFile(...)` custom column names for conversational CSV scenario, turns, outcome, user description, comments, name, context, metadata, and custom columns
 - Single-turn synthesizer for contexts, docs, scratch styling, and existing goldens, with CLI generation and OpenAI/Ollama LangChain4j provider wiring
 - Multi-turn synthesizer for contexts, docs, scratch styling, and existing conversational goldens, producing `ConversationalGolden` values with scenario, turns, expected outcome, context, and metadata
+- BoolQ benchmark evaluation over supplied `Golden` rows with DeepEval-style prediction rows and `overallScore`
 - `ExactMatchMetric` with DeepEval-required input, actual output, and expected output validation
 - `JsonCorrectnessMetric` deterministic schema-validation path with DeepEval-required input and actual output validation, including local success/failure reasons when enabled
 - `PatternMatchMetric` with DeepEval-required input and actual output validation

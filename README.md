@@ -133,6 +133,25 @@ var testCase = LlmTestCase.builder("refund")
         .build();
 ```
 
+## Benchmarks
+
+JEval includes a local BoolQ benchmark surface for supplied `Golden` rows. It
+keeps DeepEval-style prediction rows and `overallScore` without downloading
+external datasets:
+
+```java
+import dev.jeval.Golden;
+import dev.jeval.benchmarks.BoolQ;
+import java.util.List;
+
+var benchmark = new BoolQ(List.of(
+        Golden.builder("Passage: Java is statically typed.\nQuestion: Is Java statically typed?")
+                .expectedOutput("Yes")
+                .build()));
+
+var result = benchmark.evaluate(model);
+```
+
 ## LangChain4j providers
 
 JEval can use any LangChain4j `ChatModel` through `LangChain4jEvaluationModel`.
