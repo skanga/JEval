@@ -82,7 +82,7 @@ final class GenerateCommand {
             var file = dataset.saveAs(option(args, "--file-type", "json"),
                     Path.of(option(args, "--output-dir", "synthetic_data")),
                     fileName);
-            out.println(file);
+            out.println("Synthetic goldens saved at " + file + "!");
             return 0;
         } catch (IOException | IllegalArgumentException | IllegalStateException error) {
             err.println(error.getMessage());

@@ -791,6 +791,26 @@ class JEvalCliTest {
     }
 
     @Test
+    void generatePrintsDeepEvalStyleSaveMessage() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "message"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals("Synthetic goldens saved at " + output.resolve("message.json") + "!", text(out).trim());
+    }
+
+    @Test
     void generateAcceptsCaseInsensitiveMethodAndVariationLikeDeepEval() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");
@@ -849,7 +869,7 @@ class JEvalCliTest {
             }, out, err);
 
             assertEquals(0, exit, text(err));
-            var generatedPath = Path.of(text(out).trim());
+            var generatedPath = generatedPathFromMessage(text(out));
             assertEquals(Path.of("synthetic_data"), generatedPath.getParent());
             assertTrue(generatedPath.getFileName().toString().matches("\\d{8}_\\d{6}\\.json"));
             assertTrue(Files.readString(generatedPath).contains("\"input\" : \"Capital?\""));
@@ -2152,6 +2172,13 @@ class JEvalCliTest {
 
     private static String text(ByteArrayOutputStream bytes) {
         return bytes.toString(StandardCharsets.UTF_8);
+    }
+
+    private static Path generatedPathFromMessage(String message) {
+        var prefix = "Synthetic goldens saved at ";
+        assertTrue(message.startsWith(prefix));
+        assertTrue(message.trim().endsWith("!"));
+        return Path.of(message.trim().substring(prefix.length(), message.trim().length() - 1));
     }
 
     private static void assertDotenv(Path path, String key, String value) throws Exception {
