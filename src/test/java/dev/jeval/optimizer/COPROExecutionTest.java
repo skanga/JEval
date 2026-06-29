@@ -3,6 +3,7 @@ package dev.jeval.optimizer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.Golden;
@@ -63,12 +64,13 @@ class COPROExecutionTest {
         var responses = new ArrayDeque<>(List.of(
                 "{\"guidelines\":[\"Add citations\"]}",
                 "{\"revised_prompt\":\"Answer with citations\"}"));
+        var copro = new COPRO(1, 1, 1, 123, promptText -> responses.removeFirst());
         var optimizer = new PromptOptimizer(
                 (callbackPrompt, golden) -> callbackPrompt.textTemplate().contains("citations")
                         ? ((Golden) golden).expectedOutput()
                         : "wrong",
                 List.of(metric),
-                new COPRO(1, 1, 1, 123, promptText -> responses.removeFirst()));
+                copro);
 
         var bestPrompt = optimizer.optimize(prompt, goldens);
         var report = optimizer.optimizationReport();
@@ -77,6 +79,14 @@ class COPROExecutionTest {
         assertEquals(List.of(1.0, 1.0), report.paretoScores().get(report.bestId()));
         assertNull(report.parents().get(report.bestId()));
         assertEquals(List.of(), report.acceptedIterations());
+        assertEquals(1, copro.iterationLog().size());
+        var log = copro.iterationLog().getFirst();
+        assertEquals(1, log.iteration());
+        assertEquals("evaluated", log.outcome());
+        assertEquals(0.0, log.before());
+        assertEquals(1.0, log.after());
+        assertTrue(log.reason().contains("Best Minibatch Candidate ID:"));
+        assertTrue(log.elapsed() > 0.0);
     }
 
     @Test
@@ -130,5 +140,32 @@ class COPROExecutionTest {
         assertEquals(0.5, accepted.before());
         assertEquals(1.0, accepted.after());
         assertEquals(accepted.parent(), report.parents().get(report.bestId()));
+    }
+
+    @Test
+    void iterationLogIsClearedBetweenRunsAndReturnedAsImmutableCopy() {
+        var prompt = new Prompt("answer", "Answer briefly");
+        var firstGoldens = List.of(Golden.builder("q1").expectedOutput("a").build());
+        var secondGoldens = List.of(Golden.builder("q2").expectedOutput("a").build());
+        Metric metric = testCase -> new MetricResult("exact", 1.0, 1.0, true, null);
+        var responses = new ArrayDeque<>(List.of(
+                "{\"guidelines\":[\"Keep wording\"]}",
+                "{\"revised_prompt\":\"Answer briefly\"}",
+                "{\"guidelines\":[\"Keep wording\"]}",
+                "{\"revised_prompt\":\"Answer briefly\"}"));
+        var copro = new COPRO(1, 1, 1, 123, promptText -> responses.removeFirst());
+        var optimizer = new PromptOptimizer(
+                (callbackPrompt, golden) -> "a",
+                List.of(metric),
+                copro);
+
+        optimizer.optimize(prompt, firstGoldens);
+        assertEquals(1, copro.iterationLog().size());
+        assertThrows(UnsupportedOperationException.class, () -> copro.iterationLog().clear());
+
+        optimizer.optimize(prompt, secondGoldens);
+
+        assertEquals(1, copro.iterationLog().size());
+        assertEquals(1, copro.iterationLog().getFirst().iteration());
     }
 }

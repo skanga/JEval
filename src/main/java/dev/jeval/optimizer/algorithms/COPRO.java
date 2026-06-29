@@ -1,6 +1,7 @@
 package dev.jeval.optimizer.algorithms;
 
 import dev.jeval.optimizer.AcceptedIteration;
+import dev.jeval.optimizer.IterationLogEntry;
 import dev.jeval.optimizer.OptimizationReport;
 import dev.jeval.optimizer.OptimizationResult;
 import dev.jeval.optimizer.OptimizerScorer;
@@ -24,6 +25,7 @@ public final class COPRO implements PromptOptimizationAlgorithm {
     private final int seed;
     private final Random randomState;
     private final Function<String, String> proposeCallback;
+    private final List<IterationLogEntry> iterationLog = new ArrayList<>();
 
     public COPRO() {
         this(4, 7, 25, (Random) null);
@@ -84,8 +86,13 @@ public final class COPRO implements PromptOptimizationAlgorithm {
         return randomState;
     }
 
+    public List<IterationLogEntry> iterationLog() {
+        return List.copyOf(iterationLog);
+    }
+
     @Override
     public OptimizationResult execute(Prompt prompt, List<?> goldens, OptimizerScorer scorer) {
+        iterationLog.clear();
         var optimizationId = UUID.randomUUID().toString();
         var prompts = new LinkedHashMap<String, Prompt>();
         prompts.put(OptimizerScorer.DEFAULT_MODULE_ID, prompt);
@@ -112,6 +119,8 @@ public final class COPRO implements PromptOptimizationAlgorithm {
             bestScore = Double.NEGATIVE_INFINITY;
 
             for (var d = 0; d < depth; d++) {
+                var depthStart = System.nanoTime();
+                var priorBest = globalBestSeen ? bestScore : 0.0;
                 var minibatch = sampleMinibatch(goldens);
                 var results = evaluateCandidates(candidates, minibatch, scorer, promptConfigurations);
                 if (results.isEmpty()) {
@@ -127,6 +136,14 @@ public final class COPRO implements PromptOptimizationAlgorithm {
                 if (history.size() > breadth) {
                     history = new ArrayList<>(history.subList(0, breadth));
                 }
+
+                iterationLog.add(new IterationLogEntry(
+                        d + 1,
+                        "evaluated",
+                        "Best Minibatch Candidate ID: " + bestBatch.configuration().id().substring(0, 8),
+                        elapsedSeconds(depthStart),
+                        priorBest,
+                        bestBatch.score()));
 
                 var fullScores = scorer.scorePareto(bestBatch.configuration(), goldens);
                 var fullScore = average(fullScores);
@@ -214,6 +231,10 @@ public final class COPRO implements PromptOptimizationAlgorithm {
             return 0.0;
         }
         return scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    }
+
+    private static double elapsedSeconds(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000_000.0;
     }
 
     private record CandidateResult(
