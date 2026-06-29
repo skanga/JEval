@@ -204,12 +204,40 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         parents.put(rootConfig.id(), null);
         var promptConfigurations = new LinkedHashMap<String, PromptConfiguration>();
         promptConfigurations.put(rootConfig.id(), rootConfig);
+        var acceptedIterations = new ArrayList<AcceptedIteration>();
+
+        for (var i = 0; i < iterations && !split.feedback().isEmpty(); i++) {
+            var parent = bestByAggregate(paretoScores, parents, promptConfigurations);
+            var minibatch = drawMinibatch(split.feedback());
+            var feedback = scorer.getMinibatchFeedback(parent, OptimizerScorer.DEFAULT_MODULE_ID, minibatch);
+            var childPrompt = generateChildPrompt(parent, OptimizerScorer.DEFAULT_MODULE_ID, feedback);
+            if (childPrompt == null) {
+                continue;
+            }
+            var parentMinibatchScore = scorer.scoreMinibatch(parent, minibatch);
+            var child = childConfiguration(parent, OptimizerScorer.DEFAULT_MODULE_ID, childPrompt);
+            var childMinibatchScore = scorer.scoreMinibatch(child, minibatch);
+            if (childMinibatchScore <= parentMinibatchScore) {
+                continue;
+            }
+            acceptChild(
+                    parent,
+                    child,
+                    OptimizerScorer.DEFAULT_MODULE_ID,
+                    paretoScores.get(parent.id()),
+                    scorer.scorePareto(child, paretoGoldens),
+                    paretoScores,
+                    parents,
+                    promptConfigurations,
+                    acceptedIterations);
+        }
+
         var best = bestByAggregate(paretoScores, parents, promptConfigurations);
 
         var report = new OptimizationReport(
                 optimizationId,
                 best.id(),
-                List.of(),
+                acceptedIterations,
                 paretoScores,
                 parents,
                 OptimizerUtils.buildPromptConfigSnapshots(promptConfigurations));

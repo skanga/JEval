@@ -50,6 +50,38 @@ class GEPAExecutionTest {
     }
 
     @Test
+    void executeAcceptsRewrittenChildWhenItImprovesFeedbackAndParetoScores() {
+        var prompt = new Prompt("answer", "Answer briefly");
+        var goldens = List.of(
+                Golden.builder("q1").expectedOutput("a").build(),
+                Golden.builder("q2").expectedOutput("b").build());
+        Metric metric = testCase -> new MetricResult(
+                "exact",
+                testCase.expectedOutput().equals(testCase.actualOutput()) ? 1.0 : 0.0,
+                1.0,
+                testCase.expectedOutput().equals(testCase.actualOutput()),
+                null);
+        var optimizer = new PromptOptimizer(
+                (callbackPrompt, golden) -> callbackPrompt.textTemplate().contains("cited")
+                        ? ((Golden) golden).expectedOutput()
+                        : "wrong",
+                List.of(metric),
+                new GEPA(1, 1, 1, 123, 1, TieBreaker.PREFER_CHILD,
+                        rewritePrompt -> "{\"revised_prompt\":\"Answer with a cited fact\"}"));
+
+        var bestPrompt = optimizer.optimize(prompt, goldens);
+        var report = optimizer.optimizationReport();
+
+        assertEquals("Answer with a cited fact", bestPrompt.textTemplate());
+        assertEquals(1, report.acceptedIterations().size());
+        var accepted = report.acceptedIterations().getFirst();
+        assertEquals(OptimizerScorer.DEFAULT_MODULE_ID, accepted.module());
+        assertEquals(0.0, accepted.before());
+        assertEquals(1.0, accepted.after());
+        assertEquals(report.bestId(), accepted.child());
+    }
+
+    @Test
     void executeRequiresAtLeastTwoGoldens() {
         var prompt = new Prompt("answer", "Answer");
         var golden = Golden.builder("q1").expectedOutput("a").build();
