@@ -2,6 +2,7 @@ package dev.jeval.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -258,9 +259,16 @@ final class CliSettings {
                     "GOOGLE_GENAI_USE_VERTEXAI"));
         }
 
-        Map<String, String> derivedUpdates(String[] args) {
+        Map<String, String> derivedUpdates(String[] args) throws IOException {
             if (!"USE_GEMINI_MODEL".equals(useKey)) {
                 return Map.of();
+            }
+            var serviceAccountFile = option(args, "--service-account-file", null);
+            if (serviceAccountFile != null) {
+                var updates = new LinkedHashMap<String, String>();
+                updates.put("GOOGLE_SERVICE_ACCOUNT_KEY", Files.readString(Path.of(serviceAccountFile)));
+                updates.put("GOOGLE_GENAI_USE_VERTEXAI", "true");
+                return updates;
             }
             if (option(args, "--project", null) != null || option(args, "--location", null) != null) {
                 return Map.of("GOOGLE_GENAI_USE_VERTEXAI", "true");

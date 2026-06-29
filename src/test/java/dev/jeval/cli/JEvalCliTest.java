@@ -509,6 +509,26 @@ class JEvalCliTest {
         assertEquals(false, readDotenv(env).containsKey("GOOGLE_GENAI_USE_VERTEXAI"));
     }
 
+    @Test
+    void geminiProviderLoadsServiceAccountFileAndSetsVertexFlag() throws Exception {
+        var env = tempDir.resolve(".env");
+        var serviceAccount = tempDir.resolve("service-account.json");
+        Files.writeString(serviceAccount, "{\"type\":\"service_account\",\"project_id\":\"jeval\"}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-gemini", "--model", "gemini-2.5-flash",
+                "--service-account-file", serviceAccount.toString(),
+                "--save", "dotenv:" + env
+        }, out, err));
+
+        assertDotenv(env, "USE_GEMINI_MODEL", "YES");
+        assertDotenv(env, "GEMINI_MODEL_NAME", "gemini-2.5-flash");
+        assertDotenv(env, "GOOGLE_SERVICE_ACCOUNT_KEY", "{\"type\":\"service_account\",\"project_id\":\"jeval\"}");
+        assertDotenv(env, "GOOGLE_GENAI_USE_VERTEXAI", "true");
+    }
+
     private static PrintStream print(ByteArrayOutputStream bytes) {
         return new PrintStream(bytes, true, StandardCharsets.UTF_8);
     }
