@@ -215,6 +215,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         var consecutiveRejections = 0;
 
         for (var i = 0; i < iterations && !split.feedback().isEmpty(); i++) {
+            var iterationStart = System.nanoTime();
             var parent = bestByAggregate(paretoScores, parents, promptConfigurations);
             var minibatch = drawMinibatch(split.feedback());
             var feedback = scorer.getMinibatchFeedback(parent, OptimizerScorer.DEFAULT_MODULE_ID, minibatch);
@@ -230,7 +231,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
                         i,
                         "skipped",
                         "Skipped (minibatch score did not improve)",
-                        0.0,
+                        elapsedSeconds(iterationStart),
                         average(paretoScores.get(parent.id())),
                         childMinibatchScore));
                 continue;
@@ -255,7 +256,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
                         i,
                         "accepted",
                         "Accepted by Pareto non-domination",
-                        0.0,
+                        elapsedSeconds(iterationStart),
                         parentAggregate,
                         childAggregate));
             } else if (++consecutiveRejections >= patience) {
@@ -263,7 +264,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
                         i,
                         "rejected",
                         "early stop (patience=" + patience + ")",
-                        0.0,
+                        elapsedSeconds(iterationStart),
                         parentAggregate,
                         childAggregate));
                 break;
@@ -272,7 +273,7 @@ public final class GEPA implements PromptOptimizationAlgorithm {
                         i,
                         "rejected",
                         "Rejected (consecutive rejections: " + consecutiveRejections + "/" + patience + ")",
-                        0.0,
+                        elapsedSeconds(iterationStart),
                         parentAggregate,
                         childAggregate));
             }
@@ -329,5 +330,9 @@ public final class GEPA implements PromptOptimizationAlgorithm {
             return 0.0;
         }
         return scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    }
+
+    private static double elapsedSeconds(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000_000.0;
     }
 }

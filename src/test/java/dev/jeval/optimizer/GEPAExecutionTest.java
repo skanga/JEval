@@ -1,6 +1,7 @@
 package dev.jeval.optimizer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -87,6 +88,7 @@ class GEPAExecutionTest {
         assertEquals(0, log.iteration());
         assertEquals("accepted", log.outcome());
         assertEquals("Accepted by Pareto non-domination", log.reason());
+        assertTrue(log.elapsed() > 0.0);
         assertEquals(0.0, log.before());
         assertEquals(1.0, log.after());
     }
