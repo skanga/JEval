@@ -282,7 +282,20 @@ final class GenerateCommand {
     }
 
     private static Path savePath(String[] args) {
-        var save = option(args, "--save", ".env");
+        var save = ".env";
+        for (var i = 0; i < args.length - 1; i++) {
+            if ("--save".equals(args[i]) || "-s".equals(args[i])) {
+                save = args[i + 1];
+                break;
+            }
+        }
+        for (var arg : args) {
+            if (arg.startsWith("--save=")) {
+                save = arg.substring("--save=".length());
+            } else if (arg.startsWith("-s=")) {
+                save = arg.substring("-s=".length());
+            }
+        }
         return save.startsWith("dotenv:") ? Path.of(save.substring("dotenv:".length())) : Path.of(save);
     }
 

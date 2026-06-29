@@ -185,6 +185,38 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateAcceptsSaveEqualsDotenvFormForProviderSettings() throws Exception {
+        withDefaultDotenv("USE_OPENAI_MODEL=YES\n", () -> {
+            var env = tempDir.resolve("missing.env");
+            var out = new ByteArrayOutputStream();
+            var err = new ByteArrayOutputStream();
+
+            var exit = run(new String[] {"generate", "--method", "scratch", "--variation", "single-turn",
+                    "--scenario", "users", "--task", "answer", "--input-format", "question",
+                    "--save=dotenv:" + env}, out, err);
+
+            assertEquals(2, exit);
+            assertTrue(text(err).contains("No supported provider"));
+        });
+    }
+
+    @Test
+    void generateAcceptsShortSaveAliasForProviderSettings() throws Exception {
+        withDefaultDotenv("USE_OPENAI_MODEL=YES\n", () -> {
+            var env = tempDir.resolve("missing.env");
+            var out = new ByteArrayOutputStream();
+            var err = new ByteArrayOutputStream();
+
+            var exit = run(new String[] {"generate", "--method", "scratch", "--variation", "single-turn",
+                    "--scenario", "users", "--task", "answer", "--input-format", "question",
+                    "-s", "dotenv:" + env}, out, err);
+
+            assertEquals(2, exit);
+            assertTrue(text(err).contains("No supported provider"));
+        });
+    }
+
+    @Test
     void generateContextsWritesGoldensFile() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");
@@ -892,6 +924,22 @@ class JEvalCliTest {
         return args.toArray(String[]::new);
     }
 
+    private static void withDefaultDotenv(String content, CheckedRunnable action) throws Exception {
+        var path = Path.of(".env");
+        var existed = Files.exists(path);
+        var original = existed ? Files.readString(path) : null;
+        Files.writeString(path, content);
+        try {
+            action.run();
+        } finally {
+            if (existed) {
+                Files.writeString(path, original);
+            } else {
+                Files.deleteIfExists(path);
+            }
+        }
+    }
+
     private static String text(ByteArrayOutputStream bytes) {
         return bytes.toString(StandardCharsets.UTF_8);
     }
@@ -920,5 +968,10 @@ class JEvalCliTest {
             }
         }
         return values;
+    }
+
+    @FunctionalInterface
+    private interface CheckedRunnable {
+        void run() throws Exception;
     }
 }
