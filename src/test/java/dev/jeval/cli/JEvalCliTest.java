@@ -481,6 +481,34 @@ class JEvalCliTest {
         assertDotenv(env, "TEMPERATURE", "0.3");
     }
 
+    @Test
+    void geminiProviderSetsVertexFlagForProjectOrLocation() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-gemini", "--model", "gemini-2.5-flash",
+                "--project", "jeval-project", "--location", "us-central1",
+                "--save", "dotenv:" + env
+        }, out, err));
+
+        assertDotenv(env, "USE_GEMINI_MODEL", "YES");
+        assertDotenv(env, "GEMINI_MODEL_NAME", "gemini-2.5-flash");
+        assertDotenv(env, "GOOGLE_CLOUD_PROJECT", "jeval-project");
+        assertDotenv(env, "GOOGLE_CLOUD_LOCATION", "us-central1");
+        assertDotenv(env, "GOOGLE_GENAI_USE_VERTEXAI", "true");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-gemini", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_GEMINI_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("GEMINI_MODEL_NAME"));
+        assertEquals(false, readDotenv(env).containsKey("GOOGLE_CLOUD_PROJECT"));
+        assertEquals(false, readDotenv(env).containsKey("GOOGLE_CLOUD_LOCATION"));
+        assertEquals(false, readDotenv(env).containsKey("GOOGLE_GENAI_USE_VERTEXAI"));
+    }
+
     private static PrintStream print(ByteArrayOutputStream bytes) {
         return new PrintStream(bytes, true, StandardCharsets.UTF_8);
     }

@@ -19,7 +19,8 @@ final class CliSettings {
             "OPENAI_API_VERSION", "ANTHROPIC_MODEL_NAME", "AWS_BEDROCK_MODEL_NAME", "AWS_BEDROCK_REGION",
             "OLLAMA_MODEL_NAME", "LOCAL_MODEL_NAME", "LOCAL_MODEL_BASE_URL", "LOCAL_MODEL_FORMAT",
             "GROK_MODEL_NAME", "MOONSHOT_MODEL_NAME", "DEEPSEEK_MODEL_NAME", "GEMINI_MODEL_NAME",
-            "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "LITELLM_MODEL_NAME", "LITELLM_API_BASE",
+            "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GOOGLE_GENAI_USE_VERTEXAI",
+            "LITELLM_MODEL_NAME", "LITELLM_API_BASE",
             "LITELLM_PROXY_API_BASE", "PORTKEY_MODEL_NAME", "PORTKEY_BASE_URL", "PORTKEY_PROVIDER_NAME",
             "OPENROUTER_MODEL_NAME", "OPENROUTER_BASE_URL", "OPENROUTER_COST_PER_INPUT_TOKEN",
             "OPENROUTER_COST_PER_OUTPUT_TOKEN");
@@ -98,6 +99,7 @@ final class CliSettings {
                         updates.put(entry.getValue(), value);
                     }
                 }
+                updates.putAll(spec.derivedUpdates(args));
             }
             new DotenvFile(savePath(args)).update(updates, removals);
             return 0;
@@ -208,7 +210,7 @@ final class CliSettings {
                 case "set-grok", "unset-grok" -> llm("USE_GROK_MODEL", Map.of("--model", "GROK_MODEL_NAME"));
                 case "set-moonshot", "unset-moonshot" -> llm("USE_MOONSHOT_MODEL", Map.of("--model", "MOONSHOT_MODEL_NAME"));
                 case "set-deepseek", "unset-deepseek" -> llm("USE_DEEPSEEK_MODEL", Map.of("--model", "DEEPSEEK_MODEL_NAME"));
-                case "set-gemini", "unset-gemini" -> llm("USE_GEMINI_MODEL", Map.of("--model", "GEMINI_MODEL_NAME", "--project", "GOOGLE_CLOUD_PROJECT", "--location", "GOOGLE_CLOUD_LOCATION"));
+                case "set-gemini", "unset-gemini" -> gemini();
                 case "set-litellm", "unset-litellm" -> llm("USE_LITELLM", Map.of("--model", "LITELLM_MODEL_NAME", "--base-url", "LITELLM_API_BASE", "--proxy-base-url", "LITELLM_PROXY_API_BASE"));
                 case "set-portkey", "unset-portkey" -> llm("USE_PORTKEY_MODEL", Map.of("--model", "PORTKEY_MODEL_NAME", "--base-url", "PORTKEY_BASE_URL", "--provider", "PORTKEY_PROVIDER_NAME"));
                 case "set-openrouter", "unset-openrouter" -> openRouter();
@@ -242,6 +244,28 @@ final class CliSettings {
                     "OPENROUTER_BASE_URL",
                     "OPENROUTER_COST_PER_INPUT_TOKEN",
                     "OPENROUTER_COST_PER_OUTPUT_TOKEN"));
+        }
+
+        private static ProviderSpec gemini() {
+            var setKeys = Map.of(
+                    "--model", "GEMINI_MODEL_NAME",
+                    "--project", "GOOGLE_CLOUD_PROJECT",
+                    "--location", "GOOGLE_CLOUD_LOCATION");
+            return llm("USE_GEMINI_MODEL", setKeys, List.of(
+                    "GEMINI_MODEL_NAME",
+                    "GOOGLE_CLOUD_PROJECT",
+                    "GOOGLE_CLOUD_LOCATION",
+                    "GOOGLE_GENAI_USE_VERTEXAI"));
+        }
+
+        Map<String, String> derivedUpdates(String[] args) {
+            if (!"USE_GEMINI_MODEL".equals(useKey)) {
+                return Map.of();
+            }
+            if (option(args, "--project", null) != null || option(args, "--location", null) != null) {
+                return Map.of("GOOGLE_GENAI_USE_VERTEXAI", "true");
+            }
+            return Map.of();
         }
 
         private static ProviderSpec llm(String useKey, Map<String, String> keys) {
