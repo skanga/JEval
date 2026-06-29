@@ -8,6 +8,7 @@ import dev.jeval.optimizer.OptimizerScorer;
 import dev.jeval.optimizer.OptimizerUtils;
 import dev.jeval.optimizer.PromptConfiguration;
 import dev.jeval.optimizer.PromptOptimizationAlgorithm;
+import dev.jeval.optimizer.policies.OptimizerPolicies;
 import dev.jeval.optimizer.policies.TieBreaker;
 import dev.jeval.prompt.Prompt;
 import dev.jeval.prompt.PromptMessage;
@@ -20,6 +21,8 @@ import java.util.Random;
 import java.util.UUID;
 
 public final class GEPA implements PromptOptimizationAlgorithm {
+    private static final double MIN_DELTA = 0.0;
+
     private final int iterations;
     private final int minibatchSize;
     private final int paretoSize;
@@ -128,13 +131,15 @@ public final class GEPA implements PromptOptimizationAlgorithm {
             List<AcceptedIteration> acceptedIterations) {
         var before = average(parentScores);
         var after = average(childScores);
-        if (after <= before) {
+        if (!shouldAcceptChild(childScores, parentScores, paretoScores)) {
             return false;
         }
         paretoScores.put(child.id(), List.copyOf(childScores));
         parents.put(child.id(), parent.id());
         promptConfigurations.put(child.id(), child);
         acceptedIterations.add(new AcceptedIteration(parent.id(), child.id(), moduleId, before, after));
+        paretoScores.entrySet().removeIf(entry -> !entry.getKey().equals(child.id())
+                && OptimizerPolicies.isDominated(entry.getValue(), childScores, MIN_DELTA));
         return true;
     }
 
@@ -185,6 +190,21 @@ public final class GEPA implements PromptOptimizationAlgorithm {
 
     private static String normalized(String value) {
         return value == null ? "" : value.strip();
+    }
+
+    private static boolean shouldAcceptChild(
+            List<Double> childScores,
+            List<Double> parentScores,
+            Map<String, List<Double>> paretoScores) {
+        if (OptimizerPolicies.isDominated(childScores, parentScores, MIN_DELTA)) {
+            return false;
+        }
+        for (var existingScores : paretoScores.values()) {
+            if (OptimizerPolicies.isDominated(childScores, existingScores, MIN_DELTA)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static double average(List<Double> scores) {

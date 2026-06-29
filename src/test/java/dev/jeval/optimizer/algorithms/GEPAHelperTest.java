@@ -98,7 +98,7 @@ class GEPAHelperTest {
     }
 
     @Test
-    void acceptChildRecordsOnlyAverageScoreImprovements() {
+    void acceptChildUsesParetoNonDominationInsteadOfAverageImprovement() {
         var gepa = new GEPA(1, 2, 1, 7, 1, TieBreaker.PREFER_CHILD);
         var parent = PromptConfiguration.create(new LinkedHashMap<>(
                 Map.of("answer", new Prompt("answer", "Answer"))));
@@ -112,22 +112,52 @@ class GEPAHelperTest {
         configs.put(parent.id(), parent);
 
         assertTrue(gepa.acceptChild(
-                parent, child, "answer", List.of(0.4, 0.6), List.of(0.8, 0.7),
+                parent, child, "answer", List.of(0.6, 0.5), List.of(0.7, 0.4),
                 paretoScores, parents, configs, accepted));
 
-        assertEquals(List.of(0.8, 0.7), paretoScores.get(child.id()));
+        assertEquals(List.of(0.7, 0.4), paretoScores.get(child.id()));
         assertEquals(parent.id(), parents.get(child.id()));
         assertEquals(child, configs.get(child.id()));
-        assertEquals(List.of(new AcceptedIteration(parent.id(), child.id(), "answer", 0.5, 0.75)), accepted);
+        assertEquals(List.of(new AcceptedIteration(parent.id(), child.id(), "answer", 0.55, 0.55)), accepted);
 
-        var rejected = gepa.childConfiguration(child, "answer", new Prompt("answer", "Worse answer"));
+        var rejected = gepa.childConfiguration(child, "answer", new Prompt("answer", "Dominated answer"));
         assertFalse(gepa.acceptChild(
-                child, rejected, "answer", List.of(0.8, 0.7), List.of(0.5, 0.5),
+                child, rejected, "answer", List.of(0.7, 0.4), List.of(0.6, 0.4),
                 paretoScores, parents, configs, accepted));
 
         assertFalse(paretoScores.containsKey(rejected.id()));
         assertFalse(parents.containsKey(rejected.id()));
         assertFalse(configs.containsKey(rejected.id()));
         assertEquals(1, accepted.size());
+    }
+
+    @Test
+    void acceptChildPrunesArchiveScoresDominatedByAcceptedChild() {
+        var gepa = new GEPA(1, 2, 1, 7, 1, TieBreaker.PREFER_CHILD);
+        var parent = PromptConfiguration.create(new LinkedHashMap<>(
+                Map.of("answer", new Prompt("answer", "Answer"))));
+        var weak = PromptConfiguration.create(new LinkedHashMap<>(
+                Map.of("answer", new Prompt("answer", "Weak"))));
+        var child = gepa.childConfiguration(parent, "answer", new Prompt("answer", "Better answer"));
+        var paretoScores = new LinkedHashMap<String, List<Double>>();
+        var parents = new LinkedHashMap<String, String>();
+        var configs = new LinkedHashMap<String, PromptConfiguration>();
+        var accepted = new ArrayList<AcceptedIteration>();
+        paretoScores.put(parent.id(), List.of(0.4, 0.4));
+        paretoScores.put(weak.id(), List.of(0.3, 0.3));
+        parents.put(parent.id(), null);
+        parents.put(weak.id(), null);
+        configs.put(parent.id(), parent);
+        configs.put(weak.id(), weak);
+
+        assertTrue(gepa.acceptChild(
+                parent, child, "answer", List.of(0.4, 0.4), List.of(0.5, 0.5),
+                paretoScores, parents, configs, accepted));
+
+        assertEquals(List.of(0.5, 0.5), paretoScores.get(child.id()));
+        assertFalse(paretoScores.containsKey(parent.id()));
+        assertFalse(paretoScores.containsKey(weak.id()));
+        assertEquals(parent.id(), parents.get(child.id()));
+        assertEquals(child, configs.get(child.id()));
     }
 }
