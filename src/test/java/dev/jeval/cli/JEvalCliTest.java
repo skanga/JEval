@@ -504,6 +504,31 @@ class JEvalCliTest {
     }
 
     @Test
+    void unsetDebugRemovesDebugSettingsFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "settings", "-u", "log-level=debug", "-u", "deepeval-verbose-mode=true",
+                "-u", "deepeval-debug-async=true", "--save", "dotenv:" + env
+        }, out, err));
+        assertDotenv(env, "LOG_LEVEL", "10");
+        assertDotenv(env, "DEEPEVAL_VERBOSE_MODE", "true");
+        assertDotenv(env, "DEEPEVAL_DEBUG_ASYNC", "true");
+
+        out.reset();
+        err.reset();
+        var exit = run(new String[] {"unset-debug", "--save", "dotenv:" + env, "--quiet"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals("", text(out));
+        assertEquals(false, readDotenv(env).containsKey("LOG_LEVEL"));
+        assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_VERBOSE_MODE"));
+        assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_DEBUG_ASYNC"));
+    }
+
+    @Test
     void providerSetUnsetRoundtripUsesExclusiveFlags() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

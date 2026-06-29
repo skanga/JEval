@@ -33,6 +33,9 @@ public final class JEvalCli {
         if (args.length > 0 && "set-debug".equals(args[0])) {
             return CliSettings.setDebug(args, out, err);
         }
+        if (args.length > 0 && "unset-debug".equals(args[0])) {
+            return CliSettings.unsetDebug(args, out, err);
+        }
         if (args.length > 0) {
             var providerExit = CliSettings.provider(args[0], args, err);
             if (providerExit >= 0) {
@@ -236,6 +239,7 @@ public final class JEvalCli {
         err.println("Usage: jeval test [run] <file-or-directory> [--identifier name] [--format markdown|html] [--output dir] [--quiet]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
         err.println("       jeval settings -u key=value|-U key|-l [filter] [--save dotenv:.env] [--quiet]");
+        err.println("       jeval set-debug|unset-debug [--save dotenv:.env] [--quiet]");
         err.println("       jeval set-openai|set-ollama|set-anthropic ... [--save dotenv:.env]");
         err.println("       jeval generate --method contexts|scratch|goldens --variation single-turn ...");
     }

@@ -10,6 +10,20 @@ import java.util.Locale;
 import java.util.Map;
 
 final class CliSettings {
+    private static final List<String> DEBUG_KEYS = List.of(
+            "LOG_LEVEL",
+            "DEEPEVAL_VERBOSE_MODE",
+            "DEEPEVAL_DEBUG_ASYNC",
+            "DEEPEVAL_LOG_STACK_TRACES",
+            "DEEPEVAL_RETRY_BEFORE_LOG_LEVEL",
+            "DEEPEVAL_RETRY_AFTER_LOG_LEVEL",
+            "DEEPEVAL_GRPC_LOGGING",
+            "GRPC_VERBOSITY",
+            "GRPC_TRACE",
+            "CONFIDENT_TRACE_VERBOSE",
+            "CONFIDENT_TRACE_ENVIRONMENT",
+            "CONFIDENT_TRACE_FLUSH",
+            "CONFIDENT_TRACE_SAMPLE_RATE");
     private static final List<String> LLM_FLAGS = List.of(
             "USE_OPENAI_MODEL", "USE_AZURE_OPENAI", "USE_ANTHROPIC_MODEL", "USE_AWS_BEDROCK_MODEL",
             "USE_LOCAL_MODEL", "USE_GROK_MODEL", "USE_MOONSHOT_MODEL", "USE_DEEPSEEK_MODEL",
@@ -72,6 +86,21 @@ final class CliSettings {
             new DotenvFile(save).update(Map.of("LOG_LEVEL", logLevel(level)), List.of());
             if (!quiet) {
                 out.println("LOG_LEVEL=" + logLevel(level));
+            }
+            return 0;
+        } catch (IOException error) {
+            err.println(error.getMessage());
+            return 2;
+        }
+    }
+
+    static int unsetDebug(String[] args, PrintStream out, PrintStream err) {
+        var save = savePath(args);
+        var quiet = has(args, "--quiet");
+        try {
+            new DotenvFile(save).update(Map.of(), DEBUG_KEYS);
+            if (!quiet) {
+                out.println("Debug settings removed");
             }
             return 0;
         } catch (IOException error) {
