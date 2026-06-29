@@ -9,6 +9,7 @@ import dev.jeval.Metric;
 import dev.jeval.MetricResult;
 import dev.jeval.optimizer.algorithms.SIMBA;
 import dev.jeval.prompt.Prompt;
+import java.util.ArrayDeque;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -44,5 +45,49 @@ class SIMBAExecutionTest {
                 .get(report.bestId())
                 .prompts()
                 .get(OptimizerScorer.DEFAULT_MODULE_ID));
+    }
+
+    @Test
+    void executeAcceptsIntrospectionRewriteCandidateWhenCallbackConfigured() {
+        var prompt = new Prompt("answer", "Answer {{input}}");
+        var goldens = List.of(
+                Golden.builder("q1").expectedOutput("a").build(),
+                Golden.builder("q2").expectedOutput("b").build());
+        Metric metric = testCase -> new MetricResult(
+                "exact",
+                testCase.expectedOutput().equals(testCase.actualOutput()) ? 1.0 : 0.0,
+                1.0,
+                testCase.expectedOutput().equals(testCase.actualOutput()),
+                null);
+        var responses = new ArrayDeque<>(List.of("""
+                {
+                  "discussion": "The rewritten prompt asks for supporting evidence before answering.",
+                  "revised_prompt": "Answer {{input}} with evidence"
+                }
+                """));
+        var optimizer = new PromptOptimizer(
+                (callbackPrompt, golden) -> callbackPrompt.textTemplate().contains("evidence")
+                        ? ((Golden) golden).expectedOutput()
+                        : "wrong",
+                List.of(metric),
+                new SIMBA(1, 2, 1, 1, 1, 123, promptText -> {
+                    if (!promptText.contains("[WORSE TRAJECTORY (The Failure)]")) {
+                        throw new AssertionError("Expected SIMBA introspection template");
+                    }
+                    return responses.removeFirst();
+                }));
+
+        var bestPrompt = optimizer.optimize(prompt, goldens);
+        var report = optimizer.optimizationReport();
+
+        assertEquals("Answer {{input}} with evidence", bestPrompt.textTemplate());
+        assertEquals(List.of(1.0, 1.0), report.paretoScores().get(report.bestId()));
+        assertEquals(1, report.acceptedIterations().size());
+        var accepted = report.acceptedIterations().getFirst();
+        assertEquals(report.bestId(), accepted.child());
+        assertEquals(OptimizerScorer.DEFAULT_MODULE_ID, accepted.module());
+        assertEquals(0.0, accepted.before());
+        assertEquals(1.0, accepted.after());
+        assertEquals(accepted.parent(), report.parents().get(report.bestId()));
     }
 }

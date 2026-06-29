@@ -43,6 +43,15 @@ public final class OptimizerScorer {
                 .orElse(0.0);
     }
 
+    public SimbaTraceRecord executeTrace(PromptConfiguration promptConfiguration, Object golden) {
+        var trace = measureOne(promptConfiguration, golden);
+        var feedback = trace.metricResults().stream()
+                .map(result -> "- " + result.name() + " (" + result.score() + "): "
+                        + (result.reason() == null ? "" : result.reason()))
+                .toList();
+        return new SimbaTraceRecord(trace.actual(), trace.score(), String.join("\n", feedback));
+    }
+
     public ScorerDiagnosisResult getMinibatchFeedback(
             PromptConfiguration promptConfiguration,
             String module,

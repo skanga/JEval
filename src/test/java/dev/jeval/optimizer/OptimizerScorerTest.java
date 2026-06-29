@@ -91,6 +91,25 @@ class OptimizerScorerTest {
     }
 
     @Test
+    void executeTraceReturnsModelOutputAverageScoreAndMetricFeedback() {
+        var prompt = new Prompt("answer", "Answer");
+        var config = new PromptConfiguration("root", null, new LinkedHashMap<>(
+                Map.of(OptimizerScorer.DEFAULT_MODULE_ID, prompt)));
+        var scorer = new OptimizerScorer(
+                (ignored, golden) -> "actual",
+                List.of(
+                        (Metric) testCase -> new MetricResult("first", 1.0, 0.5, true, "matched"),
+                        (Metric) testCase -> new MetricResult("second", 0.0, 0.5, false, "missed")));
+
+        var trace = scorer.executeTrace(config, Golden.builder("q").expectedOutput("expected").build());
+
+        assertEquals("actual", trace.output());
+        assertEquals(0.5, trace.score());
+        assertTrue(trace.feedback().contains("- first (1.0): matched"));
+        assertTrue(trace.feedback().contains("- second (0.0): missed"));
+    }
+
+    @Test
     void getMinibatchFeedbackBuildsDiagnosisFromMetricResults() {
         var prompt = new Prompt("answer", "Answer {question}");
         var config = new PromptConfiguration("root", null, new LinkedHashMap<>(
