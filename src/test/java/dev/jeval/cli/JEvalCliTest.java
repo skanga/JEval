@@ -995,6 +995,42 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateContextsRejectsNonListContextsFileLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "{\"context\":[\"Paris is in France.\"]}");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Contexts file must contain a JSON list of context lists."));
+    }
+
+    @Test
+    void generateContextsRejectsNonStringContextChunksLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"], [42]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Contexts file must be shaped like [[\"chunk 1\", \"chunk 2\"], ...]."));
+    }
+
+    @Test
     void generateDocsChunksDocumentAndWritesGoldensFile() throws Exception {
         var document = tempDir.resolve("policy.md");
         Files.writeString(document, "alpha beta gamma delta");

@@ -1,6 +1,6 @@
 package dev.jeval.cli;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ConversationalGolden;
 import dev.jeval.EvaluationDataset;
@@ -142,7 +142,7 @@ final class GenerateCommand {
             err.println("--contexts-file is required for --method contexts");
             return null;
         }
-        var contexts = JSON.readValue(Path.of(file).toFile(), new TypeReference<List<List<String>>>() {});
+        var contexts = loadContexts(Path.of(file));
         return synthesizer.generateGoldensFromContexts(contexts,
                 includeExpected(args),
                 integer(args, "--max-goldens-per-context", 2),
@@ -158,7 +158,7 @@ final class GenerateCommand {
             err.println("--contexts-file is required for --method contexts");
             return null;
         }
-        var contexts = JSON.readValue(Path.of(file).toFile(), new TypeReference<List<List<String>>>() {});
+        var contexts = loadContexts(Path.of(file));
         return synthesizer.generateConversationalGoldensFromContexts(contexts,
                 includeExpected(args),
                 integer(args, "--max-goldens-per-context", 2),
@@ -167,6 +167,30 @@ final class GenerateCommand {
 
     private static List<Golden> fromScratch(String[] args, Synthesizer synthesizer, PrintStream err) {
         return synthesizer.generateGoldensFromScratch(integer(args, "--num-goldens", 1));
+    }
+
+    private static List<List<String>> loadContexts(Path file) throws IOException {
+        JsonNode root = JSON.readTree(file.toFile());
+        if (!root.isArray()) {
+            throw new IllegalArgumentException("Contexts file must contain a JSON list of context lists.");
+        }
+        var contexts = new ArrayList<List<String>>();
+        for (var context : root) {
+            if (!context.isArray()) {
+                throw new IllegalArgumentException(
+                        "Contexts file must be shaped like [[\"chunk 1\", \"chunk 2\"], ...].");
+            }
+            var chunks = new ArrayList<String>();
+            for (var chunk : context) {
+                if (!chunk.isTextual()) {
+                    throw new IllegalArgumentException(
+                            "Contexts file must be shaped like [[\"chunk 1\", \"chunk 2\"], ...].");
+                }
+                chunks.add(chunk.asText());
+            }
+            contexts.add(List.copyOf(chunks));
+        }
+        return List.copyOf(contexts);
     }
 
     private static List<Golden> fromGoldens(String[] args, Synthesizer synthesizer, PrintStream err) {
