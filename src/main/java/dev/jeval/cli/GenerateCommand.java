@@ -29,6 +29,10 @@ final class GenerateCommand {
     static int run(String[] args, PrintStream out, PrintStream err) {
         var method = lowerOption(args, "--method", null);
         var variation = lowerOption(args, "--variation", null);
+        if (method == null) {
+            err.println("--method is required");
+            return 2;
+        }
         if (variation == null) {
             err.println("--variation is required");
             return 2;

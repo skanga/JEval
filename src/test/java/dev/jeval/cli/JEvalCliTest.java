@@ -1,6 +1,7 @@
 package dev.jeval.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -1120,6 +1121,22 @@ class JEvalCliTest {
 
         assertEquals(2, exit);
         assertTrue(text(err).contains("--contexts-file"));
+    }
+
+    @Test
+    void generateRequiresMethodBeforeProviderSetupLikeDeepEval() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--variation", "single-turn",
+                "--scenario", "users", "--task", "answer", "--input-format", "question",
+                "--num-goldens", "1"
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("--method is required"));
+        assertFalse(text(err).contains("No supported provider"));
     }
 
     @Test
