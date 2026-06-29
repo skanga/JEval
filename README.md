@@ -135,9 +135,9 @@ var testCase = LlmTestCase.builder("refund")
 
 ## Benchmarks
 
-JEval includes a local BoolQ benchmark surface for supplied `Golden` rows. It
-keeps DeepEval-style prediction rows and `overallScore` without downloading
-external datasets:
+JEval includes local benchmark surfaces for supplied `Golden` rows. They keep
+DeepEval-style prediction rows and `overallScore` without downloading external
+datasets:
 
 ```java
 import dev.jeval.Golden;
@@ -147,6 +147,7 @@ import dev.jeval.benchmarks.BoolQ;
 import dev.jeval.benchmarks.DROP;
 import dev.jeval.benchmarks.GSM8K;
 import dev.jeval.benchmarks.HellaSwag;
+import dev.jeval.benchmarks.HumanEval;
 import dev.jeval.benchmarks.LAMBADA;
 import dev.jeval.benchmarks.LogiQA;
 import dev.jeval.benchmarks.MathQA;
@@ -168,6 +169,10 @@ var bbq = new BBQ(Map.of("Age", goldens)).evaluate(model);
 var drop = new DROP(Map.of("history", goldens)).evaluate(model);
 var gsm8k = new GSM8K(goldens).evaluate(model);
 var hellaswagResult = new HellaSwag(Map.of("Applying sunscreen", goldens)).evaluate(model);
+var humanEval = new HumanEval(
+        Map.of("add", Golden.builder("def add(a, b):\n").expectedOutput("assert add(1, 2) == 3").build()),
+        (golden, prediction) -> prediction.contains("return a + b"),
+        4).evaluate(model, 2);
 var lambada = new LAMBADA(goldens).evaluate(model);
 var logiqa = new LogiQA(Map.of("deduction", goldens)).evaluate(model);
 var mathqa = new MathQA(Map.of("general", goldens)).evaluate(model);

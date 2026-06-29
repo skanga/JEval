@@ -75,6 +75,7 @@ Current Java parity:
 - GSM8K benchmark evaluation over supplied `Golden` rows with DeepEval-style exact-match prediction rows and `overallScore`
 - MMLU benchmark evaluation over task-grouped supplied `Golden` rows with task prediction rows, task scores, and `overallScore`
 - HellaSwag benchmark evaluation over task-grouped supplied `Golden` rows with task prediction rows, task scores, batch support, and `overallScore`
+- HumanEval benchmark evaluation over supplied task `Golden` rows with repeated generation, caller-supplied correctness checking, pass@k scoring, task scores, and `overallScore`
 - LAMBADA benchmark evaluation over supplied `Golden` rows with DeepEval-style exact-match prediction rows and `overallScore`
 - LogiQA benchmark evaluation over task-grouped supplied `Golden` rows with exact-match task prediction rows, task scores, batch support, and `overallScore`
 - MathQA benchmark evaluation over task-grouped supplied `Golden` rows with lower-case exact-match task prediction rows, task scores, batch support, and `overallScore`
