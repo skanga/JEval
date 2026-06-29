@@ -281,6 +281,9 @@ final class GenerateCommand {
     }
 
     private static void loadGoldens(EvaluationDataset dataset, Path file) {
+        if (!Files.exists(file)) {
+            throw new IllegalArgumentException("Goldens file not found: " + file);
+        }
         var name = file.getFileName().toString().toLowerCase(Locale.ROOT);
         if (name.endsWith(".jsonl")) {
             dataset.addGoldensFromJsonlFile(file);
@@ -289,7 +292,7 @@ final class GenerateCommand {
         } else if (name.endsWith(".json")) {
             dataset.addGoldensFromJsonFile(file);
         } else {
-            throw new IllegalArgumentException("Unsupported goldens file type: " + file);
+            throw new IllegalArgumentException("Goldens file must be a .json, .csv, or .jsonl file.");
         }
     }
 

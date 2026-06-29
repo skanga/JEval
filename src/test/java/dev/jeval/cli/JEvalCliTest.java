@@ -984,6 +984,41 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateGoldensReportsMissingGoldensFileLikeDeepEval() throws Exception {
+        var goldens = tempDir.resolve("missing-goldens.json");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"New question?\",\"expected_output\":\"New answer\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "goldens", "--variation", "single-turn",
+                "--goldens-file", goldens.toString(), "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Goldens file not found: " + goldens));
+    }
+
+    @Test
+    void generateGoldensRejectsUnsupportedFileTypeLikeDeepEval() throws Exception {
+        var goldens = tempDir.resolve("goldens.txt");
+        Files.writeString(goldens, "input,expected_output\nOld question?,Old answer\n");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"New question?\",\"expected_output\":\"New answer\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "goldens", "--variation", "single-turn",
+                "--goldens-file", goldens.toString(), "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Goldens file must be a .json, .csv, or .jsonl file."));
+    }
+
+    @Test
     void generateRequiresMethodSpecificInput() {
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();
