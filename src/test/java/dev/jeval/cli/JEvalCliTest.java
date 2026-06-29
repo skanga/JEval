@@ -1140,6 +1140,22 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRejectsUnsupportedMethodBeforeProviderSetupLikeDeepEval() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "invalid", "--variation", "single-turn",
+                "--scenario", "users", "--task", "answer", "--input-format", "question",
+                "--num-goldens", "1"
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Missing or unsupported --method."));
+        assertFalse(text(err).contains("No supported provider"));
+    }
+
+    @Test
     void generateRequiresVariationLikeDeepEval() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");

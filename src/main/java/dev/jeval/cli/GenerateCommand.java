@@ -33,6 +33,10 @@ final class GenerateCommand {
             err.println("--method is required");
             return 2;
         }
+        if (!supportedMethod(method)) {
+            err.println("Missing or unsupported --method.");
+            return 2;
+        }
         if (variation == null) {
             err.println("--variation is required");
             return 2;
@@ -465,6 +469,13 @@ final class GenerateCommand {
             }
         }
         return false;
+    }
+
+    private static boolean supportedMethod(String method) {
+        return "contexts".equals(method)
+                || "scratch".equals(method)
+                || "goldens".equals(method)
+                || "docs".equals(method);
     }
 
     private static boolean has(String[] args, String name) {
