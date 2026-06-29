@@ -80,7 +80,7 @@ final class CliSettings {
 
     static int setDebug(String[] args, PrintStream out, PrintStream err) {
         var save = savePath(args);
-        var quiet = has(args, "--quiet");
+        var quiet = quiet(args);
         var updates = new LinkedHashMap<String, String>();
         updates.put("LOG_LEVEL", logLevel(option(args, "--log-level", "DEBUG")));
         putToggle(updates, args, "--verbose", "--no-verbose", "DEEPEVAL_VERBOSE_MODE");
@@ -109,7 +109,7 @@ final class CliSettings {
 
     static int unsetDebug(String[] args, PrintStream out, PrintStream err) {
         var save = savePath(args);
-        var quiet = has(args, "--quiet");
+        var quiet = quiet(args);
         try {
             new DotenvFile(save).update(Map.of(), DEBUG_KEYS);
             if (!quiet) {
@@ -172,7 +172,7 @@ final class CliSettings {
         var updates = new java.util.ArrayList<String>();
         var unsets = new java.util.ArrayList<String>();
         String list = null;
-        var quiet = false;
+        var quiet = quiet(args);
         var save = Path.of(".env");
         for (var i = start; i < args.length; i++) {
             switch (args[i]) {
@@ -185,9 +185,14 @@ final class CliSettings {
                         list = "";
                     }
                 }
-                case "--quiet" -> quiet = true;
-                case "--save" -> save = savePath(args[++i]);
+                case "-q", "--quiet" -> quiet = true;
+                case "-s", "--save" -> save = savePath(args[++i]);
                 default -> {
+                    if (args[i].startsWith("--save=")) {
+                        save = savePath(args[i].substring("--save=".length()));
+                    } else if (args[i].startsWith("-s=")) {
+                        save = savePath(args[i].substring("-s=".length()));
+                    }
                 }
             }
         }
@@ -242,8 +247,16 @@ final class CliSettings {
 
     private static Path savePath(String[] args) {
         for (var i = 0; i < args.length - 1; i++) {
-            if ("--save".equals(args[i])) {
+            if ("--save".equals(args[i]) || "-s".equals(args[i])) {
                 return savePath(args[i + 1]);
+            }
+        }
+        for (var arg : args) {
+            if (arg.startsWith("--save=")) {
+                return savePath(arg.substring("--save=".length()));
+            }
+            if (arg.startsWith("-s=")) {
+                return savePath(arg.substring("-s=".length()));
             }
         }
         return Path.of(".env");
@@ -278,6 +291,10 @@ final class CliSettings {
             }
         }
         return false;
+    }
+
+    private static boolean quiet(String[] args) {
+        return has(args, "--quiet") || has(args, "-q");
     }
 
     private record Parsed(List<String> updates, List<String> unsets, String listFilter, boolean quiet, Path save) {

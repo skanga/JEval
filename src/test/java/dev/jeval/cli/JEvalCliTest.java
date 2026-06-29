@@ -172,11 +172,13 @@ class JEvalCliTest {
 
     @Test
     void generateCommandRequiresResponsesFileOrProviderSettings() {
+        var env = tempDir.resolve("missing.env");
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();
 
         var exit = run(new String[] {"generate", "--method", "scratch", "--variation", "single-turn",
-                "--scenario", "users", "--task", "answer", "--input-format", "question"}, out, err);
+                "--scenario", "users", "--task", "answer", "--input-format", "question",
+                "--save", "dotenv:" + env}, out, err);
 
         assertEquals(2, exit);
         assertTrue(text(err).contains("No supported provider"));
@@ -490,6 +492,20 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsAcceptsSaveEqualsDotenvForm() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "-u", "log-level=info", "--save=dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "LOG_LEVEL", "20");
+    }
+
+    @Test
     void setDebugQuietUpdatesDotenvWithoutOutput() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
@@ -501,6 +517,20 @@ class JEvalCliTest {
         assertEquals(0, exit);
         assertEquals("", text(out));
         assertDotenv(env, "LOG_LEVEL", "10");
+    }
+
+    @Test
+    void setDebugAcceptsShortSaveAndQuietAliases() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-debug", "--log-level", "INFO", "-s", "dotenv:" + env, "-q"},
+                out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals("", text(out));
+        assertDotenv(env, "LOG_LEVEL", "20");
     }
 
     @Test
@@ -568,6 +598,21 @@ class JEvalCliTest {
         assertEquals(false, readDotenv(env).containsKey("LOG_LEVEL"));
         assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_VERBOSE_MODE"));
         assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_DEBUG_ASYNC"));
+    }
+
+    @Test
+    void providerAcceptsShortSaveAlias() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "-s", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "USE_OPENAI_MODEL", "YES");
+        assertDotenv(env, "OPENAI_MODEL_NAME", "gpt-4o-mini");
     }
 
     @Test

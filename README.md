@@ -79,8 +79,9 @@ Settings and provider commands persist DeepEval-style environment keys to dotenv
 
 ```powershell
 java -jar target/jeval-0.1.0-SNAPSHOT.jar settings -u log-level=error --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar settings -u log-level=info --save=dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar settings --list --save dotenv:.env
-java -jar target/jeval-0.1.0-SNAPSHOT.jar set-debug --log-level DEBUG --verbose --grpc --trace-env staging --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-debug --log-level DEBUG --verbose --grpc --trace-env staging -s dotenv:.env -q
 java -jar target/jeval-0.1.0-SNAPSHOT.jar unset-debug --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --temperature 0.0 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openrouter --model openai/gpt-4.1 --temperature 0.0 --save dotenv:.env
