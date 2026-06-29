@@ -150,6 +150,7 @@ import dev.jeval.benchmarks.EquityMedQA;
 import dev.jeval.benchmarks.GSM8K;
 import dev.jeval.benchmarks.HellaSwag;
 import dev.jeval.benchmarks.HumanEval;
+import dev.jeval.benchmarks.IFEval;
 import dev.jeval.benchmarks.LAMBADA;
 import dev.jeval.benchmarks.LogiQA;
 import dev.jeval.benchmarks.MathQA;
@@ -177,6 +178,7 @@ var humanEval = new HumanEval(
         Map.of("add", Golden.builder("def add(a, b):\n").expectedOutput("assert add(1, 2) == 3").build()),
         (golden, prediction) -> prediction.contains("return a + b"),
         4).evaluate(model, 2);
+var ifeval = new IFEval(goldens).evaluate(model);
 var lambada = new LAMBADA(goldens).evaluate(model);
 var logiqa = new LogiQA(Map.of("deduction", goldens)).evaluate(model);
 var mathqa = new MathQA(Map.of("general", goldens)).evaluate(model);
