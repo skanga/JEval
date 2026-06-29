@@ -246,6 +246,13 @@ class UtilsTest {
     }
 
     @Test
+    void chunkTextSupportsChunkOverlapLikeDeepEval() {
+        assertEquals(
+                List.of("alpha beta gamma", "gamma delta epsilon"),
+                Utils.chunkText("alpha beta gamma delta epsilon", 3, 1));
+    }
+
+    @Test
     void chunkTextReturnsNoChunksForNegativeSizeLikeDeepEval() {
         assertEquals(List.of(), assertDoesNotThrow(() -> Utils.chunkText("one two three", -1)));
     }

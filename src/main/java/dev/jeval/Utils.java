@@ -297,15 +297,29 @@ public final class Utils {
     }
 
     public static List<String> chunkText(String text, int chunkSize) {
+        return chunkText(text, chunkSize, 0);
+    }
+
+    public static List<String> chunkText(String text, int chunkSize, int chunkOverlap) {
         if (chunkSize < 0) {
             return List.of();
         }
         if (chunkSize == 0) {
             throw new IllegalArgumentException("chunkSize must not be zero");
         }
+        if (chunkOverlap < 0) {
+            throw new IllegalArgumentException("chunkOverlap must not be negative");
+        }
+        if (chunkOverlap >= chunkSize) {
+            throw new IllegalArgumentException("chunkOverlap must be less than chunkSize");
+        }
         var words = text.split("\\s+");
         var chunks = new ArrayList<String>();
-        for (var i = 0; i < words.length; i += chunkSize) {
+        var step = chunkSize - chunkOverlap;
+        for (var i = 0; i < words.length; i += step) {
+            if (i > 0 && words.length - i <= chunkOverlap) {
+                break;
+            }
             chunks.add(String.join(" ", List.of(words).subList(i, Math.min(i + chunkSize, words.length))));
         }
         return List.copyOf(chunks);

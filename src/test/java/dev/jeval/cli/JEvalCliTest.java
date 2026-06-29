@@ -1275,6 +1275,32 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateDocsHonorsChunkOverlapLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta epsilon");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"Question one?","expected_output":"Answer one"}]}
+                {"data":[{"input":"Question two?","expected_output":"Answer two"}]}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--document-path", document.toString(), "--chunk-size", "3", "--chunk-overlap", "1",
+                "--responses-file", responses.toString(), "--output-dir", output.toString(),
+                "--file-name", "docs-overlap"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("docs-overlap.json"));
+        assertTrue(generated.contains("alpha beta gamma"));
+        assertTrue(generated.contains("gamma delta epsilon"));
+    }
+
+    @Test
     void generateConversationalDocsHonorsMaxContextsPerDocumentLikeDeepEval() throws Exception {
         var document = tempDir.resolve("policy.md");
         Files.writeString(document, "alpha beta gamma delta epsilon zeta");
