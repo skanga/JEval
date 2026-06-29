@@ -6,7 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.jeval.ConversationalMetric;
 import dev.jeval.DeepEvalException;
+import dev.jeval.Metric;
+import dev.jeval.MetricResult;
 import dev.jeval.prompt.Prompt;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -139,6 +142,35 @@ class OptimizerUtilsTest {
 
         assertTrue(low.getMessage().contains("between 1 and 4"));
         assertTrue(high.getMessage().contains("between 1 and 4"));
+    }
+
+    @Test
+    void validateMetricsCopiesSingleTurnAndConversationalMetrics() {
+        Metric metric = testCase -> new MetricResult("metric", 1.0, 0.5, true, null);
+        ConversationalMetric conversationalMetric =
+                testCase -> new MetricResult("conversation", 1.0, 0.5, true, null);
+        var metrics = new ArrayList<>(List.of(metric, conversationalMetric));
+
+        var validated = OptimizerUtils.validateMetrics("Scorer", metrics);
+
+        metrics.clear();
+
+        assertEquals(2, validated.size());
+        assertSame(metric, validated.get(0));
+        assertSame(conversationalMetric, validated.get(1));
+        assertThrows(UnsupportedOperationException.class, () -> validated.clear());
+    }
+
+    @Test
+    void validateMetricsRequiresNonEmptyMetricList() {
+        assertThrows(DeepEvalException.class, () -> OptimizerUtils.validateMetrics("Scorer", null));
+        assertThrows(DeepEvalException.class, () -> OptimizerUtils.validateMetrics("Scorer", List.of()));
+
+        var error = assertThrows(DeepEvalException.class,
+                () -> OptimizerUtils.validateMetrics("Scorer", List.of("not a metric")));
+
+        assertTrue(error.getMessage().contains("Scorer expected all elements of `metrics`"));
+        assertTrue(error.getMessage().contains("String"));
     }
 
     private static Set<String> union(OptimizerUtils.GoldenSplit<String> split) {

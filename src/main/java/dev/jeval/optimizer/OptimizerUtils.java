@@ -1,6 +1,8 @@
 package dev.jeval.optimizer;
 
+import dev.jeval.ConversationalMetric;
 import dev.jeval.DeepEvalException;
+import dev.jeval.Metric;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -75,6 +77,15 @@ public final class OptimizerUtils {
                     + "Supply a custom callable via `modelCallback` that performs generation and returns the model output.");
         }
         return modelCallback;
+    }
+
+    public static List<?> validateMetrics(String component, Object metrics) {
+        if (!(metrics instanceof List<?> list) || list.isEmpty()) {
+            throw new DeepEvalException(component + " requires a `metrics`.\n\n"
+                    + "Supply one or more DeepEval metrics via `metrics`.");
+        }
+        validateSequenceOf(component, "metrics", list, false, Metric.class, ConversationalMetric.class);
+        return List.copyOf(list);
     }
 
     public static int validateIntInRange(
