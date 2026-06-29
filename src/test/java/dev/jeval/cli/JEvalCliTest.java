@@ -1199,6 +1199,23 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRejectsUnsupportedFileTypeBeforeProviderSetupLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--file-type", "xml"
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid file type. Available file types to save as: json, csv, jsonl"));
+        assertFalse(text(err).contains("No supported provider"));
+    }
+
+    @Test
     void generateRequiresVariationLikeDeepEval() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");

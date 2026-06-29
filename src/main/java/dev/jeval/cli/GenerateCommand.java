@@ -45,6 +45,11 @@ final class GenerateCommand {
             err.println("Only --variation single-turn and multi-turn are implemented in JEval CLI generate.");
             return 2;
         }
+        var fileType = lowerOption(args, "--file-type", "json");
+        if (!supportedFileType(fileType)) {
+            err.println("Invalid file type. Available file types to save as: json, csv, jsonl");
+            return 2;
+        }
         if ("contexts".equals(method) && option(args, "--contexts-file", null) == null) {
             err.println("--contexts-file is required for --method contexts");
             return 2;
@@ -487,6 +492,10 @@ final class GenerateCommand {
                 || "scratch".equals(method)
                 || "goldens".equals(method)
                 || "docs".equals(method);
+    }
+
+    private static boolean supportedFileType(String fileType) {
+        return "json".equals(fileType) || "jsonl".equals(fileType) || "csv".equals(fileType);
     }
 
     private static boolean has(String[] args, String name) {
