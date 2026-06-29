@@ -35,6 +35,7 @@ Package the jar, then run JSON evaluations with the `test` command:
 ```powershell
 mvn -q -DskipTests package
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test path\to\eval.json --format markdown --output reports
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --identifier release-smoke --format markdown --output reports
 ```
 
 Evaluation files can use any file name and contain a name, metrics, and cases:

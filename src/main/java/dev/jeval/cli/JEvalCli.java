@@ -2,6 +2,7 @@ package dev.jeval.cli;
 
 import dev.jeval.report.EvaluationReportWriter;
 import dev.jeval.runner.TestRunner;
+import dev.jeval.runner.TestRunResult;
 import dev.jeval.store.LocalRunStore;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -41,17 +42,25 @@ public final class JEvalCli {
             usage(err);
             return 2;
         }
-        var path = Path.of(args[1]);
+        var pathIndex = args.length > 1 && "run".equals(args[1]) ? 2 : 1;
+        if (args.length <= pathIndex) {
+            usage(err);
+            return 2;
+        }
+        var path = Path.of(args[pathIndex]);
         if (!Files.isRegularFile(path) && !Files.isDirectory(path)) {
             err.println(path + " is neither a valid file nor a directory");
             return 2;
         }
-        var options = options(args, err);
+        var options = options(args, pathIndex + 1, err);
         if (options == null) {
             return 2;
         }
         try {
             var result = new TestRunner().run(path);
+            if (options.identifier() != null) {
+                result = withName(result, options.identifier());
+            }
             new LocalRunStore(storeRoot).write(result);
             var report = report(result, options.format());
             if (options.output() != null) {
@@ -68,11 +77,12 @@ public final class JEvalCli {
         }
     }
 
-    private static Options options(String[] args, PrintStream err) {
+    private static Options options(String[] args, int start, PrintStream err) {
         var format = "markdown";
         Path output = null;
         var quiet = false;
-        for (var i = 2; i < args.length; i++) {
+        String identifier = null;
+        for (var i = start; i < args.length; i++) {
             switch (args[i]) {
                 case "--quiet" -> quiet = true;
                 case "--format" -> {
@@ -89,6 +99,13 @@ public final class JEvalCli {
                     }
                     output = Path.of(args[i]);
                 }
+                case "--identifier" -> {
+                    if (++i == args.length) {
+                        usage(err);
+                        return null;
+                    }
+                    identifier = args[i];
+                }
                 default -> {
                     usage(err);
                     return null;
@@ -99,11 +116,15 @@ public final class JEvalCli {
             err.println("Unsupported format: " + format);
             return null;
         }
-        return new Options(format, output, quiet);
+        return new Options(format, output, quiet, identifier);
     }
 
     private static String report(dev.jeval.runner.TestRunResult result, String format) {
         return format.equals("html") ? EvaluationReportWriter.html(result) : EvaluationReportWriter.markdown(result);
+    }
+
+    private static TestRunResult withName(TestRunResult result, String name) {
+        return new TestRunResult(name, result.results(), result.summary(), result.aggregates());
     }
 
     private static String fileName(String name, String format) {
@@ -111,12 +132,12 @@ public final class JEvalCli {
     }
 
     private static void usage(PrintStream err) {
-        err.println("Usage: jeval test <file-or-directory> [--format markdown|html] [--output dir] [--quiet]");
+        err.println("Usage: jeval test [run] <file-or-directory> [--identifier name] [--format markdown|html] [--output dir] [--quiet]");
         err.println("       jeval settings -u key=value|-U key|-l filter [--save dotenv:.env] [--quiet]");
         err.println("       jeval set-openai|set-ollama|set-anthropic ... [--save dotenv:.env]");
         err.println("       jeval generate --method contexts|scratch|goldens --variation single-turn ...");
     }
 
-    private record Options(String format, Path output, boolean quiet) {
+    private record Options(String format, Path output, boolean quiet, String identifier) {
     }
 }

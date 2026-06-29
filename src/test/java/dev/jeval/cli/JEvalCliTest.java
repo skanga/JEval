@@ -72,6 +72,33 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunSubcommandUsesDeepEvalStyleEntrypointAndIdentifier() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "spec-name",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var output = tempDir.resolve("reports");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "test", "run", file.toString(), "--identifier", "release-smoke",
+                "--format", "markdown", "--output", output.toString()
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("release-smoke"));
+        assertTrue(Files.readString(output.resolve("release-smoke.md")).contains("release-smoke"));
+        assertTrue(Files.readString(tempDir.resolve(".jeval").resolve(".jeval")).contains("\"name\" : \"release-smoke\""));
+    }
+
+    @Test
     void quietSuppressesConsoleReportButStillRunsDirectory() throws Exception {
         var dir = tempDir.resolve("cases");
         Files.createDirectories(dir);
