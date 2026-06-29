@@ -248,6 +248,53 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunIgnoreErrorsRecordsCaseErrorAndContinues() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "ignore-errors-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "bad", "input": "q", "actualOutput": "a"},
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--ignore-errors"}, out, err);
+
+        assertEquals(1, exit, text(err));
+        assertTrue(text(out).contains("Summary: total=2 passed=1 failed=1"));
+        assertTrue(text(out).contains("### bad"));
+        assertTrue(text(out).contains("Evaluation error:"));
+        assertTrue(text(out).contains("### good"));
+    }
+
+    @Test
+    void testRunIgnoreErrorsSupportsShortAlias() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "ignore-errors-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "bad", "input": "q", "actualOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-i"}, out, err);
+
+        assertEquals(1, exit, text(err));
+        assertTrue(text(out).contains("Summary: total=1 passed=0 failed=1"));
+        assertEquals("", text(err));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
