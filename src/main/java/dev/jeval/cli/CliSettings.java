@@ -81,11 +81,24 @@ final class CliSettings {
     static int setDebug(String[] args, PrintStream out, PrintStream err) {
         var save = savePath(args);
         var quiet = has(args, "--quiet");
-        var level = option(args, "--log-level", "DEBUG");
+        var updates = new LinkedHashMap<String, String>();
+        updates.put("LOG_LEVEL", logLevel(option(args, "--log-level", "DEBUG")));
+        putToggle(updates, args, "--verbose", "--no-verbose", "DEEPEVAL_VERBOSE_MODE");
+        putToggle(updates, args, "--debug-async", "--no-debug-async", "DEEPEVAL_DEBUG_ASYNC");
+        putToggle(updates, args, "--log-stack-traces", "--no-log-stack-traces", "DEEPEVAL_LOG_STACK_TRACES");
+        putLogLevel(updates, args, "--retry-before-level", "DEEPEVAL_RETRY_BEFORE_LOG_LEVEL");
+        putLogLevel(updates, args, "--retry-after-level", "DEEPEVAL_RETRY_AFTER_LOG_LEVEL");
+        putToggle(updates, args, "--grpc", "--no-grpc", "DEEPEVAL_GRPC_LOGGING");
+        putOption(updates, args, "--grpc-verbosity", "GRPC_VERBOSITY");
+        putOption(updates, args, "--grpc-trace", "GRPC_TRACE");
+        putToggle(updates, args, "--trace-verbose", "--no-trace-verbose", "CONFIDENT_TRACE_VERBOSE");
+        putOption(updates, args, "--trace-env", "CONFIDENT_TRACE_ENVIRONMENT");
+        putToggle(updates, args, "--trace-flush", "--no-trace-flush", "CONFIDENT_TRACE_FLUSH");
+        putOption(updates, args, "--trace-sample-rate", "CONFIDENT_TRACE_SAMPLE_RATE");
         try {
-            new DotenvFile(save).update(Map.of("LOG_LEVEL", logLevel(level)), List.of());
+            new DotenvFile(save).update(updates, List.of());
             if (!quiet) {
-                out.println("LOG_LEVEL=" + logLevel(level));
+                updates.forEach((key, value) -> out.println(key + "=" + value));
             }
             return 0;
         } catch (IOException error) {
@@ -189,6 +202,34 @@ final class CliSettings {
         return settingKey(key).equals("LOG_LEVEL") ? logLevel(value) : value;
     }
 
+    private static void putOption(Map<String, String> updates, String[] args, String option, String key) {
+        var value = optionValue(args, option);
+        if (value != null) {
+            updates.put(key, value);
+        }
+    }
+
+    private static void putLogLevel(Map<String, String> updates, String[] args, String option, String key) {
+        var value = optionValue(args, option);
+        if (value != null) {
+            updates.put(key, logLevel(value));
+        }
+    }
+
+    private static void putToggle(
+            Map<String, String> updates, String[] args, String enabledOption, String disabledOption, String key) {
+        if (has(args, disabledOption)) {
+            updates.put(key, "false");
+            return;
+        }
+        var value = optionValue(args, enabledOption);
+        if (value != null) {
+            updates.put(key, value);
+        } else if (has(args, enabledOption)) {
+            updates.put(key, "true");
+        }
+    }
+
     private static String logLevel(String value) {
         return switch (value.toUpperCase(Locale.ROOT)) {
             case "DEBUG" -> "10";
@@ -210,6 +251,15 @@ final class CliSettings {
 
     private static Path savePath(String value) {
         return value.startsWith("dotenv:") ? Path.of(value.substring("dotenv:".length())) : Path.of(value);
+    }
+
+    private static String optionValue(String[] args, String name) {
+        for (var i = 0; i < args.length - 1; i++) {
+            if (name.equals(args[i]) && !args[i + 1].startsWith("--")) {
+                return args[i + 1];
+            }
+        }
+        return null;
     }
 
     private static String option(String[] args, String name, String fallback) {

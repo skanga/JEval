@@ -504,6 +504,48 @@ class JEvalCliTest {
     }
 
     @Test
+    void setDebugPersistsExplicitDebugOptions() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "set-debug",
+                "--log-level", "WARNING",
+                "--verbose", "true",
+                "--debug-async", "true",
+                "--log-stack-traces", "true",
+                "--retry-before-level", "INFO",
+                "--retry-after-level", "ERROR",
+                "--grpc", "true",
+                "--grpc-verbosity", "DEBUG",
+                "--grpc-trace", "api",
+                "--trace-verbose", "true",
+                "--trace-env", "staging",
+                "--trace-flush", "true",
+                "--trace-sample-rate", "0.25",
+                "--save", "dotenv:" + env,
+                "--quiet"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals("", text(out));
+        assertDotenv(env, "LOG_LEVEL", "30");
+        assertDotenv(env, "DEEPEVAL_VERBOSE_MODE", "true");
+        assertDotenv(env, "DEEPEVAL_DEBUG_ASYNC", "true");
+        assertDotenv(env, "DEEPEVAL_LOG_STACK_TRACES", "true");
+        assertDotenv(env, "DEEPEVAL_RETRY_BEFORE_LOG_LEVEL", "20");
+        assertDotenv(env, "DEEPEVAL_RETRY_AFTER_LOG_LEVEL", "40");
+        assertDotenv(env, "DEEPEVAL_GRPC_LOGGING", "true");
+        assertDotenv(env, "GRPC_VERBOSITY", "DEBUG");
+        assertDotenv(env, "GRPC_TRACE", "api");
+        assertDotenv(env, "CONFIDENT_TRACE_VERBOSE", "true");
+        assertDotenv(env, "CONFIDENT_TRACE_ENVIRONMENT", "staging");
+        assertDotenv(env, "CONFIDENT_TRACE_FLUSH", "true");
+        assertDotenv(env, "CONFIDENT_TRACE_SAMPLE_RATE", "0.25");
+    }
+
+    @Test
     void unsetDebugRemovesDebugSettingsFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

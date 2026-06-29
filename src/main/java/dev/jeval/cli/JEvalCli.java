@@ -239,7 +239,8 @@ public final class JEvalCli {
         err.println("Usage: jeval test [run] <file-or-directory> [--identifier name] [--format markdown|html] [--output dir] [--quiet]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
         err.println("       jeval settings -u key=value|-U key|-l [filter] [--save dotenv:.env] [--quiet]");
-        err.println("       jeval set-debug|unset-debug [--save dotenv:.env] [--quiet]");
+        err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [--save dotenv:.env] [--quiet]");
+        err.println("       jeval unset-debug [--save dotenv:.env] [--quiet]");
         err.println("       jeval set-openai|set-ollama|set-anthropic ... [--save dotenv:.env]");
         err.println("       jeval generate --method contexts|scratch|goldens --variation single-turn ...");
     }
