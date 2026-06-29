@@ -217,7 +217,7 @@ final class GenerateCommand {
         validateGoldensVariation(dataset, false);
         return synthesizer.generateGoldensFromGoldens(
                 dataset.goldens(),
-                integer(args, "--max-goldens-per-golden", 1),
+                integer(args, "--max-goldens-per-golden", 2),
                 includeExpected(args));
     }
 
@@ -235,7 +235,7 @@ final class GenerateCommand {
         validateGoldensVariation(dataset, true);
         return synthesizer.generateConversationalGoldensFromGoldens(
                 dataset.conversationalGoldens(),
-                integer(args, "--max-goldens-per-golden", 1),
+                integer(args, "--max-goldens-per-golden", 2),
                 includeExpected(args));
     }
 

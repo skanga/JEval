@@ -1005,6 +1005,33 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateGoldensDefaultsMaxGoldensPerGoldenToTwoLikeDeepEval() throws Exception {
+        var goldens = tempDir.resolve("goldens.json");
+        Files.writeString(goldens, """
+                [
+                  {"input":"Old question?","context":["Paris is in France."]}
+                ]
+                """);
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"input\":\"Question one?\",\"expected_output\":\"Answer one\"},{\"input\":\"Question two?\",\"expected_output\":\"Answer two\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "goldens", "--variation", "single-turn",
+                "--goldens-file", goldens.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "default-max-goldens"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("default-max-goldens.json"));
+        assertTrue(generated.contains("Question one?"));
+        assertTrue(generated.contains("Question two?"));
+    }
+
+    @Test
     void generateGoldensReportsMissingGoldensFileLikeDeepEval() throws Exception {
         var goldens = tempDir.resolve("missing-goldens.json");
         var responses = tempDir.resolve("responses.txt");
@@ -1468,6 +1495,33 @@ class JEvalCliTest {
 
         assertEquals(0, exit, text(err));
         assertTrue(Files.readString(output.resolve("multi-goldens.json")).contains("flight change request"));
+    }
+
+    @Test
+    void generateMultiTurnGoldensDefaultsMaxGoldensPerGoldenToTwoLikeDeepEval() throws Exception {
+        var goldens = tempDir.resolve("goldens.json");
+        Files.writeString(goldens, """
+                [
+                  {"scenario":"traveler wants to rebook a flight","context":["Flights can be changed online."]}
+                ]
+                """);
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"scenario\":\"first scenario\",\"turns\":[{\"role\":\"user\",\"content\":\"One\"}],\"expected_outcome\":\"First outcome\"},{\"scenario\":\"second scenario\",\"turns\":[{\"role\":\"user\",\"content\":\"Two\"}],\"expected_outcome\":\"Second outcome\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "goldens", "--variation", "multi-turn",
+                "--goldens-file", goldens.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "default-max-conv-goldens"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("default-max-conv-goldens.json"));
+        assertTrue(generated.contains("first scenario"));
+        assertTrue(generated.contains("second scenario"));
     }
 
     @Test
