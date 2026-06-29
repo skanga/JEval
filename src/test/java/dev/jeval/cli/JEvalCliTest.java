@@ -419,6 +419,37 @@ class JEvalCliTest {
     }
 
     @Test
+    void unsetOpenAiClearSecretsRemovesApiKey() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "settings", "-u", "openai-api-key=sk-test", "--save", "dotenv:" + env
+        }, out, err));
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-openai", "--save", "dotenv:" + env}, out, err));
+        assertDotenv(env, "OPENAI_API_KEY", "sk-test");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err));
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-openai", "--clear-secrets", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_API_KEY"));
+    }
+
+    @Test
     void openRouterProviderRoundtripUsesExclusiveFlags() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

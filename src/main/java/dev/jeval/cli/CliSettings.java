@@ -92,6 +92,9 @@ final class CliSettings {
             removals.addAll(spec.unsetKeys());
             if (command.startsWith("unset-")) {
                 removals.add(spec.useKey());
+                if (has(args, "--clear-secrets")) {
+                    removals.addAll(spec.secretKeys());
+                }
             } else {
                 updates.put(spec.useKey(), "YES");
                 for (var entry : spec.setKeys().entrySet()) {
@@ -199,7 +202,8 @@ final class CliSettings {
             String useKey,
             Map<String, String> setKeys,
             List<String> groupFlags,
-            List<String> unsetKeys) {
+            List<String> unsetKeys,
+            List<String> secretKeys) {
         static ProviderSpec forCommand(String command) {
             return switch (command) {
                 case "set-openai", "unset-openai" -> openAi();
@@ -230,7 +234,7 @@ final class CliSettings {
             return llm("USE_OPENAI_MODEL", setKeys, List.of(
                     "OPENAI_MODEL_NAME",
                     "OPENAI_COST_PER_INPUT_TOKEN",
-                    "OPENAI_COST_PER_OUTPUT_TOKEN"));
+                    "OPENAI_COST_PER_OUTPUT_TOKEN"), List.of("OPENAI_API_KEY"));
         }
 
         private static ProviderSpec openRouter() {
@@ -281,17 +285,25 @@ final class CliSettings {
         }
 
         private static ProviderSpec llm(String useKey, Map<String, String> keys, List<String> unsetKeys) {
+            return llm(useKey, keys, unsetKeys, List.of());
+        }
+
+        private static ProviderSpec llm(
+                String useKey,
+                Map<String, String> keys,
+                List<String> unsetKeys,
+                List<String> secretKeys) {
             var removals = new java.util.ArrayList<String>();
             removals.addAll(LLM_FLAGS);
             removals.addAll(LLM_VALUES);
-            return new ProviderSpec(useKey, keys, removals, unsetKeys);
+            return new ProviderSpec(useKey, keys, removals, unsetKeys, secretKeys);
         }
 
         private static ProviderSpec embed(String useKey, Map<String, String> keys) {
             var removals = new java.util.ArrayList<String>();
             removals.addAll(EMBED_FLAGS);
             removals.addAll(EMBED_VALUES);
-            return new ProviderSpec(useKey, keys, removals, List.copyOf(keys.values()));
+            return new ProviderSpec(useKey, keys, removals, List.copyOf(keys.values()), List.of());
         }
     }
 }
