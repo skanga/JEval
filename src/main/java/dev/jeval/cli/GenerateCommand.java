@@ -9,6 +9,7 @@ import dev.jeval.EvaluationModel;
 import dev.jeval.Golden;
 import dev.jeval.Utils;
 import dev.jeval.synthesizer.ConversationalStylingConfig;
+import dev.jeval.synthesizer.ContextConstructionConfig;
 import dev.jeval.synthesizer.EvolutionConfig;
 import dev.jeval.synthesizer.StylingConfig;
 import dev.jeval.synthesizer.Synthesizer;
@@ -286,9 +287,10 @@ final class GenerateCommand {
         }
         var contexts = new ArrayList<List<String>>();
         var sourceFiles = new ArrayList<String>();
+        var config = contextConstructionConfig(args);
         for (var path : paths) {
             for (var file : documentFiles(path)) {
-                addDocumentContexts(args, contexts, sourceFiles, file);
+                addDocumentContexts(config, contexts, sourceFiles, file);
             }
         }
         return synthesizer.generateGoldensFromContexts(contexts,
@@ -308,9 +310,10 @@ final class GenerateCommand {
         }
         var contexts = new ArrayList<List<String>>();
         var sourceFiles = new ArrayList<String>();
+        var config = contextConstructionConfig(args);
         for (var path : paths) {
             for (var file : documentFiles(path)) {
-                addDocumentContexts(args, contexts, sourceFiles, file);
+                addDocumentContexts(config, contexts, sourceFiles, file);
             }
         }
         return synthesizer.generateConversationalGoldensFromContexts(contexts,
@@ -320,25 +323,32 @@ final class GenerateCommand {
     }
 
     private static void addDocumentContexts(
-            String[] args,
+            ContextConstructionConfig config,
             List<List<String>> contexts,
             List<String> sourceFiles,
             Path file) throws IOException {
-        var maxContexts = integer(args, "--max-contexts-per-document", 3);
-        var minContexts = integer(args, "--min-contexts-per-document", 1);
-        var chunkSize = integer(args, "--chunk-size", 1024);
-        var chunkOverlap = integer(args, "--chunk-overlap", 0);
-        validateChunkOverlap(chunkSize, chunkOverlap);
-        var chunks = Utils.chunkText(Files.readString(file), chunkSize, chunkOverlap);
-        validateMinContexts(chunks.size(), minContexts);
+        validateChunkOverlap(config.chunkSize(), config.chunkOverlap());
+        var chunks = Utils.chunkText(Files.readString(file), config.chunkSize(), config.chunkOverlap());
+        validateMinContexts(chunks.size(), config.minContextsPerDocument());
         var count = 0;
         for (var chunk : chunks) {
-            if (count++ >= maxContexts) {
+            if (count++ >= config.maxContextsPerDocument()) {
                 break;
             }
             contexts.add(List.of(chunk));
             sourceFiles.add(file.getFileName().toString());
         }
+    }
+
+    private static ContextConstructionConfig contextConstructionConfig(String[] args) {
+        return new ContextConstructionConfig(
+                integer(args, "--max-contexts-per-document", ContextConstructionConfig.DEFAULT.maxContextsPerDocument()),
+                integer(args, "--min-contexts-per-document", ContextConstructionConfig.DEFAULT.minContextsPerDocument()),
+                integer(args, "--chunk-size", ContextConstructionConfig.DEFAULT.chunkSize()),
+                integer(args, "--chunk-overlap", ContextConstructionConfig.DEFAULT.chunkOverlap()),
+                decimal(args, "--context-quality-threshold", ContextConstructionConfig.DEFAULT.contextQualityThreshold()),
+                decimal(args, "--context-similarity-threshold", ContextConstructionConfig.DEFAULT.contextSimilarityThreshold()),
+                integer(args, "--max-retries", ContextConstructionConfig.DEFAULT.maxRetries()));
     }
 
     private static void validateChunkOverlap(int chunkSize, int chunkOverlap) {
@@ -443,6 +453,10 @@ final class GenerateCommand {
 
     private static int integer(String[] args, String name, int fallback) {
         return Integer.parseInt(option(args, name, Integer.toString(fallback)));
+    }
+
+    private static double decimal(String[] args, String name, double fallback) {
+        return Double.parseDouble(option(args, name, Double.toString(fallback)));
     }
 
     private static boolean includeExpected(String[] args) {

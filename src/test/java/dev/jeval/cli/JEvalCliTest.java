@@ -808,6 +808,31 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateParsesDocsContextConstructionOptionsLikeDeepEval() throws Exception {
+        var method = GenerateCommand.class.getDeclaredMethod("contextConstructionConfig", String[].class);
+        method.setAccessible(true);
+
+        var config = method.invoke(null, (Object) new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--max-contexts-per-document", "5",
+                "--min-contexts-per-document", "2",
+                "--chunk-size", "256",
+                "--chunk-overlap", "32",
+                "--context-quality-threshold", "0.72",
+                "--context-similarity-threshold", "0.18",
+                "--max-retries", "4"
+        });
+
+        assertEquals(5, accessor(config, "maxContextsPerDocument"));
+        assertEquals(2, accessor(config, "minContextsPerDocument"));
+        assertEquals(256, accessor(config, "chunkSize"));
+        assertEquals(32, accessor(config, "chunkOverlap"));
+        assertEquals(0.72, (Double) accessor(config, "contextQualityThreshold"), 0.0001);
+        assertEquals(0.18, (Double) accessor(config, "contextSimilarityThreshold"), 0.0001);
+        assertEquals(4, accessor(config, "maxRetries"));
+    }
+
+    @Test
     void generateContextsWritesGoldensFile() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");
@@ -2228,6 +2253,12 @@ class JEvalCliTest {
 
     private static String text(ByteArrayOutputStream bytes) {
         return bytes.toString(StandardCharsets.UTF_8);
+    }
+
+    private static Object accessor(Object target, String name) throws Exception {
+        var method = target.getClass().getDeclaredMethod(name);
+        method.setAccessible(true);
+        return method.invoke(target);
     }
 
     private static Path generatedPathFromMessage(String message) {
