@@ -13,6 +13,7 @@ Implemented:
 - `Evaluator.evaluate(...)`, `Evaluator.evaluateConversations(...)`, arena evaluation, and assertion helpers
 - Deterministic metrics: exact match, pattern match, JSON correctness, tool correctness, and DAG verdict paths
 - Model-backed metric shells and prompt/schema parsing paths for the ported DeepEval single-turn, conversational, arena, MCP, trace, and DAG metrics
+- Optimizer algorithm configuration surfaces for SIMBA, COPRO, and GEPA
 - Shared DeepEval-style validation and formatting utilities
 
 See `docs/deepeval-parity-plan.md` for the detailed parity ledger.
