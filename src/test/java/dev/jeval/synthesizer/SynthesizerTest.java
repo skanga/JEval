@@ -6,12 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import dev.jeval.EvaluationModel;
 import dev.jeval.ConversationalGolden;
 import dev.jeval.Golden;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class SynthesizerTest {
+    @TempDir
+    Path tempDir;
 
     @Test
     void generatesGoldensFromContexts() {
@@ -80,6 +85,65 @@ class SynthesizerTest {
         assertEquals("plain", goldens.getFirst().input());
         assertEquals(List.of(), goldens.getFirst().additionalMetadata().get("evolutions"));
         assertEquals(1, model.prompts().size());
+    }
+
+    @Test
+    void generatesGoldensFromDocsLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta");
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"Question one?\",\"expected_output\":\"Answer one\"}]}",
+                "{\"data\":[{\"input\":\"Question two?\",\"expected_output\":\"Answer two\"}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                new EvolutionConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocs(
+                List.of(document),
+                true,
+                1,
+                new ContextConstructionConfig(2, 1, 2, 0, 0.5, 0.0, 3));
+
+        assertEquals(List.of("Question one?", "Question two?"), goldens.stream().map(Golden::input).toList());
+        assertEquals(List.of("Answer one", "Answer two"), goldens.stream().map(Golden::expectedOutput).toList());
+        assertEquals(List.of(List.of("alpha beta"), List.of("gamma delta")),
+                goldens.stream().map(Golden::context).toList());
+        assertEquals(List.of("policy.md", "policy.md"), goldens.stream().map(Golden::sourceFile).toList());
+    }
+
+    @Test
+    void generatesConversationalGoldensFromDocsLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta");
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"Scenario one","turns":[{"role":"user","content":"Question one?"}],"expected_outcome":"Outcome one"}]}
+                """,
+                """
+                {"data":[{"scenario":"Scenario two","turns":[{"role":"user","content":"Question two?"}],"expected_outcome":"Outcome two"}]}
+                """));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                new EvolutionConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateConversationalGoldensFromDocs(
+                List.of(document),
+                true,
+                1,
+                new ContextConstructionConfig(2, 1, 2, 0, 0.5, 0.0, 3));
+
+        assertEquals(List.of("Scenario one", "Scenario two"),
+                goldens.stream().map(ConversationalGolden::scenario).toList());
+        assertEquals(List.of("Outcome one", "Outcome two"),
+                goldens.stream().map(ConversationalGolden::expectedOutcome).toList());
+        assertEquals(List.of(List.of("alpha beta"), List.of("gamma delta")),
+                goldens.stream().map(ConversationalGolden::context).toList());
     }
 
     @Test

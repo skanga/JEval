@@ -3,8 +3,12 @@ package dev.jeval.synthesizer;
 import dev.jeval.EvaluationModel;
 import dev.jeval.ConversationalGolden;
 import dev.jeval.Golden;
+import dev.jeval.Utils;
 import dev.jeval.synthesizer.SynthesizerSchemas.SyntheticData;
 import dev.jeval.synthesizer.SynthesizerSchemas.ConversationalData;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -64,6 +68,21 @@ public final class Synthesizer {
 
     public List<Golden> generateGoldensFromContexts(List<List<String>> contexts) {
         return generateGoldensFromContexts(contexts, true, 2, null);
+    }
+
+    public List<Golden> generateGoldensFromDocs(List<Path> documentPaths) throws IOException {
+        return generateGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT);
+    }
+
+    public List<Golden> generateGoldensFromDocs(
+            List<Path> documentPaths,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            ContextConstructionConfig contextConstructionConfig) throws IOException {
+        var contexts = new ArrayList<List<String>>();
+        var sourceFiles = new ArrayList<String>();
+        addDocumentContexts(documentPaths, config(contextConstructionConfig), contexts, sourceFiles);
+        return generateGoldensFromContexts(contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles);
     }
 
     public List<Golden> generateGoldensFromContexts(
@@ -153,6 +172,22 @@ public final class Synthesizer {
             goldens.addAll(batch);
         }
         return List.copyOf(goldens);
+    }
+
+    public List<ConversationalGolden> generateConversationalGoldensFromDocs(List<Path> documentPaths)
+            throws IOException {
+        return generateConversationalGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT);
+    }
+
+    public List<ConversationalGolden> generateConversationalGoldensFromDocs(
+            List<Path> documentPaths,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            ContextConstructionConfig contextConstructionConfig) throws IOException {
+        var contexts = new ArrayList<List<String>>();
+        var sourceFiles = new ArrayList<String>();
+        addDocumentContexts(documentPaths, config(contextConstructionConfig), contexts, sourceFiles);
+        return generateConversationalGoldensFromContexts(contexts, includeExpectedOutcome, maxGoldensPerContext, sourceFiles);
     }
 
     private List<ConversationalGolden> generateConversationalGoldensForContext(
@@ -266,6 +301,74 @@ public final class Synthesizer {
         }
         return model.generate(SynthesizerPrompts.generateExpectedOutput(
                 context, input, stylingConfig == null ? null : stylingConfig.expectedOutputFormat()));
+    }
+
+    private static ContextConstructionConfig config(ContextConstructionConfig config) {
+        return config == null ? ContextConstructionConfig.DEFAULT : config;
+    }
+
+    private static void addDocumentContexts(
+            List<Path> documentPaths,
+            ContextConstructionConfig config,
+            List<List<String>> contexts,
+            List<String> sourceFiles) throws IOException {
+        for (var path : documentPaths) {
+            for (var file : documentFiles(path)) {
+                addDocumentContexts(config, contexts, sourceFiles, file);
+            }
+        }
+    }
+
+    private static void addDocumentContexts(
+            ContextConstructionConfig config,
+            List<List<String>> contexts,
+            List<String> sourceFiles,
+            Path file) throws IOException {
+        validateChunkOverlap(config.chunkSize(), config.chunkOverlap());
+        var chunks = Utils.chunkText(Files.readString(file), config.chunkSize(), config.chunkOverlap());
+        validateMinContexts(chunks.size(), config.minContextsPerDocument());
+        var count = 0;
+        for (var chunk : chunks) {
+            if (count++ >= config.maxContextsPerDocument()) {
+                break;
+            }
+            contexts.add(List.of(chunk));
+            sourceFiles.add(file.getFileName().toString());
+        }
+    }
+
+    private static List<Path> documentFiles(Path path) throws IOException {
+        if (Files.isRegularFile(path)) {
+            return List.of(path);
+        }
+        try (var files = Files.walk(path)) {
+            return files.filter(Files::isRegularFile).sorted().toList();
+        }
+    }
+
+    private static void validateChunkOverlap(int chunkSize, int chunkOverlap) {
+        if (chunkOverlap > chunkSize - 1) {
+            throw new IllegalArgumentException(
+                    "`chunk_overlap` must not exceed " + (chunkSize - 1) + " (chunk_size - 1).");
+        }
+    }
+
+    private static void validateMinContexts(int numChunks, int minContexts) {
+        if (numChunks >= minContexts) {
+            return;
+        }
+        var message = new StringBuilder()
+                .append("Impossible to generate ")
+                .append(minContexts)
+                .append(" contexts from a document with ")
+                .append(numChunks)
+                .append(" chunks.\nYou have the following options:");
+        if (numChunks > 0) {
+            message.append("\n1. Adjust the `min_contexts_per_document` to no more than ")
+                    .append(numChunks)
+                    .append(".");
+        }
+        throw new IllegalArgumentException(message.toString());
     }
 
     private <T> List<List<T>> generateContextBatches(int contextCount, IntFunction<List<T>> generator) {
