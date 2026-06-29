@@ -2,6 +2,7 @@ package dev.jeval.synthesizer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.EvaluationModel;
 import dev.jeval.ConversationalGolden;
@@ -112,6 +113,32 @@ class SynthesizerTest {
         assertEquals(List.of(List.of("alpha beta"), List.of("gamma delta")),
                 goldens.stream().map(Golden::context).toList());
         assertEquals(List.of("policy.md", "policy.md"), goldens.stream().map(Golden::sourceFile).toList());
+    }
+
+    @Test
+    void saveAsWritesLastSyntheticGoldensLikeDeepEval() throws Exception {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
+        var synthesizer = new Synthesizer(model);
+        synthesizer.generateGoldensFromContexts(List.of(List.of("Paris is in France.")), true, 1, null);
+
+        var path = synthesizer.saveAs("json", tempDir.resolve("generated"), "goldens", true);
+
+        assertEquals(tempDir.resolve("generated").resolve("goldens.json"), path);
+        var exported = Files.readString(path);
+        assertTrue(exported.contains("\"input\" : \"What is France's capital?\""));
+        assertTrue(exported.contains("\"expected_output\" : \"Paris\""));
+    }
+
+    @Test
+    void saveAsRejectsEmptySyntheticGoldensLikeDeepEval() {
+        var synthesizer = new Synthesizer(prompt -> "{}");
+
+        var error = assertThrows(IllegalStateException.class,
+                () -> synthesizer.saveAs("json", tempDir.resolve("generated"), "empty", true));
+
+        assertEquals("No synthetic goldens found. Please generate goldens before saving goldens.",
+                error.getMessage());
     }
 
     @Test

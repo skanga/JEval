@@ -87,10 +87,10 @@ final class GenerateCommand {
                         + "The file extension will be added based on the file_type parameter.");
                 return 2;
             }
-            var dataset = new EvaluationDataset(goldens);
-            var file = dataset.saveAs(option(args, "--file-type", "json"),
+            var file = synthesizer.saveAs(option(args, "--file-type", "json"),
                     Path.of(option(args, "--output-dir", "synthetic_data")),
-                    fileName);
+                    fileName,
+                    true);
             out.println("Synthetic goldens saved at " + file + "!");
             return 0;
         } catch (IOException | IllegalArgumentException | IllegalStateException error) {

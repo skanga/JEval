@@ -1,6 +1,7 @@
 package dev.jeval.synthesizer;
 
 import dev.jeval.EvaluationModel;
+import dev.jeval.EvaluationDataset;
 import dev.jeval.ConversationalGolden;
 import dev.jeval.Golden;
 import dev.jeval.Utils;
@@ -24,6 +25,8 @@ public final class Synthesizer {
     private final ConversationalStylingConfig conversationalStylingConfig;
     private final EvolutionConfig evolutionConfig;
     private final SynthesizerOptions options;
+    private List<Golden> syntheticGoldens = List.of();
+    private List<ConversationalGolden> syntheticConversationalGoldens = List.of();
 
     public Synthesizer(EvaluationModel model) {
         this(model, null, null, new EvolutionConfig());
@@ -66,6 +69,21 @@ public final class Synthesizer {
         return options;
     }
 
+    public Path saveAs(String fileType, Path directory, String fileName, boolean quiet) {
+        if (syntheticGoldens.isEmpty() && syntheticConversationalGoldens.isEmpty()) {
+            throw new IllegalStateException(
+                    "No synthetic goldens found. Please generate goldens before saving goldens.");
+        }
+        var dataset = syntheticGoldens.isEmpty()
+                ? new EvaluationDataset(syntheticConversationalGoldens)
+                : new EvaluationDataset(syntheticGoldens);
+        var path = dataset.saveAs(fileType, directory, fileName);
+        if (!quiet) {
+            System.out.println("Synthetic goldens saved at " + path + "!");
+        }
+        return path;
+    }
+
     public List<Golden> generateGoldensFromContexts(List<List<String>> contexts) {
         return generateGoldensFromContexts(contexts, true, 2, null);
     }
@@ -95,7 +113,7 @@ public final class Synthesizer {
                 index -> generateGoldensForContext(index, contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles))) {
             goldens.addAll(batch);
         }
-        return List.copyOf(goldens);
+        return retainGoldens(goldens);
     }
 
     private List<Golden> generateGoldensForContext(
@@ -128,7 +146,7 @@ public final class Synthesizer {
         for (var item : data) {
             goldens.add(golden(item, null, null, false, goldens.size()));
         }
-        return List.copyOf(goldens);
+        return retainGoldens(goldens);
     }
 
     public List<Golden> generateGoldensFromGoldens(
@@ -157,7 +175,7 @@ public final class Synthesizer {
                 generated.add(golden(item, null, null, includeExpectedOutput, generated.size()));
             }
         }
-        return List.copyOf(generated);
+        return retainGoldens(generated);
     }
 
     public List<ConversationalGolden> generateConversationalGoldensFromContexts(
@@ -171,7 +189,7 @@ public final class Synthesizer {
                         maxGoldensPerContext, sourceFiles))) {
             goldens.addAll(batch);
         }
-        return List.copyOf(goldens);
+        return retainConversationalGoldens(goldens);
     }
 
     public List<ConversationalGolden> generateConversationalGoldensFromDocs(List<Path> documentPaths)
@@ -221,7 +239,9 @@ public final class Synthesizer {
                                 conversationalStylingConfig, numGoldens)))
                 .stream()
                 .map(data -> conversationalGolden(data, null, null, false))
-                .toList();
+                .collect(java.util.stream.Collectors.collectingAndThen(
+                        java.util.stream.Collectors.toList(),
+                        this::retainConversationalGoldens));
     }
 
     public List<ConversationalGolden> generateConversationalGoldensFromGoldens(
@@ -249,7 +269,19 @@ public final class Synthesizer {
                 generated.add(conversationalGolden(item, null, null, includeExpectedOutcome));
             }
         }
-        return List.copyOf(generated);
+        return retainConversationalGoldens(generated);
+    }
+
+    private List<Golden> retainGoldens(List<Golden> goldens) {
+        syntheticGoldens = List.copyOf(goldens);
+        syntheticConversationalGoldens = List.of();
+        return syntheticGoldens;
+    }
+
+    private List<ConversationalGolden> retainConversationalGoldens(List<ConversationalGolden> goldens) {
+        syntheticConversationalGoldens = List.copyOf(goldens);
+        syntheticGoldens = List.of();
+        return syntheticConversationalGoldens;
     }
 
     private ConversationalGolden conversationalGolden(
