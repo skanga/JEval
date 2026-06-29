@@ -50,6 +50,32 @@ class PromptOptimizerTest {
                 () -> new PromptOptimizer((prompt, golden) -> "answer", metric, null));
     }
 
+    @Test
+    void constructorStoresDefaultOptimizerConfigs() {
+        var optimizer = new PromptOptimizer(
+                (prompt, golden) -> "answer",
+                List.of((Metric) testCase -> new MetricResult("metric", 1.0, 0.5, true, null)),
+                new CapturingAlgorithm(new Prompt("optimized", "Optimized"), null));
+
+        assertEquals(new AsyncConfig(), optimizer.asyncConfig());
+        assertEquals(new DisplayConfig(), optimizer.displayConfig());
+    }
+
+    @Test
+    void constructorStoresExplicitOptimizerConfigs() {
+        var asyncConfig = new AsyncConfig(false, 0.5, 4);
+        var displayConfig = new DisplayConfig(false, true);
+        var optimizer = new PromptOptimizer(
+                (prompt, golden) -> "answer",
+                List.of((Metric) testCase -> new MetricResult("metric", 1.0, 0.5, true, null)),
+                new CapturingAlgorithm(new Prompt("optimized", "Optimized"), null),
+                asyncConfig,
+                displayConfig);
+
+        assertSame(asyncConfig, optimizer.asyncConfig());
+        assertSame(displayConfig, optimizer.displayConfig());
+    }
+
     private static final class CapturingAlgorithm implements PromptOptimizationAlgorithm {
         private final Prompt optimizedPrompt;
         private final OptimizationReport report;
