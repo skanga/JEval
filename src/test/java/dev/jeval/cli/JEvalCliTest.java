@@ -769,6 +769,27 @@ class JEvalCliTest {
     }
 
     @Test
+    void generatePassesModelOptionToProviderFactoryLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_OPENROUTER_MODEL=YES
+                OPENROUTER_API_KEY=sk-or-test
+                OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+                """);
+        var method = GenerateCommand.class.getDeclaredMethod("synthesizer", String[].class);
+        method.setAccessible(true);
+
+        var synthesizer = method.invoke(null, (Object) new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", tempDir.resolve("contexts.json").toString(),
+                "--model", "openai/gpt-4.1",
+                "--save", "dotenv:" + env
+        });
+
+        assertTrue(synthesizer instanceof dev.jeval.synthesizer.Synthesizer);
+    }
+
+    @Test
     void generateContextsWritesGoldensFile() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");

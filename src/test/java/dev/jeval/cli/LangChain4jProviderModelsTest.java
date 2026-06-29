@@ -64,6 +64,35 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void usesModelOverrideForOpenRouterGenerationLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_OPENROUTER_MODEL=YES
+                OPENROUTER_API_KEY=sk-or-test
+                OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "openai/gpt-4.1");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
+    void usesModelOverrideForOllamaGenerationLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_LOCAL_MODEL=YES
+                LOCAL_MODEL_BASE_URL=http://localhost:11434
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "llama3");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void rejectsMissingProviderConfig() throws Exception {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));

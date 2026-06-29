@@ -132,7 +132,7 @@ final class GenerateCommand {
     private static Synthesizer synthesizer(String[] args) throws IOException {
         var responses = option(args, "--responses-file", null);
         var model = responses == null
-                ? LangChain4jProviderModels.from(new DotenvFile(savePath(args)))
+                ? LangChain4jProviderModels.from(new DotenvFile(savePath(args)), option(args, "--model", null))
                 : new ScriptedModel(Files.readAllLines(Path.of(responses)).stream()
                         .filter(line -> !line.isBlank())
                         .toList());

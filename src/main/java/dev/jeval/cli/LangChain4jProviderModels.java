@@ -12,43 +12,48 @@ final class LangChain4jProviderModels {
     }
 
     static EvaluationModel from(DotenvFile dotenv) throws IOException {
+        return from(dotenv, null);
+    }
+
+    static EvaluationModel from(DotenvFile dotenv, String modelOverride) throws IOException {
         var config = dotenv.read();
         if ("YES".equals(config.get("USE_OPENAI_MODEL"))) {
-            return new LangChain4jEvaluationModel(openAi(config));
+            return new LangChain4jEvaluationModel(openAi(config, modelOverride));
         }
         if ("YES".equals(config.get("USE_OPENROUTER_MODEL"))) {
-            return new LangChain4jEvaluationModel(openRouter(config));
+            return new LangChain4jEvaluationModel(openRouter(config, modelOverride));
         }
-        if ("YES".equals(config.get("USE_LOCAL_MODEL")) && present(config, "OLLAMA_MODEL_NAME")) {
-            return new LangChain4jEvaluationModel(ollama(config));
+        if ("YES".equals(config.get("USE_LOCAL_MODEL"))
+                && (present(config, "OLLAMA_MODEL_NAME") || present(modelOverride))) {
+            return new LangChain4jEvaluationModel(ollama(config, modelOverride));
         }
         throw new IllegalArgumentException(
                 "No supported provider is configured; run set-openai, set-ollama, or set-openrouter, or pass --responses-file.");
     }
 
-    private static OpenAiChatModel openAi(Map<String, String> config) {
+    private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
         var builder = OpenAiChatModel.builder()
                 .apiKey(required(config, "OPENAI_API_KEY"))
-                .modelName(value(config, "OPENAI_MODEL_NAME", "gpt-4o-mini"));
+                .modelName(modelName(config, "OPENAI_MODEL_NAME", modelOverride, "gpt-4o-mini"));
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
         return builder.build();
     }
 
-    private static OpenAiChatModel openRouter(Map<String, String> config) {
+    private static OpenAiChatModel openRouter(Map<String, String> config, String modelOverride) {
         var builder = OpenAiChatModel.builder()
                 .apiKey(required(config, "OPENROUTER_API_KEY"))
-                .modelName(required(config, "OPENROUTER_MODEL_NAME"))
+                .modelName(modelName(config, "OPENROUTER_MODEL_NAME", modelOverride, null))
                 .baseUrl(value(config, "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"));
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
         return builder.build();
     }
 
-    private static OllamaChatModel ollama(Map<String, String> config) {
+    private static OllamaChatModel ollama(Map<String, String> config, String modelOverride) {
         var builder = OllamaChatModel.builder()
                 .baseUrl(value(config, "LOCAL_MODEL_BASE_URL", "http://localhost:11434"))
-                .modelName(required(config, "OLLAMA_MODEL_NAME"));
+                .modelName(modelName(config, "OLLAMA_MODEL_NAME", modelOverride, null));
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::numPredict);
         return builder.build();
@@ -58,8 +63,23 @@ final class LangChain4jProviderModels {
         return value(config, key, null) != null;
     }
 
+    private static boolean present(String value) {
+        return value != null && !value.isBlank();
+    }
+
     private static String required(Map<String, String> config, String key) {
         var value = value(config, key, null);
+        if (value == null) {
+            throw new IllegalArgumentException(key + " is required for provider-backed generation.");
+        }
+        return value;
+    }
+
+    private static String modelName(Map<String, String> config, String key, String modelOverride, String fallback) {
+        if (modelOverride != null && !modelOverride.isBlank()) {
+            return modelOverride;
+        }
+        var value = value(config, key, fallback);
         if (value == null) {
             throw new IllegalArgumentException(key + " is required for provider-backed generation.");
         }
