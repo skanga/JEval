@@ -51,8 +51,8 @@ final class GenerateCommand {
             err.println("--goldens-file is required for --method goldens");
             return 2;
         }
-        if ("docs".equals(method) && option(args, "--document-path", null) == null) {
-            err.println("--document-path is required for --method docs");
+        if ("docs".equals(method) && documentPaths(args).isEmpty()) {
+            err.println("--document-path or --documents is required for --method docs");
             return 2;
         }
         try {
@@ -143,7 +143,7 @@ final class GenerateCommand {
         }
         var contexts = JSON.readValue(Path.of(file).toFile(), new TypeReference<List<List<String>>>() {});
         return synthesizer.generateGoldensFromContexts(contexts,
-                !has(args, "--no-expected-output"),
+                includeExpected(args),
                 integer(args, "--max-goldens-per-context", 2),
                 null);
     }
@@ -159,7 +159,7 @@ final class GenerateCommand {
         }
         var contexts = JSON.readValue(Path.of(file).toFile(), new TypeReference<List<List<String>>>() {});
         return synthesizer.generateConversationalGoldensFromContexts(contexts,
-                !has(args, "--no-expected-output"),
+                includeExpected(args),
                 integer(args, "--max-goldens-per-context", 2),
                 null);
     }
@@ -183,7 +183,7 @@ final class GenerateCommand {
         return synthesizer.generateGoldensFromGoldens(
                 dataset.goldens(),
                 integer(args, "--max-goldens-per-golden", 1),
-                !has(args, "--no-expected-output"));
+                includeExpected(args));
     }
 
     private static List<ConversationalGolden> fromConversationalGoldens(
@@ -200,25 +200,27 @@ final class GenerateCommand {
         return synthesizer.generateConversationalGoldensFromGoldens(
                 dataset.conversationalGoldens(),
                 integer(args, "--max-goldens-per-golden", 1),
-                !has(args, "--no-expected-output"));
+                includeExpected(args));
     }
 
     private static List<Golden> fromDocs(String[] args, Synthesizer synthesizer, PrintStream err) throws IOException {
-        var path = option(args, "--document-path", null);
-        if (path == null) {
-            err.println("--document-path is required for --method docs");
+        var paths = documentPaths(args);
+        if (paths.isEmpty()) {
+            err.println("--document-path or --documents is required for --method docs");
             return null;
         }
         var contexts = new ArrayList<List<String>>();
         var sourceFiles = new ArrayList<String>();
-        for (var file : documentFiles(Path.of(path))) {
-            for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
-                contexts.add(List.of(chunk));
-                sourceFiles.add(file.getFileName().toString());
+        for (var path : paths) {
+            for (var file : documentFiles(path)) {
+                for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
+                    contexts.add(List.of(chunk));
+                    sourceFiles.add(file.getFileName().toString());
+                }
             }
         }
         return synthesizer.generateGoldensFromContexts(contexts,
-                !has(args, "--no-expected-output"),
+                includeExpected(args),
                 integer(args, "--max-goldens-per-context", 2),
                 sourceFiles);
     }
@@ -227,21 +229,23 @@ final class GenerateCommand {
             String[] args,
             Synthesizer synthesizer,
             PrintStream err) throws IOException {
-        var path = option(args, "--document-path", null);
-        if (path == null) {
-            err.println("--document-path is required for --method docs");
+        var paths = documentPaths(args);
+        if (paths.isEmpty()) {
+            err.println("--document-path or --documents is required for --method docs");
             return null;
         }
         var contexts = new ArrayList<List<String>>();
         var sourceFiles = new ArrayList<String>();
-        for (var file : documentFiles(Path.of(path))) {
-            for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
-                contexts.add(List.of(chunk));
-                sourceFiles.add(file.getFileName().toString());
+        for (var path : paths) {
+            for (var file : documentFiles(path)) {
+                for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
+                    contexts.add(List.of(chunk));
+                    sourceFiles.add(file.getFileName().toString());
+                }
             }
         }
         return synthesizer.generateConversationalGoldensFromContexts(contexts,
-                !has(args, "--no-expected-output"),
+                includeExpected(args),
                 integer(args, "--max-goldens-per-context", 2),
                 sourceFiles);
     }
@@ -284,6 +288,24 @@ final class GenerateCommand {
 
     private static int integer(String[] args, String name, int fallback) {
         return Integer.parseInt(option(args, name, Integer.toString(fallback)));
+    }
+
+    private static boolean includeExpected(String[] args) {
+        return !has(args, "--no-expected-output") && !has(args, "--no-include-expected");
+    }
+
+    private static List<Path> documentPaths(String[] args) {
+        var paths = new ArrayList<Path>();
+        var legacyPath = option(args, "--document-path", null);
+        if (legacyPath != null) {
+            paths.add(Path.of(legacyPath));
+        }
+        for (var i = 0; i < args.length - 1; i++) {
+            if ("--documents".equals(args[i])) {
+                paths.add(Path.of(args[i + 1]));
+            }
+        }
+        return List.copyOf(paths);
     }
 
     private static boolean has(String[] args, String name) {

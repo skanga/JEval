@@ -128,6 +128,28 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateSupportsDeepEvalNoIncludeExpectedAlias() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--no-include-expected", "--output-dir", output.toString(), "--file-name", "without-expected"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("without-expected.json"));
+        assertTrue(generated.contains("Capital?"));
+        assertTrue(generated.contains("\"expected_output\" : null"));
+    }
+
+    @Test
     void generateScratchWritesGoldensFile() throws Exception {
         var responses = tempDir.resolve("responses.txt");
         Files.writeString(responses, "{\"data\":[{\"input\":\"Study question?\"}]}");
@@ -228,6 +250,32 @@ class JEvalCliTest {
         var generated = Files.readString(output.resolve("docs.json"));
         assertTrue(generated.contains("Question one?"));
         assertTrue(generated.contains("Question two?"));
+        assertTrue(generated.contains("policy.md"));
+    }
+
+    @Test
+    void generateDocsSupportsDeepEvalDocumentsAlias() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"Question one?","expected_output":"Answer one"}]}
+                {"data":[{"input":"Question two?","expected_output":"Answer two"}]}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--documents", document.toString(), "--chunk-size", "2",
+                "--responses-file", responses.toString(), "--output-dir", output.toString(),
+                "--file-name", "docs-alias"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("docs-alias.json"));
+        assertTrue(generated.contains("Question one?"));
         assertTrue(generated.contains("policy.md"));
     }
 
