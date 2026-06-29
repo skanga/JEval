@@ -4,6 +4,7 @@ import dev.jeval.ConversationalGolden;
 import dev.jeval.Golden;
 import dev.jeval.Turn;
 import dev.jeval.optimizer.AcceptedIteration;
+import dev.jeval.optimizer.IterationLogEntry;
 import dev.jeval.optimizer.OptimizationReport;
 import dev.jeval.optimizer.OptimizationResult;
 import dev.jeval.optimizer.OptimizerScorer;
@@ -30,6 +31,7 @@ public final class SIMBA implements PromptOptimizationAlgorithm {
     private final int seed;
     private final Random randomState;
     private final Function<String, String> proposeCallback;
+    private final List<IterationLogEntry> iterationLog = new ArrayList<>();
 
     public SIMBA() {
         this(8, 15, 4, 3, 4, (Random) null);
@@ -107,8 +109,13 @@ public final class SIMBA implements PromptOptimizationAlgorithm {
         return randomState;
     }
 
+    public List<IterationLogEntry> iterationLog() {
+        return List.copyOf(iterationLog);
+    }
+
     @Override
     public OptimizationResult execute(Prompt prompt, List<?> goldens, OptimizerScorer scorer) {
+        iterationLog.clear();
         var optimizationId = UUID.randomUUID().toString();
         var prompts = new LinkedHashMap<String, Prompt>();
         prompts.put(OptimizerScorer.DEFAULT_MODULE_ID, prompt);
@@ -128,6 +135,7 @@ public final class SIMBA implements PromptOptimizationAlgorithm {
         if (proposeCallback != null) {
             var proposer = new SIMBAProposer(proposeCallback);
             for (var iteration = 1; iteration <= iterations; iteration++) {
+                var iterationStart = System.nanoTime();
                 var minibatch = sampleMinibatch(goldens);
                 var candidateConfigs = candidateConfigs(
                         currentBestConfig,
@@ -136,6 +144,13 @@ public final class SIMBA implements PromptOptimizationAlgorithm {
                         proposer,
                         promptConfigurations);
                 if (candidateConfigs.isEmpty()) {
+                    iterationLog.add(new IterationLogEntry(
+                            iteration,
+                            "skipped",
+                            "No introspectable variance or ground-truths found.",
+                            elapsedSeconds(iterationStart),
+                            globalBestScore,
+                            globalBestScore));
                     continue;
                 }
 
@@ -148,6 +163,8 @@ public final class SIMBA implements PromptOptimizationAlgorithm {
                     var fullScores = scorer.scorePareto(bestBatchConfig, goldens);
                     var fullScore = average(fullScores);
                     paretoScores.put(bestBatchConfig.id(), fullScores);
+                    var before = globalBestScore;
+                    var accepted = false;
                     if (fullScore > globalBestScore) {
                         acceptedIterations.add(new AcceptedIteration(
                                 currentBestConfig.id(),
@@ -158,7 +175,15 @@ public final class SIMBA implements PromptOptimizationAlgorithm {
                         parents.put(bestBatchConfig.id(), currentBestConfig.id());
                         currentBestConfig = bestBatchConfig;
                         globalBestScore = fullScore;
+                        accepted = true;
                     }
+                    iterationLog.add(new IterationLogEntry(
+                            iteration,
+                            accepted ? "accepted" : "rejected",
+                            "Evaluated on full dataset.",
+                            elapsedSeconds(iterationStart),
+                            before,
+                            fullScore));
                 }
             }
         }
@@ -265,6 +290,10 @@ public final class SIMBA implements PromptOptimizationAlgorithm {
             return 0.0;
         }
         return scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    }
+
+    private static double elapsedSeconds(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000_000.0;
     }
 
     private static String inputs(Object golden) {
