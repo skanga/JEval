@@ -1,8 +1,10 @@
 package dev.jeval.synthesizer;
 
 import dev.jeval.EvaluationModel;
+import dev.jeval.ConversationalGolden;
 import dev.jeval.Golden;
 import dev.jeval.synthesizer.SynthesizerSchemas.SyntheticData;
+import dev.jeval.synthesizer.SynthesizerSchemas.ConversationalData;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,19 +13,33 @@ import java.util.Objects;
 public final class Synthesizer {
     private final EvaluationModel model;
     private final StylingConfig stylingConfig;
+    private final ConversationalStylingConfig conversationalStylingConfig;
     private final EvolutionConfig evolutionConfig;
 
     public Synthesizer(EvaluationModel model) {
-        this(model, null, new EvolutionConfig());
+        this(model, null, null, new EvolutionConfig());
     }
 
     public Synthesizer(EvaluationModel model, StylingConfig stylingConfig) {
-        this(model, stylingConfig, new EvolutionConfig());
+        this(model, stylingConfig, null, new EvolutionConfig());
+    }
+
+    public Synthesizer(EvaluationModel model, ConversationalStylingConfig conversationalStylingConfig) {
+        this(model, null, conversationalStylingConfig, new EvolutionConfig());
     }
 
     public Synthesizer(EvaluationModel model, StylingConfig stylingConfig, EvolutionConfig evolutionConfig) {
+        this(model, stylingConfig, null, evolutionConfig);
+    }
+
+    public Synthesizer(
+            EvaluationModel model,
+            StylingConfig stylingConfig,
+            ConversationalStylingConfig conversationalStylingConfig,
+            EvolutionConfig evolutionConfig) {
         this.model = Objects.requireNonNull(model, "model");
         this.stylingConfig = stylingConfig;
+        this.conversationalStylingConfig = conversationalStylingConfig;
         this.evolutionConfig = evolutionConfig == null ? new EvolutionConfig() : evolutionConfig;
     }
 
@@ -93,6 +109,62 @@ public final class Synthesizer {
         return List.copyOf(generated);
     }
 
+    public List<ConversationalGolden> generateConversationalGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<String> sourceFiles) {
+        var goldens = new ArrayList<ConversationalGolden>();
+        for (var i = 0; i < contexts.size(); i++) {
+            var context = List.copyOf(contexts.get(i));
+            var sourceFile = sourceFiles != null && i < sourceFiles.size() ? sourceFiles.get(i) : null;
+            var data = SynthesizerSchemas.parseConversationalData(model.generate(
+                    SynthesizerPrompts.generateSyntheticConversationalScenarios(
+                            context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome)));
+            for (var item : data) {
+                goldens.add(conversationalGolden(item, context, sourceFile, includeExpectedOutcome));
+            }
+        }
+        return List.copyOf(goldens);
+    }
+
+    public List<ConversationalGolden> generateConversationalGoldensFromScratch(int numGoldens) {
+        if (conversationalStylingConfig == null
+                || conversationalStylingConfig.scenarioContext() == null
+                || conversationalStylingConfig.conversationalTask() == null
+                || conversationalStylingConfig.participantRoles() == null) {
+            throw new IllegalStateException(
+                    "ConversationalStylingConfig with scenarioContext, conversationalTask, and participantRoles is required for conversational scratch generation");
+        }
+        return SynthesizerSchemas.parseConversationalData(model.generate(
+                        SynthesizerPrompts.generateSyntheticConversationalScenariosFromScratch(
+                                conversationalStylingConfig, numGoldens)))
+                .stream()
+                .map(data -> conversationalGolden(data, null, null, false))
+                .toList();
+    }
+
+    private ConversationalGolden conversationalGolden(
+            ConversationalData data,
+            List<String> context,
+            String sourceFile,
+            boolean includeExpectedOutcome) {
+        var expectedOutcome = data.expectedOutcome();
+        if (includeExpectedOutcome && expectedOutcome == null) {
+            expectedOutcome = model.generate(SynthesizerPrompts.generateConversationalExpectedOutcome(
+                    data.scenario(),
+                    context,
+                    conversationalStylingConfig == null ? null : conversationalStylingConfig.expectedOutcomeFormat()));
+        }
+        return ConversationalGolden.builder(data.scenario())
+                .turns(data.turns())
+                .expectedOutcome(expectedOutcome)
+                .userDescription(data.userDescription())
+                .context(context)
+                .additionalMetadata(metadata(List.of(), data, sourceFile))
+                .build();
+    }
+
     private Golden golden(
             SyntheticData data,
             List<String> context,
@@ -135,6 +207,22 @@ public final class Synthesizer {
         var metadata = new LinkedHashMap<String, Object>();
         metadata.put("evolutions", List.copyOf(evolutions));
         if (sourceFile != null) {
+            metadata.put("context_source_files", List.of(sourceFile));
+        }
+        if (data.usedSourceFiles() != null) {
+            metadata.put("used_source_files", data.usedSourceFiles());
+        }
+        return metadata;
+    }
+
+    private static LinkedHashMap<String, Object> metadata(
+            List<String> evolutions,
+            ConversationalData data,
+            String sourceFile) {
+        var metadata = new LinkedHashMap<String, Object>();
+        metadata.put("evolutions", List.copyOf(evolutions));
+        if (sourceFile != null) {
+            metadata.put("source_files", sourceFile);
             metadata.put("context_source_files", List.of(sourceFile));
         }
         if (data.usedSourceFiles() != null) {

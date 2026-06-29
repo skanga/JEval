@@ -66,6 +66,8 @@ Current Java parity:
 - `EvaluationDataset.addGoldensFromCsvFile(...)` and `saveAsCsvFile(...)` for single-turn and conversational CSV goldens, including empty-list context/tool defaults and optional test-case inclusion
 - `EvaluationDataset.addGoldensFromCsvFile(...)` custom column names, context delimiters, and tool delimiters for single-turn CSV fields, tools as JSON or delimited names, comments, source file, metadata, and custom columns
 - `EvaluationDataset.addGoldensFromCsvFile(...)` custom column names for conversational CSV scenario, turns, outcome, user description, comments, name, context, metadata, and custom columns
+- Single-turn synthesizer for contexts, docs, scratch styling, and existing goldens, with CLI generation and OpenAI/Ollama LangChain4j provider wiring
+- Multi-turn synthesizer for contexts, docs, and scratch styling, producing `ConversationalGolden` values with scenario, turns, expected outcome, context, and metadata
 - `ExactMatchMetric` with DeepEval-required input, actual output, and expected output validation
 - `JsonCorrectnessMetric` deterministic schema-validation path with DeepEval-required input and actual output validation, including local success/failure reasons when enabled
 - `PatternMatchMetric` with DeepEval-required input and actual output validation

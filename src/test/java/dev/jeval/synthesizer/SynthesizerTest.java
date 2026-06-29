@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import dev.jeval.EvaluationModel;
+import dev.jeval.ConversationalGolden;
 import dev.jeval.Golden;
 import java.util.ArrayList;
 import java.util.List;
@@ -145,6 +146,66 @@ class SynthesizerTest {
         assertEquals("Plain question", goldens.get(1).input());
         assertEquals("Plain answer", goldens.get(1).expectedOutput());
         assertEquals(true, model.prompts().get(2).contains("expected_output"));
+    }
+
+    @Test
+    void generatesConversationalGoldensFromContexts() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"user needs refund help","turns":[
+                  {"role":"user","content":"I need a refund"},
+                  {"role":"assistant","content":"I can help"}
+                ],"used_source_files":["refund.md"]}]}
+                """,
+                "Help the user get a refund"));
+        var synthesizer = new Synthesizer(model);
+
+        var goldens = synthesizer.generateConversationalGoldensFromContexts(
+                List.of(List.of("Refunds are available within 30 days.")), true, 1, List.of("refund.md"));
+
+        assertEquals(1, goldens.size());
+        assertEquals("user needs refund help", goldens.getFirst().scenario());
+        assertEquals("Help the user get a refund", goldens.getFirst().expectedOutcome());
+        assertEquals(List.of("Refunds are available within 30 days."), goldens.getFirst().context());
+        assertEquals(List.of("refund.md"), goldens.getFirst().additionalMetadata().get("used_source_files"));
+        assertEquals("user", goldens.getFirst().turns().getFirst().role());
+        assertEquals(2, model.prompts().size());
+    }
+
+    @Test
+    void parsesConversationalTurnsFromModelJson() {
+        var data = SynthesizerSchemas.parseConversationalData("""
+                {"data":[{"scenario":"support","turns":[{"role":"user","content":"hello"}]}]}
+                """);
+
+        assertEquals("user", data.getFirst().turns().getFirst().role());
+        assertEquals("hello", data.getFirst().turns().getFirst().content());
+    }
+
+    @Test
+    void generatesConversationalGoldensFromScratch() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"traveler books a flight","turns":[
+                  {"role":"user","content":"Book me a flight"},
+                  {"role":"assistant","content":"Where to?"}
+                ],"expected_outcome":"Flight search started"}]}
+                """));
+        var synthesizer = new Synthesizer(model,
+                new ConversationalStylingConfig("travel support", "book flights", "traveler and agent", null));
+
+        var goldens = synthesizer.generateConversationalGoldensFromScratch(1);
+
+        assertEquals(List.of("traveler books a flight"), goldens.stream().map(ConversationalGolden::scenario).toList());
+        assertEquals("Flight search started", goldens.getFirst().expectedOutcome());
+        assertEquals("assistant", goldens.getFirst().turns().get(1).role());
+    }
+
+    @Test
+    void conversationalScratchRequiresStylingConfig() {
+        var synthesizer = new Synthesizer(prompt -> "{}");
+
+        assertThrows(IllegalStateException.class, () -> synthesizer.generateConversationalGoldensFromScratch(1));
     }
 
     private static final class ScriptedModel implements EvaluationModel {

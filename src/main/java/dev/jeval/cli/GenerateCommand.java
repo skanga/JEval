@@ -2,10 +2,12 @@ package dev.jeval.cli;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.jeval.ConversationalGolden;
 import dev.jeval.EvaluationDataset;
 import dev.jeval.EvaluationModel;
 import dev.jeval.Golden;
 import dev.jeval.Utils;
+import dev.jeval.synthesizer.ConversationalStylingConfig;
 import dev.jeval.synthesizer.StylingConfig;
 import dev.jeval.synthesizer.Synthesizer;
 import java.io.IOException;
@@ -24,16 +26,24 @@ final class GenerateCommand {
     static int run(String[] args, PrintStream out, PrintStream err) {
         var method = option(args, "--method", null);
         var variation = option(args, "--variation", "single-turn");
-        if (!"single-turn".equals(variation)) {
-            err.println("Only --variation single-turn is implemented in JEval CLI generate.");
+        if (!"single-turn".equals(variation) && !"multi-turn".equals(variation)) {
+            err.println("Only --variation single-turn and multi-turn are implemented in JEval CLI generate.");
             return 2;
         }
         if ("contexts".equals(method) && option(args, "--contexts-file", null) == null) {
             err.println("--contexts-file is required for --method contexts");
             return 2;
         }
-        if ("scratch".equals(method) && option(args, "--scenario", null) == null) {
+        if ("scratch".equals(method)
+                && "single-turn".equals(variation)
+                && option(args, "--scenario", null) == null) {
             err.println("--scenario is required for --method scratch");
+            return 2;
+        }
+        if ("scratch".equals(method)
+                && "multi-turn".equals(variation)
+                && option(args, "--scenario-context", null) == null) {
+            err.println("--scenario-context is required for --method scratch --variation multi-turn");
             return 2;
         }
         if ("goldens".equals(method) && option(args, "--goldens-file", null) == null) {
@@ -46,16 +56,9 @@ final class GenerateCommand {
         }
         try {
             var synthesizer = synthesizer(args);
-            var goldens = switch (method == null ? "" : method) {
-                case "contexts" -> fromContexts(args, synthesizer, err);
-                case "scratch" -> fromScratch(args, synthesizer, err);
-                case "goldens" -> fromGoldens(args, synthesizer, err);
-                case "docs" -> fromDocs(args, synthesizer, err);
-                default -> {
-                    err.println("Missing or unsupported --method.");
-                    yield null;
-                }
-            };
+            var goldens = "multi-turn".equals(variation)
+                    ? multiTurnGoldens(method, args, synthesizer, err)
+                    : singleTurnGoldens(method, args, synthesizer, err);
             if (goldens == null) {
                 return 2;
             }
@@ -71,6 +74,39 @@ final class GenerateCommand {
         }
     }
 
+    private static List<?> singleTurnGoldens(
+            String method,
+            String[] args,
+            Synthesizer synthesizer,
+            PrintStream err) throws IOException {
+        return switch (method == null ? "" : method) {
+            case "contexts" -> fromContexts(args, synthesizer, err);
+            case "scratch" -> fromScratch(args, synthesizer, err);
+            case "goldens" -> fromGoldens(args, synthesizer, err);
+            case "docs" -> fromDocs(args, synthesizer, err);
+            default -> {
+                err.println("Missing or unsupported --method.");
+                yield null;
+            }
+        };
+    }
+
+    private static List<?> multiTurnGoldens(
+            String method,
+            String[] args,
+            Synthesizer synthesizer,
+            PrintStream err) throws IOException {
+        return switch (method == null ? "" : method) {
+            case "contexts" -> fromConversationalContexts(args, synthesizer, err);
+            case "scratch" -> synthesizer.generateConversationalGoldensFromScratch(integer(args, "--num-goldens", 1));
+            case "docs" -> fromConversationalDocs(args, synthesizer, err);
+            default -> {
+                err.println("Missing or unsupported --method for --variation multi-turn.");
+                yield null;
+            }
+        };
+    }
+
     private static Synthesizer synthesizer(String[] args) throws IOException {
         var responses = option(args, "--responses-file", null);
         var model = responses == null
@@ -80,7 +116,15 @@ final class GenerateCommand {
                         .toList());
         var scenario = option(args, "--scenario", null);
         if (scenario == null) {
-            return new Synthesizer(model);
+            var scenarioContext = option(args, "--scenario-context", null);
+            if (scenarioContext == null) {
+                return new Synthesizer(model);
+            }
+            return new Synthesizer(model, new ConversationalStylingConfig(
+                    scenarioContext,
+                    option(args, "--conversational-task", null),
+                    option(args, "--participant-roles", null),
+                    option(args, "--expected-outcome-format", null)));
         }
         return new Synthesizer(model, new StylingConfig(
                 scenario,
@@ -97,6 +141,22 @@ final class GenerateCommand {
         }
         var contexts = JSON.readValue(Path.of(file).toFile(), new TypeReference<List<List<String>>>() {});
         return synthesizer.generateGoldensFromContexts(contexts,
+                !has(args, "--no-expected-output"),
+                integer(args, "--max-goldens-per-context", 2),
+                null);
+    }
+
+    private static List<ConversationalGolden> fromConversationalContexts(
+            String[] args,
+            Synthesizer synthesizer,
+            PrintStream err) throws IOException {
+        var file = option(args, "--contexts-file", null);
+        if (file == null) {
+            err.println("--contexts-file is required for --method contexts");
+            return null;
+        }
+        var contexts = JSON.readValue(Path.of(file).toFile(), new TypeReference<List<List<String>>>() {});
+        return synthesizer.generateConversationalGoldensFromContexts(contexts,
                 !has(args, "--no-expected-output"),
                 integer(args, "--max-goldens-per-context", 2),
                 null);
@@ -139,6 +199,29 @@ final class GenerateCommand {
             }
         }
         return synthesizer.generateGoldensFromContexts(contexts,
+                !has(args, "--no-expected-output"),
+                integer(args, "--max-goldens-per-context", 2),
+                sourceFiles);
+    }
+
+    private static List<ConversationalGolden> fromConversationalDocs(
+            String[] args,
+            Synthesizer synthesizer,
+            PrintStream err) throws IOException {
+        var path = option(args, "--document-path", null);
+        if (path == null) {
+            err.println("--document-path is required for --method docs");
+            return null;
+        }
+        var contexts = new ArrayList<List<String>>();
+        var sourceFiles = new ArrayList<String>();
+        for (var file : documentFiles(Path.of(path))) {
+            for (var chunk : Utils.chunkText(Files.readString(file), integer(args, "--chunk-size", 20))) {
+                contexts.add(List.of(chunk));
+                sourceFiles.add(file.getFileName().toString());
+            }
+        }
+        return synthesizer.generateConversationalGoldensFromContexts(contexts,
                 !has(args, "--no-expected-output"),
                 integer(args, "--max-goldens-per-context", 2),
                 sourceFiles);

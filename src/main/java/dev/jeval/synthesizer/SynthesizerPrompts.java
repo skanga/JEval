@@ -62,6 +62,61 @@ final class SynthesizerPrompts {
                 input, String.join("\n", context));
     }
 
+    static String generateSyntheticConversationalScenarios(
+            List<String> context,
+            int maxGoldensPerContext,
+            ConversationalStylingConfig stylingConfig,
+            boolean includeExpectedOutcome) {
+        var shape = includeExpectedOutcome
+                ? "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}],\"expected_outcome\":\"...\"}]}"
+                : "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}]}]}";
+        return """
+                Generate up to %d synthetic multi-turn conversation scenarios from the context below.
+                Return only JSON in this shape: %s.
+
+                Scenario context: %s
+                Conversational task: %s
+                Participant roles: %s
+
+                Context:
+                %s
+                """.formatted(maxGoldensPerContext, shape,
+                stylingConfig == null ? "" : stylingConfig.scenarioContext(),
+                stylingConfig == null ? "" : stylingConfig.conversationalTask(),
+                stylingConfig == null ? "" : stylingConfig.participantRoles(),
+                String.join("\n", context));
+    }
+
+    static String generateSyntheticConversationalScenariosFromScratch(
+            ConversationalStylingConfig stylingConfig,
+            int numGoldens) {
+        return """
+                Generate %d synthetic multi-turn conversation scenarios.
+                Return only JSON in this shape: {"data":[{"scenario":"...","turns":[{"role":"user","content":"..."},{"role":"assistant","content":"..."}],"expected_outcome":"..."}]}.
+
+                Scenario context: %s
+                Conversational task: %s
+                Participant roles: %s
+                """.formatted(numGoldens, stylingConfig.scenarioContext(),
+                stylingConfig.conversationalTask(), stylingConfig.participantRoles());
+    }
+
+    static String generateConversationalExpectedOutcome(
+            String scenario,
+            List<String> context,
+            String expectedOutcomeFormat) {
+        return """
+                Generate the expected outcome for this conversation scenario using only the context.
+                Return plain text only.%s
+
+                Scenario: %s
+
+                Context:
+                %s
+                """.formatted(expectedOutcomeFormat == null ? "" : "\nExpected outcome format: " + expectedOutcomeFormat,
+                scenario, String.join("\n", context == null ? List.of() : context));
+    }
+
     static String evolveInput(String input, Evolution evolution) {
         return """
                 Rewrite the input using this evolution: %s.

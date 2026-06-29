@@ -196,6 +196,50 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateMultiTurnContextsWritesConversationalGoldensFile() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Refunds are available within 30 days.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"scenario\":\"refund support\",\"turns\":[{\"role\":\"user\",\"content\":\"Need a refund\"},{\"role\":\"assistant\",\"content\":\"I can help\"}],\"expected_outcome\":\"Refund path explained\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "multi-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "conversations"
+        }, out, err);
+
+        assertEquals(0, exit);
+        var generated = Files.readString(output.resolve("conversations.json"));
+        assertTrue(generated.contains("\"scenario\" : \"refund support\""));
+        assertTrue(generated.contains("\"turns\""));
+        assertTrue(generated.contains("\"expected_outcome\" : \"Refund path explained\""));
+    }
+
+    @Test
+    void generateMultiTurnScratchUsesConversationalStyling() throws Exception {
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"scenario\":\"flight booking\",\"turns\":[{\"role\":\"user\",\"content\":\"Book a flight\"}],\"expected_outcome\":\"Flight booking started\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "scratch", "--variation", "multi-turn",
+                "--scenario-context", "travel support", "--conversational-task", "book flights",
+                "--participant-roles", "traveler and agent", "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "scratch-conversations"
+        }, out, err);
+
+        assertEquals(0, exit);
+        assertTrue(Files.readString(output.resolve("scratch-conversations.json")).contains("flight booking"));
+    }
+
+    @Test
     void settingsSetUnsetListAndMaskSecretsInDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
