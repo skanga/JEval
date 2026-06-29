@@ -9,6 +9,9 @@ import dev.jeval.optimizer.PromptConfiguration;
 import dev.jeval.optimizer.PromptOptimizationAlgorithm;
 import dev.jeval.optimizer.policies.TieBreaker;
 import dev.jeval.prompt.Prompt;
+import dev.jeval.prompt.PromptMessage;
+import dev.jeval.prompt.PromptType;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
@@ -83,6 +86,28 @@ public final class GEPA implements PromptOptimizationAlgorithm {
         return randomState;
     }
 
+    <T> List<T> drawMinibatch(List<T> goldens) {
+        var size = Math.min(minibatchSize, goldens.size());
+        var sampled = new ArrayList<T>(size);
+        for (var i = 0; i < size; i++) {
+            sampled.add(goldens.get(randomState.nextInt(goldens.size())));
+        }
+        return List.copyOf(sampled);
+    }
+
+    boolean isEquivalentPrompt(Prompt original, Prompt rewritten) {
+        if (original.type() != rewritten.type()) {
+            return false;
+        }
+        if (original.type() == PromptType.TEXT) {
+            return normalized(original.textTemplate()).equals(normalized(rewritten.textTemplate()));
+        }
+        if (original.type() == PromptType.LIST) {
+            return equivalentMessages(original.messagesTemplate(), rewritten.messagesTemplate());
+        }
+        return false;
+    }
+
     @Override
     public OptimizationResult execute(Prompt prompt, List<?> goldens, OptimizerScorer scorer) {
         if (goldens.size() < 2) {
@@ -111,5 +136,24 @@ public final class GEPA implements PromptOptimizationAlgorithm {
                 parents,
                 OptimizerUtils.buildPromptConfigSnapshots(promptConfigurations));
         return new OptimizationResult(prompt, report);
+    }
+
+    private static boolean equivalentMessages(List<PromptMessage> original, List<PromptMessage> rewritten) {
+        if (original.size() != rewritten.size()) {
+            return false;
+        }
+        for (var i = 0; i < original.size(); i++) {
+            if (!original.get(i).role().equals(rewritten.get(i).role())) {
+                return false;
+            }
+            if (!normalized(original.get(i).content()).equals(normalized(rewritten.get(i).content()))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String normalized(String value) {
+        return value == null ? "" : value.strip();
     }
 }
