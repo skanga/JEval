@@ -141,6 +141,7 @@ external datasets:
 
 ```java
 import dev.jeval.Golden;
+import dev.jeval.benchmarks.ARC;
 import dev.jeval.benchmarks.BoolQ;
 import java.util.List;
 import java.util.Map;
@@ -151,6 +152,7 @@ var benchmark = new BoolQ(List.of(
                 .build()));
 
 var result = benchmark.evaluate(model);
+var arcResult = new ARC(goldens).evaluate(model);
 ```
 
 MMLU-style task scoring is available for task-grouped goldens:
