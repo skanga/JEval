@@ -1,9 +1,19 @@
 package dev.jeval.optimizer.algorithms;
 
+import dev.jeval.optimizer.OptimizationReport;
+import dev.jeval.optimizer.OptimizationResult;
+import dev.jeval.optimizer.OptimizerScorer;
+import dev.jeval.optimizer.OptimizerUtils;
+import dev.jeval.optimizer.PromptConfiguration;
+import dev.jeval.optimizer.PromptOptimizationAlgorithm;
 import dev.jeval.optimizer.policies.TieBreaker;
+import dev.jeval.prompt.Prompt;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
-public final class GEPA {
+public final class GEPA implements PromptOptimizationAlgorithm {
     private final int iterations;
     private final int minibatchSize;
     private final int paretoSize;
@@ -70,5 +80,32 @@ public final class GEPA {
 
     public Random randomState() {
         return randomState;
+    }
+
+    @Override
+    public OptimizationResult execute(Prompt prompt, List<?> goldens, OptimizerScorer scorer) {
+        var optimizationId = UUID.randomUUID().toString();
+        var prompts = new LinkedHashMap<String, Prompt>();
+        prompts.put(OptimizerScorer.DEFAULT_MODULE_ID, prompt);
+        var rootConfig = PromptConfiguration.create(prompts);
+        var split = OptimizerUtils.splitGoldens(goldens, paretoSize, randomState);
+        var paretoGoldens = split.pareto();
+        var scores = scorer.scorePareto(rootConfig, paretoGoldens);
+
+        var paretoScores = new LinkedHashMap<String, List<Double>>();
+        paretoScores.put(rootConfig.id(), scores);
+        var parents = new LinkedHashMap<String, String>();
+        parents.put(rootConfig.id(), null);
+        var promptConfigurations = new LinkedHashMap<String, PromptConfiguration>();
+        promptConfigurations.put(rootConfig.id(), rootConfig);
+
+        var report = new OptimizationReport(
+                optimizationId,
+                rootConfig.id(),
+                List.of(),
+                paretoScores,
+                parents,
+                OptimizerUtils.buildPromptConfigSnapshots(promptConfigurations));
+        return new OptimizationResult(prompt, report);
     }
 }
