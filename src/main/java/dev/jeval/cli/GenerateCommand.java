@@ -100,6 +100,7 @@ final class GenerateCommand {
             case "contexts" -> fromConversationalContexts(args, synthesizer, err);
             case "scratch" -> synthesizer.generateConversationalGoldensFromScratch(integer(args, "--num-goldens", 1));
             case "docs" -> fromConversationalDocs(args, synthesizer, err);
+            case "goldens" -> fromConversationalGoldens(args, synthesizer, err);
             default -> {
                 err.println("Missing or unsupported --method for --variation multi-turn.");
                 yield null;
@@ -180,6 +181,23 @@ final class GenerateCommand {
         dataset.addGoldensFromJsonFile(Path.of(file));
         return synthesizer.generateGoldensFromGoldens(
                 dataset.goldens(),
+                integer(args, "--max-goldens-per-golden", 1),
+                !has(args, "--no-expected-output"));
+    }
+
+    private static List<ConversationalGolden> fromConversationalGoldens(
+            String[] args,
+            Synthesizer synthesizer,
+            PrintStream err) {
+        var file = option(args, "--goldens-file", null);
+        if (file == null) {
+            err.println("--goldens-file is required for --method goldens");
+            return null;
+        }
+        var dataset = new EvaluationDataset();
+        dataset.addGoldensFromJsonFile(Path.of(file));
+        return synthesizer.generateConversationalGoldensFromGoldens(
+                dataset.conversationalGoldens(),
                 integer(args, "--max-goldens-per-golden", 1),
                 !has(args, "--no-expected-output"));
     }

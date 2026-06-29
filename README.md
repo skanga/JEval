@@ -75,9 +75,8 @@ commands currently persist configuration only.
 
 ## CLI generate
 
-The `generate` command supports single-turn `contexts`, `docs`, `scratch`, and
-`goldens`, plus multi-turn `contexts`, `docs`, and `scratch` generation through
-JEval's synthesizer. It can use OpenAI/Ollama settings saved with provider
+The `generate` command supports single-turn and multi-turn `contexts`, `docs`,
+`scratch`, and `goldens` generation through JEval's synthesizer. It can use OpenAI/Ollama settings saved with provider
 commands, or deterministic scripted responses with `--responses-file`:
 
 ```powershell
@@ -93,7 +92,7 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation
 
 The synthesizer can generate single-turn `Golden` values from contexts, scratch
 styling, or existing goldens, and multi-turn `ConversationalGolden` values from
-contexts or scratch styling. It uses any `EvaluationModel`, including the
+contexts, scratch styling, or existing conversational goldens. It uses any `EvaluationModel`, including the
 LangChain4j adapter.
 
 ```java

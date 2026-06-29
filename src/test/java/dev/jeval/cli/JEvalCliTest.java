@@ -240,6 +240,31 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateMultiTurnGoldensWritesConversationalGoldensFile() throws Exception {
+        var goldens = tempDir.resolve("goldens.json");
+        Files.writeString(goldens, """
+                [
+                  {"scenario":"traveler wants to rebook a flight"}
+                ]
+                """);
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"scenario\":\"flight change request\",\"turns\":[{\"role\":\"user\",\"content\":\"Change my flight\"}],\"expected_outcome\":\"Flight change started\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "goldens", "--variation", "multi-turn",
+                "--goldens-file", goldens.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "multi-goldens"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(Files.readString(output.resolve("multi-goldens.json")).contains("flight change request"));
+    }
+
+    @Test
     void settingsSetUnsetListAndMaskSecretsInDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

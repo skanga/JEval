@@ -208,6 +208,48 @@ class SynthesizerTest {
         assertThrows(IllegalStateException.class, () -> synthesizer.generateConversationalGoldensFromScratch(1));
     }
 
+    @Test
+    void generatesConversationalGoldensFromExistingGoldensWithContext() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"refund follow up","turns":[
+                  {"role":"user","content":"Can I still get a refund?"},
+                  {"role":"assistant","content":"Yes, within 30 days."}
+                ],"expected_outcome":"Refund eligibility explained"}]}
+                """));
+        var synthesizer = new Synthesizer(model);
+        var original = ConversationalGolden.builder("old refund scenario")
+                .context(List.of("Refunds are available within 30 days."))
+                .build();
+
+        var goldens = synthesizer.generateConversationalGoldensFromGoldens(List.of(original), 1, true);
+
+        assertEquals(1, goldens.size());
+        assertEquals("refund follow up", goldens.getFirst().scenario());
+        assertEquals(List.of("Refunds are available within 30 days."), goldens.getFirst().context());
+        assertEquals("Refund eligibility explained", goldens.getFirst().expectedOutcome());
+    }
+
+    @Test
+    void generatesConversationalGoldensFromExistingGoldensWithoutContext() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"flight change request","turns":[
+                  {"role":"user","content":"Change my flight"},
+                  {"role":"assistant","content":"I can help with that."}
+                ]}]}
+                """));
+        var synthesizer = new Synthesizer(model);
+        var original = ConversationalGolden.builder("traveler wants to rebook a flight").build();
+
+        var goldens = synthesizer.generateConversationalGoldensFromGoldens(List.of(original), 1, false);
+
+        assertEquals(1, goldens.size());
+        assertEquals("flight change request", goldens.getFirst().scenario());
+        assertEquals("user", goldens.getFirst().turns().getFirst().role());
+        assertEquals(true, model.prompts().getFirst().contains("traveler wants to rebook a flight"));
+    }
+
     private static final class ScriptedModel implements EvaluationModel {
         private final List<String> responses;
         private final List<String> prompts = new ArrayList<>();

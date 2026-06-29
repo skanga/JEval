@@ -144,6 +144,35 @@ public final class Synthesizer {
                 .toList();
     }
 
+    public List<ConversationalGolden> generateConversationalGoldensFromGoldens(
+            List<ConversationalGolden> goldens,
+            int maxGoldensPerGolden,
+            boolean includeExpectedOutcome) {
+        var contexts = new ArrayList<List<String>>();
+        var scenarios = new ArrayList<String>();
+        for (var golden : goldens) {
+            if (golden.context() != null && !golden.context().isEmpty()) {
+                contexts.add(golden.context());
+            } else {
+                scenarios.add(golden.scenario());
+            }
+        }
+        var generated = new ArrayList<ConversationalGolden>();
+        if (!contexts.isEmpty()) {
+            generated.addAll(generateConversationalGoldensFromContexts(
+                    contexts, includeExpectedOutcome, maxGoldensPerGolden, null));
+        }
+        if (!scenarios.isEmpty()) {
+            var data = SynthesizerSchemas.parseConversationalData(model.generate(
+                    SynthesizerPrompts.generateSyntheticConversationalScenariosFromGoldens(
+                            scenarios, scenarios.size() * maxGoldensPerGolden, includeExpectedOutcome)));
+            for (var item : data) {
+                generated.add(conversationalGolden(item, null, null, includeExpectedOutcome));
+            }
+        }
+        return List.copyOf(generated);
+    }
+
     private ConversationalGolden conversationalGolden(
             ConversationalData data,
             List<String> context,
