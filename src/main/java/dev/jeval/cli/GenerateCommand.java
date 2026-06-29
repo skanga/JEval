@@ -210,6 +210,7 @@ final class GenerateCommand {
         }
         var dataset = new EvaluationDataset();
         loadGoldens(dataset, Path.of(file));
+        validateGoldensVariation(dataset, false);
         return synthesizer.generateGoldensFromGoldens(
                 dataset.goldens(),
                 integer(args, "--max-goldens-per-golden", 1),
@@ -227,6 +228,7 @@ final class GenerateCommand {
         }
         var dataset = new EvaluationDataset();
         loadGoldens(dataset, Path.of(file));
+        validateGoldensVariation(dataset, true);
         return synthesizer.generateConversationalGoldensFromGoldens(
                 dataset.conversationalGoldens(),
                 integer(args, "--max-goldens-per-golden", 1),
@@ -293,6 +295,18 @@ final class GenerateCommand {
             dataset.addGoldensFromJsonFile(file);
         } else {
             throw new IllegalArgumentException("Goldens file must be a .json, .csv, or .jsonl file.");
+        }
+    }
+
+    private static void validateGoldensVariation(EvaluationDataset dataset, boolean multiTurn) {
+        if (dataset.goldens().isEmpty() && dataset.conversationalGoldens().isEmpty()) {
+            throw new IllegalArgumentException("Goldens file does not contain any goldens.");
+        }
+        if (multiTurn && dataset.conversationalGoldens().isEmpty()) {
+            throw new IllegalArgumentException("`--variation multi-turn` requires conversational goldens.");
+        }
+        if (!multiTurn && dataset.goldens().isEmpty()) {
+            throw new IllegalArgumentException("`--variation single-turn` requires single-turn goldens.");
         }
     }
 

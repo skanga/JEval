@@ -1019,6 +1019,51 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateGoldensRejectsSingleTurnFileForMultiTurnVariationLikeDeepEval() throws Exception {
+        var goldens = tempDir.resolve("single-turn-goldens.json");
+        Files.writeString(goldens, """
+                [
+                  {"input":"Old question?","expected_output":"Old answer"}
+                ]
+                """);
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"scenario\":\"flight change\",\"turns\":[{\"role\":\"user\",\"content\":\"Change flight\"}]}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "goldens", "--variation", "multi-turn",
+                "--goldens-file", goldens.toString(), "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("`--variation multi-turn` requires conversational goldens."));
+    }
+
+    @Test
+    void generateGoldensRejectsConversationalFileForSingleTurnVariationLikeDeepEval() throws Exception {
+        var goldens = tempDir.resolve("conversation-goldens.json");
+        Files.writeString(goldens, """
+                [
+                  {"scenario":"traveler wants to rebook a flight"}
+                ]
+                """);
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"New question?\",\"expected_output\":\"New answer\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "goldens", "--variation", "single-turn",
+                "--goldens-file", goldens.toString(), "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("`--variation single-turn` requires single-turn goldens."));
+    }
+
+    @Test
     void generateRequiresMethodSpecificInput() {
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();
