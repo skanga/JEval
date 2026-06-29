@@ -470,6 +470,26 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsListWithoutFilterPrintsAllSavedSettings() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "settings", "-u", "log-level=debug", "-u", "openai-api-key=sk-test",
+                "--save", "dotenv:" + env
+        }, out, err));
+        out.reset();
+        err.reset();
+
+        var exit = run(new String[] {"settings", "--list", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("LOG_LEVEL=10"));
+        assertTrue(text(out).contains("OPENAI_API_KEY=********"));
+    }
+
+    @Test
     void setDebugQuietUpdatesDotenvWithoutOutput() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

@@ -136,7 +136,13 @@ final class CliSettings {
             switch (args[i]) {
                 case "-u", "--update" -> updates.add(args[++i]);
                 case "-U", "--unset" -> unsets.add(args[++i]);
-                case "-l", "--list" -> list = args[++i];
+                case "-l", "--list" -> {
+                    if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
+                        list = args[++i];
+                    } else {
+                        list = "";
+                    }
+                }
                 case "--quiet" -> quiet = true;
                 case "--save" -> save = savePath(args[++i]);
                 default -> {
