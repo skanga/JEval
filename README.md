@@ -144,6 +144,7 @@ import dev.jeval.Golden;
 import dev.jeval.benchmarks.ARC;
 import dev.jeval.benchmarks.BoolQ;
 import dev.jeval.benchmarks.HellaSwag;
+import dev.jeval.benchmarks.LAMBADA;
 import dev.jeval.benchmarks.TruthfulQA;
 import dev.jeval.benchmarks.TruthfulQAMode;
 import dev.jeval.benchmarks.Winogrande;
@@ -158,6 +159,7 @@ var benchmark = new BoolQ(List.of(
 var result = benchmark.evaluate(model);
 var arcResult = new ARC(goldens).evaluate(model);
 var hellaswagResult = new HellaSwag(Map.of("Applying sunscreen", goldens)).evaluate(model);
+var lambada = new LAMBADA(goldens).evaluate(model);
 var truthful = new TruthfulQA(Map.of("Health", goldens), TruthfulQAMode.MC1).evaluate(model);
 var winogrande = new Winogrande(goldens).evaluate(model);
 ```
