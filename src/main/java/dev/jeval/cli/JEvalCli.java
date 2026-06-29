@@ -78,6 +78,9 @@ public final class JEvalCli {
             if (options.identifier() != null) {
                 result = withName(result, options.identifier());
             }
+            if (options.official()) {
+                err.println("Warning: --official is not supported by local JEval runs. Skipping.");
+            }
             new LocalRunStore(storeRoot).write(result);
             var report = report(displayed(result, options.display()), options.format());
             if (options.output() != null) {
@@ -198,6 +201,7 @@ public final class JEvalCli {
         var display = "all";
         var ignoreErrors = false;
         var skipOnMissingParams = false;
+        var official = false;
         String mark = null;
         for (var i = start; i < args.length; i++) {
             switch (args[i]) {
@@ -205,6 +209,7 @@ public final class JEvalCli {
                 case "-x", "--exit-on-first-failure" -> exitOnFirstFailure = true;
                 case "-i", "--ignore-errors" -> ignoreErrors = true;
                 case "-s", "--skip-on-missing-params" -> skipOnMissingParams = true;
+                case "-o", "--official" -> official = true;
                 case "--format" -> {
                     if (++i == args.length) {
                         usage(err);
@@ -275,6 +280,7 @@ public final class JEvalCli {
                 display,
                 ignoreErrors,
                 skipOnMissingParams,
+                official,
                 mark);
     }
 
@@ -309,7 +315,7 @@ public final class JEvalCli {
     }
 
     private static void usage(PrintStream err) {
-        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|--exit-on-first-failure] [-i|--ignore-errors] [-s|--skip-on-missing-params] [-d|--display all|passing|failing] [-m|--mark tag] [--format markdown|html] [--output dir] [--quiet]");
+        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|--exit-on-first-failure] [-i|--ignore-errors] [-s|--skip-on-missing-params] [-d|--display all|passing|failing] [-m|--mark tag] [-o|--official] [--format markdown|html] [--output dir] [--quiet]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
         err.println("       jeval settings -u key=value|-U key|-l [filter] [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv:.env] [-q|--quiet]");
@@ -328,6 +334,7 @@ public final class JEvalCli {
             String display,
             boolean ignoreErrors,
             boolean skipOnMissingParams,
+            boolean official,
             String mark) {
     }
 

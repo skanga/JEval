@@ -386,6 +386,50 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunOfficialWarnsAndContinuesLocally() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "official-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--official"}, out, err);
+
+        assertEquals(0, exit);
+        assertTrue(text(out).contains("Summary: total=1 passed=1 failed=0"));
+        assertTrue(text(err).contains("Warning: --official is not supported by local JEval runs. Skipping."));
+    }
+
+    @Test
+    void testRunOfficialSupportsShortAlias() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "official-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-o", "--quiet"}, out, err);
+
+        assertEquals(0, exit);
+        assertEquals("", text(out));
+        assertTrue(text(err).contains("Warning: --official is not supported by local JEval runs. Skipping."));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
