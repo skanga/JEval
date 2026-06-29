@@ -142,6 +142,21 @@ class SynthesizerTest {
     }
 
     @Test
+    void saveAsRejectsFileNameWithPeriodsLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
+        var synthesizer = new Synthesizer(model);
+        synthesizer.generateGoldensFromContexts(List.of(List.of("Paris is in France.")), true, 1, null);
+
+        var error = assertThrows(IllegalArgumentException.class,
+                () -> synthesizer.saveAs("json", tempDir.resolve("generated"), "goldens.json", true));
+
+        assertEquals("file_name should not contain periods or file extensions. "
+                        + "The file extension will be added based on the file_type parameter.",
+                error.getMessage());
+    }
+
+    @Test
     void generatesConversationalGoldensFromDocsLikeDeepEval() throws Exception {
         var document = tempDir.resolve("policy.md");
         Files.writeString(document, "alpha beta gamma delta");

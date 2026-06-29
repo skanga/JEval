@@ -70,6 +70,10 @@ public final class Synthesizer {
     }
 
     public Path saveAs(String fileType, Path directory, String fileName, boolean quiet) {
+        if (fileName != null && fileName.contains(".")) {
+            throw new IllegalArgumentException("file_name should not contain periods or file extensions. "
+                    + "The file extension will be added based on the file_type parameter.");
+        }
         if (syntheticGoldens.isEmpty() && syntheticConversationalGoldens.isEmpty()) {
             throw new IllegalStateException(
                     "No synthetic goldens found. Please generate goldens before saving goldens.");
