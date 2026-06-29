@@ -812,6 +812,29 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateAcceptsEqualsFormOptionsLikeDeepEvalTyper() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method=contexts", "--variation=single-turn",
+                "--contexts-file=" + contexts,
+                "--responses-file=" + responses,
+                "--output-dir=" + output,
+                "--file-name=equals-form"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("equals-form.json"));
+        assertTrue(generated.contains("\"input\" : \"Capital?\""));
+    }
+
+    @Test
     void generateUsesDeepEvalDefaultOutputDirectoryAndTimestampedFileName() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");
