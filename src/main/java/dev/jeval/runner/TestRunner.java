@@ -68,9 +68,23 @@ public final class TestRunner {
             boolean ignoreErrors,
             boolean skipOnMissingParams,
             String mark) throws IOException {
+        return run(path, selector, repeat, exitOnFirstFailure, ignoreErrors, skipOnMissingParams, mark, null, false);
+    }
+
+    public TestRunResult run(
+            Path path,
+            String selector,
+            int repeat,
+            boolean exitOnFirstFailure,
+            boolean ignoreErrors,
+            boolean skipOnMissingParams,
+            String mark,
+            Path cacheFile,
+            boolean useCache) throws IOException {
         if (repeat < 1) {
             throw new IllegalArgumentException("The repeat argument must be at least 1.");
         }
+        var cache = TestRunCache.open(cacheFile);
         if (Files.isDirectory(path)) {
             if (selector != null) {
                 throw new IllegalArgumentException("Test selectors are only supported for files: " + path);
@@ -89,7 +103,9 @@ public final class TestRunner {
                             exitOnFirstFailure,
                             ignoreErrors,
                             skipOnMissingParams,
-                            mark).results());
+                            mark,
+                            cache,
+                            useCache).results());
                     if (exitOnFirstFailure && results.stream().anyMatch(result -> !result.success())) {
                         break;
                     }
@@ -97,7 +113,7 @@ public final class TestRunner {
             }
             return summarize(path.getFileName().toString(), results);
         }
-        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, skipOnMissingParams, mark);
+        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, skipOnMissingParams, mark, cache, useCache);
     }
 
     private TestRunResult runFile(Path path) throws IOException {
@@ -144,6 +160,19 @@ public final class TestRunner {
             boolean ignoreErrors,
             boolean skipOnMissingParams,
             String mark) throws IOException {
+        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, skipOnMissingParams, mark, null, false);
+    }
+
+    private TestRunResult runFile(
+            Path path,
+            String selector,
+            int repeat,
+            boolean exitOnFirstFailure,
+            boolean ignoreErrors,
+            boolean skipOnMissingParams,
+            String mark,
+            TestRunCache cache,
+            boolean useCache) throws IOException {
         var spec = JSON.readValue(path.toFile(), EvaluationSpec.class);
         if (spec.metrics() == null || spec.metrics().isEmpty()) {
             throw new IllegalArgumentException("Evaluation spec must define at least one metric: " + path);
@@ -161,25 +190,51 @@ public final class TestRunner {
         if (mark != null) {
             testCases = markedCases(testCases, mark);
         }
-        var results = repeatedResults(testCases, metrics, repeat, exitOnFirstFailure, ignoreErrors, skipOnMissingParams);
+        var results = repeatedResults(
+                testCases,
+                metrics,
+                metricCacheKeys(spec.metrics()),
+                repeat,
+                exitOnFirstFailure,
+                ignoreErrors,
+                skipOnMissingParams,
+                cache,
+                useCache);
         return summarize(spec.name() == null ? stripExtension(path.getFileName().toString()) : spec.name(), results);
     }
 
     private static List<TestCaseResult> repeatedResults(
             List<LlmTestCase> testCases,
             List<Metric> metrics,
+            List<String> metricCacheKeys,
             int repeat,
             boolean exitOnFirstFailure,
             boolean ignoreErrors,
-            boolean skipOnMissingParams) {
+            boolean skipOnMissingParams,
+            TestRunCache cache,
+            boolean useCache) {
         var results = new ArrayList<TestCaseResult>();
         for (var i = 0; i < repeat; i++) {
             for (var testCase : testCases) {
+                if (useCache && cache != null) {
+                    var cached = cache.get(testCase, metricCacheKeys);
+                    if (cached.isPresent()) {
+                        var result = cached.get();
+                        results.add(result);
+                        if (exitOnFirstFailure && !result.success()) {
+                            return List.copyOf(results);
+                        }
+                        continue;
+                    }
+                }
                 var result = runCase(testCase, metrics, ignoreErrors, skipOnMissingParams);
                 if (result == null) {
                     continue;
                 }
                 results.add(result);
+                if (cache != null) {
+                    cache.put(testCase, metricCacheKeys, result);
+                }
                 if (exitOnFirstFailure && !result.success()) {
                     return List.copyOf(results);
                 }
@@ -300,6 +355,16 @@ public final class TestRunner {
             case "pattern_match" -> new PatternMatchMetric(spec.pattern(), Boolean.TRUE.equals(spec.ignoreCase()), threshold);
             default -> throw new IllegalArgumentException("Unsupported metric type: " + spec.type());
         };
+    }
+
+    private static List<String> metricCacheKeys(List<MetricSpec> specs) {
+        return specs.stream()
+                .map(spec -> String.join("|",
+                        spec.type() == null ? "" : spec.type().toLowerCase(Locale.ROOT).replace("-", "_"),
+                        spec.pattern() == null ? "" : spec.pattern(),
+                        String.valueOf(Boolean.TRUE.equals(spec.ignoreCase())),
+                        String.valueOf(spec.threshold() == null ? 1.0 : spec.threshold())))
+                .toList();
     }
 
     private static TestRunResult summarize(String name, List<TestCaseResult> results) {

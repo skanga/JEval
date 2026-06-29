@@ -41,6 +41,7 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -x
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -d failing
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -i
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -s
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -c
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -m smoke
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -o
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --color no --durations 5 -w -n 2

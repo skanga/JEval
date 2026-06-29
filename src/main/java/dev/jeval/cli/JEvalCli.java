@@ -74,7 +74,9 @@ public final class JEvalCli {
                     options.exitOnFirstFailure(),
                     options.ignoreErrors(),
                     options.skipOnMissingParams(),
-                    options.mark());
+                    options.mark(),
+                    storeRoot.resolve(".deepeval").resolve(".deepeval-cache.json"),
+                    options.useCache() && options.repeat() == 1);
             if (options.identifier() != null) {
                 result = withName(result, options.identifier());
             }
@@ -202,6 +204,7 @@ public final class JEvalCli {
         var ignoreErrors = false;
         var skipOnMissingParams = false;
         var official = false;
+        var useCache = false;
         String mark = null;
         for (var i = start; i < args.length; i++) {
             switch (args[i]) {
@@ -210,6 +213,7 @@ public final class JEvalCli {
                 case "-i", "--ignore-errors" -> ignoreErrors = true;
                 case "-s", "--skip-on-missing-params" -> skipOnMissingParams = true;
                 case "-o", "--official" -> official = true;
+                case "-c", "--use-cache" -> useCache = true;
                 case "--pdb", "-w", "--show-warnings" -> {
                     // Pytest compatibility flags accepted by DeepEval; local JEval runs have no pytest layer.
                 }
@@ -290,6 +294,7 @@ public final class JEvalCli {
                 ignoreErrors,
                 skipOnMissingParams,
                 official,
+                useCache,
                 mark);
     }
 
@@ -324,7 +329,7 @@ public final class JEvalCli {
     }
 
     private static void usage(PrintStream err) {
-        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|--exit-on-first-failure] [-i|--ignore-errors] [-s|--skip-on-missing-params] [-d|--display all|passing|failing] [-m|--mark tag] [-o|--official] [--color yes|no|auto] [--durations count] [--pdb] [-w|--show-warnings] [-n|--num-processes count] [--format markdown|html] [--output dir] [--quiet]");
+        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|--exit-on-first-failure] [-i|--ignore-errors] [-s|--skip-on-missing-params] [-c|--use-cache] [-d|--display all|passing|failing] [-m|--mark tag] [-o|--official] [--color yes|no|auto] [--durations count] [--pdb] [-w|--show-warnings] [-n|--num-processes count] [--format markdown|html] [--output dir] [--quiet]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
         err.println("       jeval settings -u key=value|-U key|-l [filter] [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv:.env] [-q|--quiet]");
@@ -344,6 +349,7 @@ public final class JEvalCli {
             boolean ignoreErrors,
             boolean skipOnMissingParams,
             boolean official,
+            boolean useCache,
             String mark) {
     }
 

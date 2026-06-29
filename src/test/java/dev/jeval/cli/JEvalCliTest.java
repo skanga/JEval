@@ -481,6 +481,64 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunUseCacheReadsCachedMetricResults() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "cache-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var cache = tempDir.resolve(".deepeval").resolve(".deepeval-cache.json");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {"test", "run", file.toString(), "--quiet"}, out, err), text(err));
+        assertTrue(Files.readString(cache).contains("Exact Match"));
+        Files.writeString(cache, Files.readString(cache)
+                .replace("The actual and expected outputs are exact matches.", "Loaded from local cache."));
+
+        out.reset();
+        err.reset();
+        var exit = run(new String[] {"test", "run", file.toString(), "--use-cache"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("Loaded from local cache."));
+    }
+
+    @Test
+    void testRunUseCacheAliasIsDisabledForRepeat() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "cache-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var cache = tempDir.resolve(".deepeval").resolve(".deepeval-cache.json");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {"test", "run", file.toString(), "--quiet"}, out, err), text(err));
+        Files.writeString(cache, Files.readString(cache)
+                .replace("The actual and expected outputs are exact matches.", "Loaded from local cache."));
+
+        out.reset();
+        err.reset();
+        var exit = run(new String[] {"test", "run", file.toString(), "-c", "--repeat", "2"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("Summary: total=2 passed=2 failed=0"));
+        assertEquals(false, text(out).contains("Loaded from local cache."));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
