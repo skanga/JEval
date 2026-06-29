@@ -143,6 +143,7 @@ external datasets:
 import dev.jeval.Golden;
 import dev.jeval.benchmarks.BoolQ;
 import java.util.List;
+import java.util.Map;
 
 var benchmark = new BoolQ(List.of(
         Golden.builder("Passage: Java is statically typed.\nQuestion: Is Java statically typed?")
@@ -150,6 +151,16 @@ var benchmark = new BoolQ(List.of(
                 .build()));
 
 var result = benchmark.evaluate(model);
+```
+
+MMLU-style task scoring is available for task-grouped goldens:
+
+```java
+import dev.jeval.benchmarks.MMLU;
+import java.util.Map;
+
+var mmlu = new MMLU(Map.of("abstract_algebra", goldens));
+var mmluResult = mmlu.evaluate(model);
 ```
 
 ## LangChain4j providers
