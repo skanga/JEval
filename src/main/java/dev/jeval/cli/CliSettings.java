@@ -34,7 +34,7 @@ final class CliSettings {
             "OPENAI_API_VERSION", "ANTHROPIC_MODEL_NAME", "AWS_BEDROCK_MODEL_NAME", "AWS_BEDROCK_REGION",
             "OLLAMA_MODEL_NAME", "LOCAL_MODEL_NAME", "LOCAL_MODEL_BASE_URL", "LOCAL_MODEL_FORMAT",
             "GROK_MODEL_NAME", "MOONSHOT_MODEL_NAME", "DEEPSEEK_MODEL_NAME", "GEMINI_MODEL_NAME",
-            "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GOOGLE_GENAI_USE_VERTEXAI",
+            "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GOOGLE_GENAI_USE_VERTEXAI", "AZURE_MODEL_VERSION",
             "LITELLM_MODEL_NAME", "LITELLM_API_BASE",
             "LITELLM_PROXY_API_BASE", "PORTKEY_MODEL_NAME", "PORTKEY_BASE_URL", "PORTKEY_PROVIDER_NAME",
             "OPENROUTER_MODEL_NAME", "OPENROUTER_BASE_URL", "OPENROUTER_COST_PER_INPUT_TOKEN",
@@ -140,7 +140,7 @@ final class CliSettings {
             } else {
                 updates.put(spec.useKey(), "YES");
                 for (var entry : spec.setKeys().entrySet()) {
-                    var value = option(args, entry.getKey(), null);
+                    var value = optionValue(args, entry.getKey());
                     if (value != null) {
                         updates.put(entry.getValue(), value);
                     }
@@ -311,37 +311,43 @@ final class CliSettings {
                 case "set-openai", "unset-openai" -> openAi();
                 case "set-anthropic", "unset-anthropic" -> llmWithSecrets(
                         "USE_ANTHROPIC_MODEL",
-                        Map.of("--model", "ANTHROPIC_MODEL_NAME"),
+                        Map.of("--model", "ANTHROPIC_MODEL_NAME", "-m", "ANTHROPIC_MODEL_NAME"),
                         "ANTHROPIC_API_KEY");
                 case "set-ollama", "unset-ollama" -> llmWithSecrets(
                         "USE_LOCAL_MODEL",
-                        Map.of("--model", "OLLAMA_MODEL_NAME", "--base-url", "LOCAL_MODEL_BASE_URL"),
+                        Map.of("--model", "OLLAMA_MODEL_NAME", "-m", "OLLAMA_MODEL_NAME",
+                                "--base-url", "LOCAL_MODEL_BASE_URL", "-u", "LOCAL_MODEL_BASE_URL"),
                         "LOCAL_MODEL_API_KEY");
                 case "set-local-model", "unset-local-model" -> llmWithSecrets(
                         "USE_LOCAL_MODEL",
-                        Map.of("--model", "LOCAL_MODEL_NAME", "--base-url", "LOCAL_MODEL_BASE_URL",
-                                "--format", "LOCAL_MODEL_FORMAT"),
+                        Map.of("--model", "LOCAL_MODEL_NAME", "-m", "LOCAL_MODEL_NAME",
+                                "--base-url", "LOCAL_MODEL_BASE_URL", "-u", "LOCAL_MODEL_BASE_URL",
+                                "--format", "LOCAL_MODEL_FORMAT", "-f", "LOCAL_MODEL_FORMAT"),
                         "LOCAL_MODEL_API_KEY");
                 case "set-azure-openai", "unset-azure-openai" -> llmWithSecrets(
                         "USE_AZURE_OPENAI",
-                        Map.of("--model", "AZURE_MODEL_NAME", "--deployment-name", "AZURE_DEPLOYMENT_NAME",
-                                "--base-url", "AZURE_OPENAI_ENDPOINT", "--api-version", "OPENAI_API_VERSION"),
+                        Map.of("--model", "AZURE_MODEL_NAME", "-m", "AZURE_MODEL_NAME",
+                                "--deployment-name", "AZURE_DEPLOYMENT_NAME", "-d", "AZURE_DEPLOYMENT_NAME",
+                                "--base-url", "AZURE_OPENAI_ENDPOINT", "-u", "AZURE_OPENAI_ENDPOINT",
+                                "--api-version", "OPENAI_API_VERSION", "-v", "OPENAI_API_VERSION",
+                                "--model-version", "AZURE_MODEL_VERSION", "-V", "AZURE_MODEL_VERSION"),
                         "AZURE_OPENAI_API_KEY");
                 case "set-bedrock", "unset-bedrock" -> llmWithSecrets(
                         "USE_AWS_BEDROCK_MODEL",
-                        Map.of("--model", "AWS_BEDROCK_MODEL_NAME", "--region", "AWS_BEDROCK_REGION"),
+                        Map.of("--model", "AWS_BEDROCK_MODEL_NAME", "-m", "AWS_BEDROCK_MODEL_NAME",
+                                "--region", "AWS_BEDROCK_REGION", "-r", "AWS_BEDROCK_REGION"),
                         "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY");
                 case "set-grok", "unset-grok" -> llmWithSecrets(
                         "USE_GROK_MODEL",
-                        Map.of("--model", "GROK_MODEL_NAME"),
+                        Map.of("--model", "GROK_MODEL_NAME", "-m", "GROK_MODEL_NAME"),
                         "GROK_API_KEY");
                 case "set-moonshot", "unset-moonshot" -> llmWithSecrets(
                         "USE_MOONSHOT_MODEL",
-                        Map.of("--model", "MOONSHOT_MODEL_NAME"),
+                        Map.of("--model", "MOONSHOT_MODEL_NAME", "-m", "MOONSHOT_MODEL_NAME"),
                         "MOONSHOT_API_KEY");
                 case "set-deepseek", "unset-deepseek" -> llmWithSecrets(
                         "USE_DEEPSEEK_MODEL",
-                        Map.of("--model", "DEEPSEEK_MODEL_NAME"),
+                        Map.of("--model", "DEEPSEEK_MODEL_NAME", "-m", "DEEPSEEK_MODEL_NAME"),
                         "DEEPSEEK_API_KEY");
                 case "set-gemini", "unset-gemini" -> gemini();
                 case "set-litellm", "unset-litellm" -> llmWithSecrets(
@@ -372,6 +378,7 @@ final class CliSettings {
         private static ProviderSpec openAi() {
             var setKeys = Map.of(
                     "--model", "OPENAI_MODEL_NAME",
+                    "-m", "OPENAI_MODEL_NAME",
                     "--temperature", "TEMPERATURE",
                     "--cost-per-input-token", "OPENAI_COST_PER_INPUT_TOKEN",
                     "--cost-per-output-token", "OPENAI_COST_PER_OUTPUT_TOKEN");
@@ -384,7 +391,9 @@ final class CliSettings {
         private static ProviderSpec openRouter() {
             var setKeys = Map.of(
                     "--model", "OPENROUTER_MODEL_NAME",
+                    "-m", "OPENROUTER_MODEL_NAME",
                     "--base-url", "OPENROUTER_BASE_URL",
+                    "-u", "OPENROUTER_BASE_URL",
                     "--temperature", "TEMPERATURE",
                     "--cost-per-input-token", "OPENROUTER_COST_PER_INPUT_TOKEN",
                     "--cost-per-output-token", "OPENROUTER_COST_PER_OUTPUT_TOKEN");
@@ -398,8 +407,11 @@ final class CliSettings {
         private static ProviderSpec gemini() {
             var setKeys = Map.of(
                     "--model", "GEMINI_MODEL_NAME",
+                    "-m", "GEMINI_MODEL_NAME",
                     "--project", "GOOGLE_CLOUD_PROJECT",
-                    "--location", "GOOGLE_CLOUD_LOCATION");
+                    "-p", "GOOGLE_CLOUD_PROJECT",
+                    "--location", "GOOGLE_CLOUD_LOCATION",
+                    "-l", "GOOGLE_CLOUD_LOCATION");
             return llm("USE_GEMINI_MODEL", setKeys, List.of(
                     "GEMINI_MODEL_NAME",
                     "GOOGLE_CLOUD_PROJECT",

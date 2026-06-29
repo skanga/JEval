@@ -1318,6 +1318,58 @@ class JEvalCliTest {
     }
 
     @Test
+    void azureProviderAcceptsDeepEvalShortAliasesAndModelVersion() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "set-azure-openai",
+                "-m", "gpt-4.1",
+                "-d", "prod-deployment",
+                "-u", "https://azure.example/",
+                "-v", "2024-02-15-preview",
+                "-V", "0125",
+                "-s", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "USE_AZURE_OPENAI", "YES");
+        assertDotenv(env, "AZURE_MODEL_NAME", "gpt-4.1");
+        assertDotenv(env, "AZURE_DEPLOYMENT_NAME", "prod-deployment");
+        assertDotenv(env, "AZURE_OPENAI_ENDPOINT", "https://azure.example/");
+        assertDotenv(env, "OPENAI_API_VERSION", "2024-02-15-preview");
+        assertDotenv(env, "AZURE_MODEL_VERSION", "0125");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-azure-openai", "-s", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_AZURE_OPENAI"));
+        assertEquals(false, readDotenv(env).containsKey("AZURE_MODEL_VERSION"));
+    }
+
+    @Test
+    void localModelProviderAcceptsDeepEvalShortAliases() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "set-local-model",
+                "-m", "local-eval",
+                "-u", "http://localhost:8000/v1",
+                "-f", "json",
+                "-s", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "USE_LOCAL_MODEL", "YES");
+        assertDotenv(env, "LOCAL_MODEL_NAME", "local-eval");
+        assertDotenv(env, "LOCAL_MODEL_BASE_URL", "http://localhost:8000/v1");
+        assertDotenv(env, "LOCAL_MODEL_FORMAT", "json");
+    }
+
+    @Test
     void openRouterProviderRoundtripUsesExclusiveFlags() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
