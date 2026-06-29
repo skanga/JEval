@@ -125,6 +125,49 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunRepeatRunsCasesMultipleTimes() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "repeat-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--repeat", "3"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("total=3"));
+        assertTrue(text(out).contains("passed=3"));
+    }
+
+    @Test
+    void testRunRepeatAliasRequiresAtLeastOneRun() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "repeat-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-r", "0"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("repeat argument must be at least 1"));
+    }
+
+    @Test
     void testRunSelectorRunsOnlyMatchingNamedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

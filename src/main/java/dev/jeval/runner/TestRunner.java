@@ -29,6 +29,13 @@ public final class TestRunner {
     }
 
     public TestRunResult run(Path path, String selector) throws IOException {
+        return run(path, selector, 1);
+    }
+
+    public TestRunResult run(Path path, String selector, int repeat) throws IOException {
+        if (repeat < 1) {
+            throw new IllegalArgumentException("The repeat argument must be at least 1.");
+        }
         if (Files.isDirectory(path)) {
             if (selector != null) {
                 throw new IllegalArgumentException("Test selectors are only supported for files: " + path);
@@ -40,12 +47,12 @@ public final class TestRunner {
                         .filter(TestRunner::isJson)
                         .sorted()
                         .toList()) {
-                    results.addAll(runFile(file).results());
+                    results.addAll(runFile(file, null, repeat).results());
                 }
             }
             return summarize(path.getFileName().toString(), results);
         }
-        return runFile(path, selector);
+        return runFile(path, selector, repeat);
     }
 
     private TestRunResult runFile(Path path) throws IOException {
@@ -53,6 +60,10 @@ public final class TestRunner {
     }
 
     private TestRunResult runFile(Path path, String selector) throws IOException {
+        return runFile(path, selector, 1);
+    }
+
+    private TestRunResult runFile(Path path, String selector, int repeat) throws IOException {
         var spec = JSON.readValue(path.toFile(), EvaluationSpec.class);
         if (spec.metrics() == null || spec.metrics().isEmpty()) {
             throw new IllegalArgumentException("Evaluation spec must define at least one metric: " + path);
@@ -67,10 +78,18 @@ public final class TestRunner {
         if (selector != null) {
             testCases = selectedCases(testCases, selector);
         }
-        var results = testCases.stream()
-                .map(testCase -> runCase(testCase, metrics))
-                .toList();
+        var results = repeatedResults(testCases, metrics, repeat);
         return summarize(spec.name() == null ? stripExtension(path.getFileName().toString()) : spec.name(), results);
+    }
+
+    private static List<TestCaseResult> repeatedResults(List<LlmTestCase> testCases, List<Metric> metrics, int repeat) {
+        var results = new ArrayList<TestCaseResult>();
+        for (var i = 0; i < repeat; i++) {
+            testCases.stream()
+                    .map(testCase -> runCase(testCase, metrics))
+                    .forEach(results::add);
+        }
+        return List.copyOf(results);
     }
 
     private static List<LlmTestCase> selectedCases(List<LlmTestCase> testCases, String selector) {
