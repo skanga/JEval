@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
 
 class ArenaEvaluatorTest {
@@ -51,6 +52,51 @@ class ArenaEvaluatorTest {
         assertAll(
                 () -> assertFalse(error.result().success()),
                 () -> assertEquals("preference failed: wrong winner", error.result().failureMessage()));
+    }
+
+    @Test
+    void aEvaluateReturnsFutureArenaResult() {
+        var arena = arena();
+
+        var result = Evaluator.aEvaluate(arena, List.of(new StaticArenaMetric("preference", "model-a", "clearer", true)))
+                .join();
+
+        assertAll(
+                () -> assertTrue(result.success()),
+                () -> assertEquals(arena, result.testCase()),
+                () -> assertEquals("model-a", result.metricResults().getFirst().winner()));
+    }
+
+    @Test
+    void aEvaluateArenasReturnsFutureArenaResults() {
+        var passing = arena();
+        var failing = new ArenaTestCase(List.of(
+                new Contestant("model-a", new LlmTestCase("input", "bad", "expected")),
+                new Contestant("model-b", new LlmTestCase("input", "good", "expected"))));
+
+        var results = Evaluator.aEvaluateArenas(List.of(passing, failing), List.of(new WinnerIsModelAMetric())).join();
+
+        assertAll(
+                () -> assertEquals(2, results.size()),
+                () -> assertTrue(results.getFirst().success()),
+                () -> assertFalse(results.getLast().success()));
+    }
+
+    @Test
+    void aAssertTestReturnsFutureArenaResultAndPropagatesAssertionErrors() {
+        var result = Evaluator.aAssertTest(
+                arena(),
+                List.of(new StaticArenaMetric("preference", "model-a", "clearer", true)))
+                .join();
+        var error = assertThrows(CompletionException.class,
+                () -> Evaluator.aAssertTest(
+                        arena(),
+                        List.of(new StaticArenaMetric("preference", "model-b", "wrong winner", false)))
+                        .join());
+
+        assertAll(
+                () -> assertTrue(result.success()),
+                () -> assertEquals(ArenaEvaluationAssertionError.class, error.getCause().getClass()));
     }
 
     private static ArenaTestCase arena() {

@@ -73,7 +73,9 @@ Current Java parity:
 - Provider-model retry policy core for dependency-free transient error classification, error-code extraction from response/body/gRPC-style/status shapes, non-retryable quota codes, message markers, HTTP 5xx retry toggles, DeepEval-style retry env settings/backoff/stop helpers, SDK retry provider opt-out lookup, executable retry wrapper behavior, per-attempt timeout retries, computed task timeout/gather-buffer settings, CLI canonicalization of deprecated computed timeout setting keys to override keys, outer-deadline attempt timeout resolution, and bounded timeout worker concurrency
 - `Evaluator.evaluate(...)` for one test case and a list of test cases
 - `Evaluator.evaluate(...)` for one conversational test case and `evaluateConversations(...)` for lists
-- `Evaluator.assertTest(...)` for single-turn and conversational test cases
+- `Evaluator.evaluate(...)` for one arena test case and `evaluateArenas(...)` for lists
+- `Evaluator.assertTest(...)` for single-turn, conversational, and arena test cases
+- DeepEval-style async evaluator wrappers for single-turn, conversational, and arena evaluation/assertion using Java `CompletableFuture`
 - DeepEval-style async measurement wrappers on single-turn, conversational, and arena metric interfaces using Java `CompletableFuture`
 - `EvaluationDataset` with single-turn/multi-turn separation, golden storage/conversion, and evaluation delegation for test cases and goldens
 - `EvaluationDataset` construction from existing single-turn or conversational goldens

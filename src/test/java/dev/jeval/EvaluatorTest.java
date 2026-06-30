@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
 
 class EvaluatorTest {
@@ -52,6 +53,46 @@ class EvaluatorTest {
                 () -> assertEquals(2, results.size()),
                 () -> assertTrue(results.getFirst().success()),
                 () -> assertFalse(results.getLast().success()));
+    }
+
+    @Test
+    void aEvaluateReturnsFutureResult() {
+        var testCase = new LlmTestCase("What is 2+2?", "4", "4");
+        var metric = new StaticMetric("exact match", 1.0, 0.5, "outputs match");
+
+        var result = Evaluator.aEvaluate(testCase, List.of(metric)).join();
+
+        assertAll(
+                () -> assertTrue(result.success()),
+                () -> assertEquals("exact match", result.metricResults().getFirst().name()));
+    }
+
+    @Test
+    void aEvaluateReturnsFutureResultsForTestCaseList() {
+        var passing = new LlmTestCase("What is 2+2?", "4", "4");
+        var failing = new LlmTestCase("What is 2+2?", "5", "4");
+
+        var results = Evaluator.aEvaluate(List.of(passing, failing), List.of(new ActualEqualsExpectedMetric())).join();
+
+        assertAll(
+                () -> assertEquals(2, results.size()),
+                () -> assertTrue(results.getFirst().success()),
+                () -> assertFalse(results.getLast().success()));
+    }
+
+    @Test
+    void aAssertTestReturnsFutureResultAndPropagatesAssertionErrors() {
+        var passing = new LlmTestCase("What is 2+2?", "4", "4");
+        var failing = new LlmTestCase("What is 2+2?", "5", "4");
+        var metric = new ActualEqualsExpectedMetric();
+
+        var result = Evaluator.aAssertTest(passing, List.of(metric)).join();
+        var error = assertThrows(CompletionException.class,
+                () -> Evaluator.aAssertTest(failing, List.of(metric)).join());
+
+        assertAll(
+                () -> assertTrue(result.success()),
+                () -> assertEquals(EvaluationAssertionError.class, error.getCause().getClass()));
     }
 
     private record StaticMetric(String name, double score, double threshold, String reason) implements Metric {
