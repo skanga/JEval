@@ -7,6 +7,7 @@ import dev.jeval.MissingTestCaseParamsException;
 import dev.jeval.SingleTurnParam;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 abstract class AbstractRagasMetric implements Metric {
     private final double threshold;
@@ -31,6 +32,10 @@ abstract class AbstractRagasMetric implements Metric {
         score = scorer.score(metricKey(), testCase);
         success = score >= threshold;
         return new MetricResult(name(), score, threshold, success, null);
+    }
+
+    public final CompletableFuture<MetricResult> aMeasure(LlmTestCase testCase) {
+        return CompletableFuture.supplyAsync(() -> measure(testCase));
     }
 
     public abstract String metricKey();

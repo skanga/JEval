@@ -9,6 +9,7 @@ import dev.jeval.LlmTestCase;
 import dev.jeval.MissingTestCaseParamsException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 class RagasMetricTest {
@@ -70,6 +71,30 @@ class RagasMetricTest {
                         "Contextual Entities Recall (ragas)", 0.9,
                         "Answer Relevancy (ragas)", 0.6,
                         "Faithfulness (ragas)", 0.5), metric.scoreBreakdown()));
+    }
+
+    @Test
+    void asyncMeasureMatchesSynchronousRagasMetricBehaviorLikeDeepEval() throws Exception {
+        var scorer = new RecordingRagasScorer(Map.of(
+                "context_precision", 0.7,
+                "context_recall", 0.8,
+                "context_entity_recall", 0.9,
+                "answer_relevancy", 0.6,
+                "faithfulness", 0.5));
+
+        var precision = new RAGASContextualPrecisionMetric(0.3, scorer)
+                .aMeasure(testCase())
+                .get(5, TimeUnit.SECONDS);
+        var ragas = new RagasMetric(0.75, scorer)
+                .aMeasure(testCase())
+                .get(5, TimeUnit.SECONDS);
+
+        assertAll(
+                () -> assertEquals("Contextual Precision (ragas)", precision.name()),
+                () -> assertEquals(0.7, precision.score()),
+                () -> assertEquals("RAGAS", ragas.name()),
+                () -> assertEquals(0.7, ragas.score(), 1.0e-12),
+                () -> assertEquals(false, ragas.success()));
     }
 
     @Test

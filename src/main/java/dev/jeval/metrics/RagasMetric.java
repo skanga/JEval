@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 public final class RagasMetric implements Metric {
     private final double threshold;
@@ -42,6 +43,10 @@ public final class RagasMetric implements Metric {
         score = scores.values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
         success = score >= threshold;
         return new MetricResult(name(), score, threshold, success, null);
+    }
+
+    public CompletableFuture<MetricResult> aMeasure(LlmTestCase testCase) {
+        return CompletableFuture.supplyAsync(() -> measure(testCase));
     }
 
     public String name() {
