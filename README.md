@@ -47,10 +47,15 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -v
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -m smoke
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -o
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --color no --durations 5 -w -n 2
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --tb short --maxfail=1
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -X -W
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json::case-name --quiet
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --results-folder evals --results-subfolder prompt-v3
 ```
+
+Unknown pytest-style options after the target are accepted for DeepEval CLI
+compatibility and ignored by the local Java runner when there is no pytest layer
+to forward them to.
 
 Each run writes DeepEval-style local artifacts to `.deepeval/.latest_run_full.json`
 and `.deepeval/test_run_<YYYYMMDD_HHMMSS>.json`; JEval also keeps the legacy

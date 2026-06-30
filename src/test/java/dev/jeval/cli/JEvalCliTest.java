@@ -505,6 +505,33 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunAcceptsUnknownPytestOptionsLikeDeepEval() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "pytest-extra-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "test", "run", file.toString(),
+                "--tb", "short",
+                "--maxfail=1",
+                "--quiet"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals("", text(out));
+        assertEquals("", text(err));
+    }
+
+    @Test
     void testRunAcceptsPytestCompatibilityAliasesLocally() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
