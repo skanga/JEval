@@ -64,6 +64,57 @@ class SynthesizerTest {
     }
 
     @Test
+    void generatesTextToSqlGoldensWithoutExpectedOutputLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"show all users\"}]}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateTextToSqlGoldensFromContext(
+                List.of("CREATE TABLE users (id INT, name TEXT)"), false, 1);
+
+        assertEquals(1, goldens.size());
+        assertEquals("show all users", goldens.getFirst().input());
+        assertEquals(null, goldens.getFirst().expectedOutput());
+        assertEquals(List.of("CREATE TABLE users (id INT, name TEXT)"), goldens.getFirst().context());
+        assertTrue(model.prompts().getFirst().contains("SQL table schema"));
+        assertEquals(1, model.prompts().size());
+    }
+
+    @Test
+    void generatesTextToSqlExpectedOutputFromSqlJsonLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"show all users\"}]}",
+                "{\"sql\":\"SELECT * FROM users\"}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateTextToSqlGoldensFromContext(
+                List.of("CREATE TABLE users (id INT, name TEXT)"), true, 1);
+
+        assertEquals(1, goldens.size());
+        assertEquals("show all users", goldens.getFirst().input());
+        assertEquals("SELECT * FROM users", goldens.getFirst().expectedOutput());
+        assertEquals(List.of("CREATE TABLE users (id INT, name TEXT)"), goldens.getFirst().context());
+        assertTrue(model.prompts().get(1).contains("generate a JSON object with a key 'sql'"));
+        assertEquals(2, model.prompts().size());
+    }
+
+    @Test
+    void generatesTextToSqlGoldensAsyncLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"show all users\"}]}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateTextToSqlGoldensFromContextAsync(
+                List.of("CREATE TABLE users (id INT, name TEXT)"), false, 1).join();
+
+        assertEquals(List.of("show all users"), goldens.stream().map(Golden::input).toList());
+        assertEquals(null, goldens.getFirst().expectedOutput());
+    }
+
+    @Test
     void generatesGoldensFromContextsWithMultipleSourceFilesLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"How do the documents relate?\"}]}"));

@@ -132,8 +132,9 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation
 
 The synthesizer can generate single-turn `Golden` values from contexts, scratch
 styling, or existing goldens, and multi-turn `ConversationalGolden` values from
-contexts, scratch styling, or existing conversational goldens. It uses any `EvaluationModel`, including the
-LangChain4j adapter.
+contexts, scratch styling, or existing conversational goldens. It also includes
+DeepEval-style text-to-SQL generation from schema context. It uses any
+`EvaluationModel`, including the LangChain4j adapter.
 
 ```java
 import dev.jeval.Golden;
@@ -146,6 +147,9 @@ var synthesizer = new Synthesizer(
 
 var goldens = synthesizer.generateGoldensFromContexts(
         List.of(List.of("Paris is the capital of France.")));
+
+var sqlGoldens = synthesizer.generateTextToSqlGoldensFromContext(
+        List.of("CREATE TABLE users (id INT, name TEXT)"), true, 1);
 ```
 
 Plain-text document chunking is available through the CLI. Multi-turn generation

@@ -119,6 +119,34 @@ public final class Synthesizer {
                 () -> generateGoldensFromContexts(contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles));
     }
 
+    public List<Golden> generateTextToSqlGoldensFromContext(
+            List<String> context,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext) {
+        var data = SynthesizerSchemas.parseSyntheticData(
+                model.generate(SynthesizerPrompts.generateTextToSqlInputs(context, maxGoldensPerContext)));
+        var goldens = new ArrayList<Golden>();
+        for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
+            var expectedOutput = includeExpectedOutput
+                    ? SynthesizerSchemas.parseSql(model.generate(
+                            SynthesizerPrompts.generateTextToSqlExpectedOutput(item.input(), context)))
+                    : null;
+            goldens.add(Golden.builder(item.input())
+                    .context(context)
+                    .expectedOutput(expectedOutput)
+                    .build());
+        }
+        return retainGoldens(goldens);
+    }
+
+    public CompletableFuture<List<Golden>> generateTextToSqlGoldensFromContextAsync(
+            List<String> context,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext) {
+        return CompletableFuture.supplyAsync(
+                () -> generateTextToSqlGoldensFromContext(context, includeExpectedOutput, maxGoldensPerContext));
+    }
+
     public List<Golden> generateGoldensFromDocs(List<Path> documentPaths) throws IOException {
         return generateGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT);
     }

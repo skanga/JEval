@@ -59,6 +59,60 @@ final class SynthesizerPrompts {
                 """.formatted(numGoldens, scenario, task, inputFormat);
     }
 
+    static String generateTextToSqlInputs(List<String> context, int maxGoldensPerContext) {
+        return """
+                Based on the given context, which is a SQL table schema, please generate a list of JSON objects with `input` keys.
+                The `input` can either be a question or a statement that can be addressed by the given schema.
+
+                IMPORTANT: Please make sure to only return in JSON format, with the 'data' key as a list of JSON objects.
+                You MUST TRY to generate %d data points, unless the `input` is getting repetitive.
+                You should NOT incorporate any prior knowledge you have and take each context at face value.
+                You MUST include at least one statement as the input.
+                `input` MUST be a STRING.
+
+                Example context: [
+                  "Table: Customers",
+                  "Column: CustomerID, Type: INT, Description: Unique identifier for each customer",
+                  "Column: City, Type: VARCHAR, Description: City where the customer resides"
+                ]
+                Example max goldens per context: 2
+                Example JSON: {"data":[{"input":"Show me all the customers who live in New York."},{"input":"List the first and last names of all customers."}]}
+
+                Max Goldens Per Context:
+                %d
+
+                Context:
+                %s
+
+                JSON:
+                """.formatted(maxGoldensPerContext, maxGoldensPerContext, String.join("\n", context));
+    }
+
+    static String generateTextToSqlExpectedOutput(String input, List<String> context) {
+        return """
+                Given the input, which may be a question or a statement addressable by the schema provided in the context,
+                generate a JSON object with a key 'sql'. This key should contain the corresponding SQL statement that accurately and efficiently responds to the input.
+
+                IMPORTANT: The output must be in JSON format, with the 'sql' key only.
+
+                Example Context: [
+                  "Table: Customers",
+                  "Column: CustomerID, Type: INT, Description: Unique identifier for each customer",
+                  "Column: City, Type: VARCHAR, Description: City where the customer resides"
+                ]
+                Example Input: "Show me all the customers who live in New York."
+                Example JSON: {"sql":"SELECT * FROM Customers WHERE City = 'New York';"}
+
+                Context:
+                %s
+
+                Input:
+                %s
+
+                JSON:
+                """.formatted(String.join("\n", context), input);
+    }
+
     static String generateSyntheticInputsFromGoldens(
             List<String> inputs,
             int numGoldens,

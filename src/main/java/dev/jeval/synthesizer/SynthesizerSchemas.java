@@ -36,6 +36,14 @@ final class SynthesizerSchemas {
         }
     }
 
+    static String parseSql(String json) {
+        try {
+            return parse(json, SqlData.class).sql();
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Unable to parse SQL data JSON", error);
+        }
+    }
+
     static StylingConfig parseStylingConfig(String json) {
         try {
             var styling = parse(json, PromptStyling.class);
@@ -102,6 +110,9 @@ final class SynthesizerSchemas {
     }
 
     private record SyntheticInput(String input) {
+    }
+
+    private record SqlData(String sql) {
     }
 
     private record PromptStyling(
