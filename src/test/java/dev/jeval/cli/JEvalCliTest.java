@@ -276,6 +276,39 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunCsvDatasetPreservesDeepEvalToolAndMetadataFieldsInLatestData() throws Exception {
+        var dataset = tempDir.resolve("cases.csv");
+        Files.writeString(dataset, """
+                input,actual_output,expected_output,tools_called,expected_tools,metadata
+                q,a,b,"[{""name"":""PolicySearch"",""input_parameters"":{""query"":""refund""},""output"":""30 days""}]","[{""name"":""PolicySearch""}]","{""suite"":""csv""}"
+                """);
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "csv-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "dataset": "cases.csv"
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--identifier", "csv-release", "--quiet"},
+                out, err);
+
+        assertEquals(1, exit, text(err));
+        var latestText = Files.readString(tempDir.resolve(".deepeval").resolve(".latest_test_run.json"));
+        assertTrue(latestText.contains("\"identifier\":\"csv-release\""));
+        assertTrue(latestText.contains("\"toolsCalled\":[{"));
+        assertTrue(latestText.contains("\"expectedTools\":[{"));
+        assertTrue(latestText.contains("\"name\":\"PolicySearch\""));
+        assertTrue(latestText.contains("\"inputParameters\":{\"query\":\"refund\"}"));
+        assertTrue(latestText.contains("\"output\":\"30 days\""));
+        assertTrue(latestText.contains("\"metadata\":{"));
+        assertTrue(latestText.contains("\"suite\":\"csv\""));
+    }
+
+    @Test
     void testRunSupportsDeepEvalIdentifierAlias() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

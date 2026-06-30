@@ -43,10 +43,10 @@ Current Java parity:
 - CLI/test-runner latest test-run data preserves single-turn case input, actual output, expected output, metric data, and pass/fail status
 - CLI/test-runner latest test-run data preserves single-turn context and retrieval context from inline specs and dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn tags and comments from inline specs, JSON dataset-loaded cases, and JSONL dataset-loaded cases
-- CLI/test-runner latest test-run data preserves single-turn metadata from inline specs, JSON dataset-loaded cases, and JSONL dataset-loaded cases
+- CLI/test-runner latest test-run data preserves single-turn metadata from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn token cost and completion time from inline specs, JSON dataset-loaded cases, and JSONL dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn custom column values from inline specs, JSON dataset-loaded cases, and JSONL dataset-loaded cases
-- CLI/test-runner latest test-run data preserves single-turn tool calls and expected tools from inline specs, JSON dataset-loaded cases, and JSONL dataset-loaded cases
+- CLI/test-runner latest test-run data preserves single-turn tool calls and expected tools from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn MCP server, tool, resource, and prompt payloads from inline specs, JSON dataset-loaded cases, and JSONL dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn trace payloads from inline specs, JSON dataset-loaded cases, and JSONL dataset-loaded cases
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling

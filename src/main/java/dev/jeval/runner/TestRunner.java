@@ -387,7 +387,8 @@ public final class TestRunner {
         if (name.endsWith(".jsonl")) {
             return jsonlTestCases(file);
         } else if (name.endsWith(".csv")) {
-            data.addTestCasesFromCsvFile(file, "input", "actual_output", "expected_output", "context", "retrieval_context");
+            data.addTestCasesFromCsvFile(file, "input", "actual_output", "expected_output",
+                    "context", "retrieval_context", "tools_called", "expected_tools", "metadata");
         } else if (name.endsWith(".json")) {
             data.addTestCasesFromJsonFile(file, "input", "actual_output", "expected_output",
                     "context", "retrieval_context", "tools_called", "expected_tools", "metadata");
