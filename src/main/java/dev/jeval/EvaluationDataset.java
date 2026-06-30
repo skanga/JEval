@@ -191,11 +191,20 @@ public final class EvaluationDataset {
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             Synthesizer synthesizer) {
+        generateGoldensFromContexts(contexts, includeExpectedOutput, maxGoldensPerContext, null, synthesizer);
+    }
+
+    public void generateGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            Synthesizer synthesizer) {
         var generated = requireSynthesizer(synthesizer).generateGoldensFromContexts(
                 contexts,
                 includeExpectedOutput,
                 maxGoldensPerContext,
-                null);
+                sourceFiles);
         generated.forEach(this::addGolden);
     }
 
@@ -204,11 +213,21 @@ public final class EvaluationDataset {
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             Synthesizer synthesizer) {
+        return generateGoldensFromContextsAsync(contexts, includeExpectedOutput, maxGoldensPerContext, null,
+                synthesizer);
+    }
+
+    public CompletableFuture<Void> generateGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            Synthesizer synthesizer) {
         return requireSynthesizer(synthesizer).generateGoldensFromContextsAsync(
                 contexts,
                 includeExpectedOutput,
                 maxGoldensPerContext,
-                null)
+                sourceFiles)
                 .thenAccept(generated -> generated.forEach(this::addGolden));
     }
 
@@ -300,11 +319,21 @@ public final class EvaluationDataset {
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             Synthesizer synthesizer) {
+        generateConversationalGoldensFromContexts(contexts, includeExpectedOutcome, maxGoldensPerContext, null,
+                synthesizer);
+    }
+
+    public void generateConversationalGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            Synthesizer synthesizer) {
         var generated = requireSynthesizer(synthesizer).generateConversationalGoldensFromContexts(
                 contexts,
                 includeExpectedOutcome,
                 maxGoldensPerContext,
-                null);
+                sourceFiles);
         generated.forEach(this::addGolden);
     }
 
@@ -313,11 +342,21 @@ public final class EvaluationDataset {
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             Synthesizer synthesizer) {
+        return generateConversationalGoldensFromContextsAsync(contexts, includeExpectedOutcome, maxGoldensPerContext,
+                null, synthesizer);
+    }
+
+    public CompletableFuture<Void> generateConversationalGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            Synthesizer synthesizer) {
         return requireSynthesizer(synthesizer).generateConversationalGoldensFromContextsAsync(
                 contexts,
                 includeExpectedOutcome,
                 maxGoldensPerContext,
-                null)
+                sourceFiles)
                 .thenAccept(generated -> generated.forEach(this::addGolden));
     }
 

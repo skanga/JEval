@@ -316,6 +316,44 @@ class EvaluationDatasetTest {
     }
 
     @Test
+    void datasetGeneratesGoldensFromContextsWithSourceFiles() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"What is the refund window?\",\"used_source_files\":[\"refund.md\"]}]}")));
+
+        dataset.generateGoldensFromContexts(
+                List.of(List.of("Refunds are available within 30 days.")),
+                false,
+                1,
+                List.of("refund.md"),
+                synthesizer);
+
+        assertEquals("What is the refund window?", dataset.goldens().getFirst().input());
+        assertEquals("refund.md", dataset.goldens().getFirst().sourceFile());
+        assertEquals(List.of("refund.md"),
+                dataset.goldens().getFirst().additionalMetadata().get("used_source_files"));
+    }
+
+    @Test
+    void datasetGeneratesGoldensFromContextsWithSourceFilesAsync() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"What is the refund window?\",\"used_source_files\":[\"refund.md\"]}]}")));
+
+        dataset.generateGoldensFromContextsAsync(
+                List.of(List.of("Refunds are available within 30 days.")),
+                false,
+                1,
+                List.of("refund.md"),
+                synthesizer)
+                .join();
+
+        assertEquals("refund.md", dataset.goldens().getFirst().sourceFile());
+        assertEquals(List.of("refund.md"),
+                dataset.goldens().getFirst().additionalMetadata().get("used_source_files"));
+    }
+
+    @Test
     void datasetGeneratesGoldensFromScratchLikeDeepEval() {
         var dataset = new EvaluationDataset();
         var synthesizer = synthesizer(
@@ -466,6 +504,53 @@ class EvaluationDatasetTest {
         assertEquals(List.of("async refund help"),
                 dataset.conversationalGoldens().stream().map(ConversationalGolden::scenario).toList());
         assertEquals("Can I get a refund?", dataset.conversationalGoldens().getFirst().turns().getFirst().content());
+    }
+
+    @Test
+    void datasetGeneratesConversationalGoldensFromContextsWithSourceFiles() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"refund help","turns":[
+                  {"role":"user","content":"Can I get a refund?"}
+                ],"used_source_files":["refund.md"]}]}
+                """)));
+
+        dataset.generateConversationalGoldensFromContexts(
+                List.of(List.of("Refunds are available within 30 days.")),
+                false,
+                1,
+                List.of("refund.md"),
+                synthesizer);
+
+        assertEquals("refund help", dataset.conversationalGoldens().getFirst().scenario());
+        assertEquals(List.of("refund.md"),
+                dataset.conversationalGoldens().getFirst().additionalMetadata().get("used_source_files"));
+        assertEquals("refund.md",
+                dataset.conversationalGoldens().getFirst().additionalMetadata().get("source_files"));
+    }
+
+    @Test
+    void datasetGeneratesConversationalGoldensFromContextsWithSourceFilesAsync() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"async refund help","turns":[
+                  {"role":"user","content":"Can I get a refund?"}
+                ],"used_source_files":["refund.md"]}]}
+                """)));
+
+        dataset.generateConversationalGoldensFromContextsAsync(
+                List.of(List.of("Refunds are available within 30 days.")),
+                false,
+                1,
+                List.of("refund.md"),
+                synthesizer)
+                .join();
+
+        assertEquals("async refund help", dataset.conversationalGoldens().getFirst().scenario());
+        assertEquals(List.of("refund.md"),
+                dataset.conversationalGoldens().getFirst().additionalMetadata().get("used_source_files"));
     }
 
     @Test
