@@ -62,6 +62,33 @@ final class SynthesizerPrompts {
                 input, String.join("\n", context));
     }
 
+    static String evaluateSyntheticInput(String input) {
+        return """
+                Evaluate the provided synthetic query for clarity and answerability.
+                Return only JSON in this shape: {"feedback":"...","score":0.0}.
+                The score must be between 0 and 1, where 1 is clear, self-contained, and answerable.
+
+                Query:
+                %s
+                """.formatted(input);
+    }
+
+    static String rewriteSyntheticInput(List<String> context, String input, String feedback) {
+        return """
+                Rewrite the synthetic query using only the context and feedback.
+                Return only JSON in this shape: {"rewritten_input":"..."}.
+
+                Context:
+                %s
+
+                Query:
+                %s
+
+                Feedback:
+                %s
+                """.formatted(String.join("\n", context == null ? List.of() : context), input, feedback);
+    }
+
     static String generateSyntheticConversationalScenarios(
             List<String> context,
             int maxGoldensPerContext,

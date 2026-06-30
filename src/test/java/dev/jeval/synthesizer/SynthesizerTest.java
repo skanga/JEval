@@ -25,8 +25,13 @@ class SynthesizerTest {
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"used_source_files\":[\"cities.txt\"]}]}",
                 "{\"rewritten_input\":\"Which city is France's capital?\"}",
                 "Paris"));
-        var synthesizer = new Synthesizer(model, null,
-                new EvolutionConfig(1, List.of(Evolution.REASONING)));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                new EvolutionConfig(1, List.of(Evolution.REASONING)),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
 
         var goldens = synthesizer.generateGoldensFromContexts(
                 List.of(List.of("Paris is in France.")), true, 1, List.of("cities.txt"));
@@ -42,10 +47,36 @@ class SynthesizerTest {
     }
 
     @Test
+    void rewritesLowQualitySyntheticInputsLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"What about it?\",\"used_source_files\":[\"cities.txt\"]}]}",
+                "{\"feedback\":\"The query is too vague.\",\"score\":0.2}",
+                "{\"rewritten_input\":\"What is the capital city of France?\"}",
+                "{\"feedback\":\"The rewritten query is clear.\",\"score\":0.9}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                new FiltrationConfig(0.5, 3, null),
+                SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateGoldensFromContexts(
+                List.of(List.of("Paris is the capital of France.")), false, 1, List.of("cities.txt"));
+
+        assertEquals("What is the capital city of France?", goldens.getFirst().input());
+        assertEquals(List.of("cities.txt"), goldens.getFirst().additionalMetadata().get("used_source_files"));
+        assertTrue(model.prompts().get(1).contains("Evaluate the provided synthetic query"));
+        assertTrue(model.prompts().get(2).contains("The query is too vague."));
+        assertEquals(4, model.prompts().size());
+    }
+
+    @Test
     void omitsExpectedOutputWhenDisabledEvenIfModelReturnsOne() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
-        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
 
         var goldens = synthesizer.generateGoldensFromContexts(
                 List.of(List.of("Paris is in France.")), false, 1, null);
@@ -66,7 +97,8 @@ class SynthesizerTest {
                   {"input":"Second question?"}
                 ]}
                 """));
-        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
 
         var goldens = synthesizer.generateGoldensFromContexts(
                 List.of(List.of("Paris is in France.")), false, 1, null);
@@ -75,11 +107,12 @@ class SynthesizerTest {
     }
 
     @Test
-    void defaultConfigEvolvesInputsLikeDeepEval() {
+    void defaultEvolutionConfigEvolvesInputsLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"plain\"}]}",
                 "{\"rewritten_input\":\"evolved\"}"));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(
+                model, null, null, new EvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
 
         var goldens = synthesizer.generateGoldensFromContexts(
                 List.of(List.of("context")), false, 1, null);
@@ -101,6 +134,7 @@ class SynthesizerTest {
                 null,
                 null,
                 noEvolutionConfig(),
+                noFiltrationConfig(),
                 new SynthesizerOptions(false, 100, false));
 
         var goldens = synthesizer.generateGoldensFromDocs(
@@ -120,7 +154,8 @@ class SynthesizerTest {
     void saveAsWritesLastSyntheticGoldensLikeDeepEval() throws Exception {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
-        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         synthesizer.generateGoldensFromContexts(List.of(List.of("Paris is in France.")), true, 1, null);
 
         var path = synthesizer.saveAs("json", tempDir.resolve("generated"), "goldens", true);
@@ -146,7 +181,8 @@ class SynthesizerTest {
     void saveAsRejectsFileNameWithPeriodsLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
-        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         synthesizer.generateGoldensFromContexts(List.of(List.of("Paris is in France.")), true, 1, null);
 
         var error = assertThrows(IllegalArgumentException.class,
@@ -197,6 +233,7 @@ class SynthesizerTest {
                 null,
                 null,
                 noEvolutionConfig(),
+                noFiltrationConfig(),
                 new SynthesizerOptions(true, 2, false));
 
         var goldens = synthesizer.generateGoldensFromContexts(
@@ -216,9 +253,13 @@ class SynthesizerTest {
                 "{\"data\":[{\"input\":\"first\"},{\"input\":\"second\"}]}",
                 "{\"rewritten_input\":\"first evolved\"}",
                 "{\"rewritten_input\":\"second evolved\"}"));
-        var synthesizer = new Synthesizer(model,
+        var synthesizer = new Synthesizer(
+                model,
                 new StylingConfig("students learning geography", "ask study questions", "one question", null),
-                new EvolutionConfig(1, List.of(Evolution.REASONING, Evolution.COMPARATIVE)));
+                null,
+                new EvolutionConfig(1, List.of(Evolution.REASONING, Evolution.COMPARATIVE)),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
 
         var goldens = synthesizer.generateGoldensFromScratch(2);
 
@@ -239,8 +280,13 @@ class SynthesizerTest {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What does the table store?\"}]}",
                 "{\"rewritten_input\":\"What data is stored in the table?\"}"));
-        var synthesizer = new Synthesizer(model, null,
-                new EvolutionConfig(1, List.of(Evolution.CONCRETIZING)));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                new EvolutionConfig(1, List.of(Evolution.CONCRETIZING)),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
         var original = Golden.builder("old")
                 .context(List.of("CREATE TABLE students (id INT)"))
                 .sourceFile("schema.sql")
@@ -258,7 +304,8 @@ class SynthesizerTest {
     void generatesGoldensFromExistingGoldensWithoutStylingConfig() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is a similar question?\"}]}"));
-        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var original = Golden.builder("What is the capital of France?")
                 .expectedOutput("Paris")
                 .build();
@@ -275,7 +322,8 @@ class SynthesizerTest {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"Context question\"}]}",
                 "Context answer"));
-        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var contextual = Golden.builder("old context")
                 .context(List.of("context"))
                 .sourceFile("context.txt")
@@ -453,6 +501,10 @@ class SynthesizerTest {
 
     private static EvolutionConfig noEvolutionConfig() {
         return new EvolutionConfig(0, List.of(Evolution.REASONING));
+    }
+
+    private static FiltrationConfig noFiltrationConfig() {
+        return new FiltrationConfig(0.5, 0, null);
     }
 
     private static final class ConcurrentContextModel implements EvaluationModel {

@@ -492,6 +492,10 @@ final class GenerateCommand {
         @Override
         public synchronized String generate(String prompt) {
             prompts.add(prompt);
+            if (isSyntheticInputEvaluationPrompt(prompt)
+                    && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("\"score\""))) {
+                return "{\"feedback\":\"The synthetic query is clear.\",\"score\":1.0}";
+            }
             if (isRewritePrompt(prompt)
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("rewritten_input"))) {
                 return "{\"rewritten_input\":\"" + escapeJson(rewriteInput(prompt)) + "\"}";
@@ -505,6 +509,10 @@ final class GenerateCommand {
 
     private static boolean isRewritePrompt(String prompt) {
         return prompt.startsWith("Rewrite the input using this evolution:");
+    }
+
+    private static boolean isSyntheticInputEvaluationPrompt(String prompt) {
+        return prompt.startsWith("Evaluate the provided synthetic query");
     }
 
     private static String rewriteInput(String prompt) {

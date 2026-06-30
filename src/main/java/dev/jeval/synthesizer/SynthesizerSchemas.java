@@ -27,6 +27,14 @@ final class SynthesizerSchemas {
         }
     }
 
+    static InputFeedback parseInputFeedback(String json) {
+        try {
+            return JSON.readValue(json, InputFeedback.class);
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Unable to parse input feedback JSON", error);
+        }
+    }
+
     static List<ConversationalData> parseConversationalData(String json) {
         try {
             return JSON.readValue(json, ConversationalDataList.class).data();
@@ -45,6 +53,9 @@ final class SynthesizerSchemas {
     }
 
     private record RewrittenInput(@JsonAlias("rewritten_input") String rewrittenInput) {
+    }
+
+    record InputFeedback(String feedback, double score) {
     }
 
     record ConversationalData(

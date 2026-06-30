@@ -24,6 +24,7 @@ public final class Synthesizer {
     private final StylingConfig stylingConfig;
     private final ConversationalStylingConfig conversationalStylingConfig;
     private final EvolutionConfig evolutionConfig;
+    private final FiltrationConfig filtrationConfig;
     private final SynthesizerOptions options;
     private List<Golden> syntheticGoldens = List.of();
     private List<ConversationalGolden> syntheticConversationalGoldens = List.of();
@@ -49,7 +50,7 @@ public final class Synthesizer {
             StylingConfig stylingConfig,
             ConversationalStylingConfig conversationalStylingConfig,
             EvolutionConfig evolutionConfig) {
-        this(model, stylingConfig, conversationalStylingConfig, evolutionConfig, SynthesizerOptions.DEFAULT);
+        this(model, stylingConfig, conversationalStylingConfig, evolutionConfig, new FiltrationConfig(), SynthesizerOptions.DEFAULT);
     }
 
     public Synthesizer(
@@ -58,10 +59,21 @@ public final class Synthesizer {
             ConversationalStylingConfig conversationalStylingConfig,
             EvolutionConfig evolutionConfig,
             SynthesizerOptions options) {
+        this(model, stylingConfig, conversationalStylingConfig, evolutionConfig, new FiltrationConfig(), options);
+    }
+
+    public Synthesizer(
+            EvaluationModel model,
+            StylingConfig stylingConfig,
+            ConversationalStylingConfig conversationalStylingConfig,
+            EvolutionConfig evolutionConfig,
+            FiltrationConfig filtrationConfig,
+            SynthesizerOptions options) {
         this.model = Objects.requireNonNull(model, "model");
         this.stylingConfig = stylingConfig;
         this.conversationalStylingConfig = conversationalStylingConfig;
         this.evolutionConfig = evolutionConfig == null ? new EvolutionConfig() : evolutionConfig;
+        this.filtrationConfig = filtrationConfig == null ? new FiltrationConfig() : filtrationConfig;
         this.options = options == null ? SynthesizerOptions.DEFAULT : options;
     }
 
@@ -132,6 +144,7 @@ public final class Synthesizer {
         var data = SynthesizerSchemas.parseSyntheticData(
                 model.generate(SynthesizerPrompts.generateSyntheticInputs(
                         context, maxGoldensPerContext, includeExpectedOutput)));
+        data = rewriteInputs(context, data);
         for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(golden(item, context, sourceFile, includeExpectedOutput,
                     contextIndex * maxGoldensPerContext + goldens.size()));
@@ -146,6 +159,7 @@ public final class Synthesizer {
         var data = SynthesizerSchemas.parseSyntheticData(model.generate(
                 SynthesizerPrompts.generateSyntheticInputsFromScratch(
                         stylingConfig.scenario(), stylingConfig.task(), stylingConfig.inputFormat(), numGoldens)));
+        data = rewriteInputs(List.of(), data);
         var goldens = new ArrayList<Golden>();
         for (var item : data) {
             goldens.add(golden(item, null, null, false, goldens.size()));
@@ -175,6 +189,7 @@ public final class Synthesizer {
             var data = SynthesizerSchemas.parseSyntheticData(model.generate(
                     SynthesizerPrompts.generateSyntheticInputsFromGoldens(
                             inputs, inputs.size() * maxGoldensPerGolden, includeExpectedOutput)));
+            data = rewriteInputs(inputs, data);
             for (var item : data) {
                 generated.add(golden(item, null, null, includeExpectedOutput, generated.size()));
             }
@@ -337,6 +352,30 @@ public final class Synthesizer {
         }
         return model.generate(SynthesizerPrompts.generateExpectedOutput(
                 context, input, stylingConfig == null ? null : stylingConfig.expectedOutputFormat()));
+    }
+
+    private List<SyntheticData> rewriteInputs(List<String> context, List<SyntheticData> data) {
+        if (filtrationConfig.maxQualityRetries() == 0) {
+            return data;
+        }
+        var filtered = new ArrayList<SyntheticData>();
+        var critic = filtrationConfig.criticModel() == null ? model : filtrationConfig.criticModel();
+        for (var item : data) {
+            var input = item.input();
+            var rewritten = false;
+            for (var i = 0; i < filtrationConfig.maxQualityRetries(); i++) {
+                var feedback = SynthesizerSchemas.parseInputFeedback(
+                        critic.generate(SynthesizerPrompts.evaluateSyntheticInput(input)));
+                if (feedback.score() >= filtrationConfig.syntheticInputQualityThreshold()) {
+                    break;
+                }
+                input = SynthesizerSchemas.parseRewrittenInput(model.generate(
+                        SynthesizerPrompts.rewriteSyntheticInput(context, input, feedback.feedback())));
+                rewritten = true;
+            }
+            filtered.add(new SyntheticData(input, rewritten ? null : item.expectedOutput(), item.usedSourceFiles()));
+        }
+        return List.copyOf(filtered);
     }
 
     private static ContextConstructionConfig config(ContextConstructionConfig config) {
