@@ -180,9 +180,12 @@ var sqlGoldens = synthesizer.generateTextToSqlGoldensFromContext(
         List.of("CREATE TABLE users (id INT, name TEXT)"), true, 1);
 ```
 
-Plain-text document chunking is available through the CLI. Multi-turn generation
-expects model JSON with `scenario`, optional `turns`, and optional
-`expected_outcome`.
+Plain-text document chunking is available through the CLI. If one document in a
+multi-document generation run cannot meet the minimum context count, JEval skips
+that document and continues with the remaining valid documents; a run where no
+document can produce contexts still fails with the DeepEval-style validation
+message. Multi-turn generation expects model JSON with `scenario`, optional
+`turns`, and optional `expected_outcome`.
 
 ## Tracing
 

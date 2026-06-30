@@ -397,6 +397,36 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromDocsContinuesWhenOneDocumentCannotMeetMinimumContextsLikeDeepEval()
+            throws Exception {
+        var tooSmall = tempDir.resolve("tiny.md");
+        var good = tempDir.resolve("good.md");
+        Files.writeString(tooSmall, "short");
+        Files.writeString(good, "alpha beta gamma delta");
+        var model = new ScriptedModel(List.of("{\"data\":[{\"input\":\"What is in the good doc?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocs(
+                List.of(tooSmall, good),
+                false,
+                1,
+                new ContextConstructionConfig(1, 2, 2, 0, 0.5, 0.0, 3));
+
+        assertEquals(1, goldens.size());
+        assertEquals("What is in the good doc?", goldens.getFirst().input());
+        assertEquals(List.of("alpha beta"), goldens.getFirst().context());
+        assertEquals("good.md", goldens.getFirst().sourceFile());
+        assertTrue(model.prompts().getFirst().contains("alpha beta"));
+        assertEquals(false, model.prompts().getFirst().contains("short"));
+    }
+
+    @Test
     void generateGoldensFromDocsCanMergeCrossFileContextsLikeDeepEval() throws Exception {
         var policy = tempDir.resolve("policy.md");
         var faq = tempDir.resolve("faq.md");

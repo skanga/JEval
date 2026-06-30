@@ -791,10 +791,18 @@ public final class Synthesizer {
             List<List<String>> contexts,
             List<String> sourceFiles,
             List<Double> contextScores) throws IOException {
+        var failures = new ArrayList<IllegalArgumentException>();
         for (var path : documentPaths) {
             for (var file : documentFiles(path)) {
-                addDocumentContexts(config, contexts, sourceFiles, contextScores, file);
+                try {
+                    addDocumentContexts(config, contexts, sourceFiles, contextScores, file);
+                } catch (IllegalArgumentException error) {
+                    failures.add(error);
+                }
             }
+        }
+        if (contexts.isEmpty() && !failures.isEmpty()) {
+            throw failures.getFirst();
         }
     }
 
