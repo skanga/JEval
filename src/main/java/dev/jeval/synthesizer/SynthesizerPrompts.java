@@ -211,15 +211,21 @@ final class SynthesizerPrompts {
         var exampleSources = sourceFiles.stream()
                 .limit(Math.max(2, targetFilesPerContext == null ? 2 : targetFilesPerContext))
                 .toList();
+        var crossFileObjective = "scenario".equals(itemKey)
+                ? "Your goal is to design powerful, cross-file scenarios whose conversations require reasoning across different files, not single-file recall."
+                : "Your goal is to generate powerful, cross-file goldens that test reasoning across different files, not single-file recall.";
         return """
 
                 This context is constructed from multiple files with these source labels: %s.
+                Each chunk in the context is prefixed with its origin as `[SOURCE: <label>]`.
+                %s
                 %s
                 For each generated item, include a `used_source_files` key listing only the source labels actually used to form that `%s`.
                 `used_source_files` MUST be a JSON array of strings and each value MUST come from: %s.
                 Example item: {"%s": "...", "used_source_files": %s}.
                 """.formatted(
                 sourceFiles,
+                crossFileObjective,
                 targetInstruction,
                 itemKey,
                 sourceFiles,

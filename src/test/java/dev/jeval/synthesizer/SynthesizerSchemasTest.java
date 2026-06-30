@@ -90,6 +90,7 @@ class SynthesizerSchemasTest {
 
         assertTrue(prompt.contains("used_source_files"));
         assertTrue(prompt.contains("\"used_source_files\": [\"policy.md\", \"faq.md\"]"));
+        assertTrue(prompt.contains("cross-file goldens that test reasoning across different files"));
         assertTrue(prompt.contains("at least 2 different source files"));
     }
 
@@ -105,6 +106,7 @@ class SynthesizerSchemasTest {
 
         assertTrue(prompt.contains("used_source_files"));
         assertTrue(prompt.contains("\"used_source_files\": [\"policy.md\", \"faq.md\"]"));
+        assertTrue(prompt.contains("cross-file scenarios whose conversations require reasoning across different files"));
         assertTrue(prompt.contains("at least 2 different source files"));
     }
 
