@@ -288,7 +288,8 @@ public final class Synthesizer {
         var qualifiedData = rewriteScenarios(context, data);
         for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(conversationalGolden(
-                    item.data(), context, sourceFile, includeExpectedOutcome, item.score(), contextQuality));
+                    item.data(), context, sourceFile, includeExpectedOutcome, item.score(), contextQuality,
+                    contextIndex * maxGoldensPerContext + goldens.size()));
         }
         return List.copyOf(goldens);
     }
@@ -305,12 +306,11 @@ public final class Synthesizer {
                         SynthesizerPrompts.generateSyntheticConversationalScenariosFromScratch(
                                 conversationalStylingConfig, numGoldens)));
         var qualifiedData = rewriteScenarios(List.of(), data);
-        return qualifiedData
-                .stream()
-                .map(item -> conversationalGolden(item.data(), null, null, false, item.score(), null))
-                .collect(java.util.stream.Collectors.collectingAndThen(
-                        java.util.stream.Collectors.toList(),
-                        this::retainConversationalGoldens));
+        var goldens = new ArrayList<ConversationalGolden>();
+        for (var item : qualifiedData) {
+            goldens.add(conversationalGolden(item.data(), null, null, false, item.score(), null, goldens.size()));
+        }
+        return retainConversationalGoldens(goldens);
     }
 
     public List<ConversationalGolden> generateConversationalGoldensFromGoldens(
@@ -337,7 +337,7 @@ public final class Synthesizer {
             var qualifiedData = rewriteScenarios(scenarios, data);
             for (var item : qualifiedData) {
                 generated.add(conversationalGolden(
-                        item.data(), null, null, includeExpectedOutcome, item.score(), null));
+                        item.data(), null, null, includeExpectedOutcome, item.score(), null, generated.size()));
             }
         }
         return retainConversationalGoldens(generated);
@@ -361,11 +361,12 @@ public final class Synthesizer {
             String sourceFile,
             boolean includeExpectedOutcome,
             Double syntheticScenarioQuality,
-            Double contextQuality) {
+            Double contextQuality,
+            int goldenIndex) {
         var evolutions = new ArrayList<String>();
         var scenario = data.scenario();
         for (var i = 0; i < evolutionConfig.numEvolutions(); i++) {
-            var evolution = evolution(i);
+            var evolution = evolution(goldenIndex + i);
             scenario = SynthesizerSchemas.parseRewrittenScenario(model.generate(
                     SynthesizerPrompts.evolveScenario(scenario, context, evolution)));
             evolutions.add(evolution.value());

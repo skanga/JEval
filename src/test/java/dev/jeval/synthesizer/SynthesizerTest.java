@@ -498,6 +498,35 @@ class SynthesizerTest {
     }
 
     @Test
+    void generatesConversationalGoldensFromScratchAndKeepsPerGoldenEvolutionMetadata() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[
+                  {"scenario":"first scenario","turns":[{"role":"user","content":"One"}]},
+                  {"scenario":"second scenario","turns":[{"role":"user","content":"Two"}]}
+                ]}
+                """,
+                "{\"rewritten_scenario\":\"first evolved\"}",
+                "{\"rewritten_scenario\":\"second evolved\"}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                new ConversationalStylingConfig("support", "resolve issues", "customer and agent", null),
+                new EvolutionConfig(1, List.of(Evolution.REASONING, Evolution.COMPARATIVE)),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateConversationalGoldensFromScratch(2);
+
+        assertEquals(List.of("first evolved", "second evolved"),
+                goldens.stream().map(ConversationalGolden::scenario).toList());
+        assertEquals(List.of("Reasoning"), goldens.get(0).additionalMetadata().get("evolutions"));
+        assertEquals(List.of("Comparative"), goldens.get(1).additionalMetadata().get("evolutions"));
+        assertTrue(model.prompts().get(1).contains("Reasoning"));
+        assertTrue(model.prompts().get(2).contains("Comparative"));
+    }
+
+    @Test
     void conversationalScratchRequiresStylingConfig() {
         var synthesizer = new Synthesizer(prompt -> "{}");
 
