@@ -423,7 +423,7 @@ public final class Synthesizer {
     }
 
     private String expectedOutput(SyntheticData data, List<String> context, String input) {
-        if (data.expectedOutput() != null || context == null) {
+        if (context == null) {
             return data.expectedOutput();
         }
         return model.generate(SynthesizerPrompts.generateExpectedOutput(

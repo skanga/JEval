@@ -519,6 +519,9 @@ final class GenerateCommand {
             if (isConversationalExpectedOutcomePrompt(prompt) && nextResponse >= responses.size()) {
                 return "Generated conversational expected outcome";
             }
+            if (isExpectedOutputPrompt(prompt) && nextResponse >= responses.size()) {
+                return "Generated expected output";
+            }
             if (nextResponse >= responses.size()) {
                 throw new IllegalArgumentException("No scripted response for prompt " + prompts.size());
             }
@@ -552,6 +555,10 @@ final class GenerateCommand {
 
     private static boolean isConversationalExpectedOutcomePrompt(String prompt) {
         return prompt.startsWith("Generate the expected outcome for this conversation scenario");
+    }
+
+    private static boolean isExpectedOutputPrompt(String prompt) {
+        return prompt.startsWith("Generate the expected output for the input");
     }
 
     private static String rewriteInput(String prompt) {

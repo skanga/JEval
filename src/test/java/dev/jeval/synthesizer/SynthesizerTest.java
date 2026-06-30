@@ -47,6 +47,23 @@ class SynthesizerTest {
     }
 
     @Test
+    void generatesExpectedOutputSeparatelyForContextGoldensLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Embedded answer\"}]}",
+                "Generated answer from context"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateGoldensFromContexts(
+                List.of(List.of("Paris is in France.")), true, 1, null);
+
+        assertEquals("Generated answer from context", goldens.getFirst().expectedOutput());
+        assertTrue(model.prompts().get(1).contains("Generate the expected output"));
+        assertTrue(model.prompts().get(1).contains("What is France's capital?"));
+        assertEquals(2, model.prompts().size());
+    }
+
+    @Test
     void generatesGoldensFromContextsWithMultipleSourceFilesLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"How do the documents relate?\"}]}"));
@@ -153,7 +170,9 @@ class SynthesizerTest {
         Files.writeString(document, "alpha beta gamma delta");
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"Question one?\",\"expected_output\":\"Answer one\"}]}",
-                "{\"data\":[{\"input\":\"Question two?\",\"expected_output\":\"Answer two\"}]}"));
+                "Answer one",
+                "{\"data\":[{\"input\":\"Question two?\",\"expected_output\":\"Answer two\"}]}",
+                "Answer two"));
         var synthesizer = new Synthesizer(
                 model,
                 null,
@@ -181,7 +200,8 @@ class SynthesizerTest {
     @Test
     void saveAsWritesLastSyntheticGoldensLikeDeepEval() throws Exception {
         var model = new ScriptedModel(List.of(
-                "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
+                "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}",
+                "Paris"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         synthesizer.generateGoldensFromContexts(List.of(List.of("Paris is in France.")), true, 1, null);
@@ -208,7 +228,8 @@ class SynthesizerTest {
     @Test
     void saveAsRejectsFileNameWithPeriodsLikeDeepEval() {
         var model = new ScriptedModel(List.of(
-                "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
+                "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}",
+                "Paris"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         synthesizer.generateGoldensFromContexts(List.of(List.of("Paris is in France.")), true, 1, null);

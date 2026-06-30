@@ -881,7 +881,7 @@ class JEvalCliTest {
         assertEquals(0, exit);
         var generated = Files.readString(output.resolve("generated.json"));
         assertTrue(generated.contains("\"input\" : \"Capital?\""));
-        assertTrue(generated.contains("\"expected_output\" : \"Paris\""));
+        assertTrue(generated.contains("\"expected_output\" : \"Generated expected output\""));
     }
 
     @Test
