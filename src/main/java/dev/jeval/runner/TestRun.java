@@ -81,11 +81,11 @@ public record TestRun(
         put(dump, key("test_cases", "testCases", byAlias), dumpLlmApiTestCases(byAlias), excludeNulls);
         put(dump, key("conversational_test_cases", "conversationalTestCases", byAlias),
                 dumpConversationalApiTestCases(byAlias), excludeNulls);
-        put(dump, key("metrics_scores", "metricsScores", byAlias), metricsScores, excludeNulls);
+        put(dump, key("metrics_scores", "metricsScores", byAlias), new ArrayList<>(metricsScores), excludeNulls);
         put(dump, key("trace_metrics_scores", "traceMetricsScores", byAlias), dumpTraceMetricScores(), excludeNulls);
         put(dump, "identifier", identifier, excludeNulls);
         put(dump, "hyperparameters", hyperparameters, excludeNulls);
-        put(dump, "prompts", prompts, excludeNulls);
+        put(dump, "prompts", prompts == null ? null : new ArrayList<>(prompts), excludeNulls);
         put(dump, key("test_passed", "testPassed", byAlias), testPassed, excludeNulls);
         put(dump, key("test_failed", "testFailed", byAlias), testFailed, excludeNulls);
         put(dump, key("run_duration", "runDuration", byAlias), runDuration, excludeNulls);
@@ -196,11 +196,12 @@ public record TestRun(
     }
 
     private List<Map<String, Object>> dumpLlmApiTestCases(boolean byAlias) {
-        return testCases.stream().map(testCase -> testCase.modelDump(byAlias)).toList();
+        return new ArrayList<>(testCases.stream().map(testCase -> testCase.modelDump(byAlias)).toList());
     }
 
     private List<Map<String, Object>> dumpConversationalApiTestCases(boolean byAlias) {
-        return conversationalTestCases.stream().map(testCase -> testCase.modelDump(byAlias)).toList();
+        return new ArrayList<>(
+                conversationalTestCases.stream().map(testCase -> testCase.modelDump(byAlias)).toList());
     }
 
     private Map<String, Object> dumpTraceMetricScores() {

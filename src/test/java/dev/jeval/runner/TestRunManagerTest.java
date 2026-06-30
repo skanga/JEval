@@ -167,4 +167,33 @@ class TestRunManagerTest {
                 () -> assertNull(manager.getLatestTestRunLink(missing)),
                 () -> assertNull(manager.getLatestTestRunLink(dataOnly)));
     }
+
+    @Test
+    void getLatestTestRunDataReadsWrappedDeepEvalPayload() throws Exception {
+        var manager = new TestRunManager();
+        var file = tempDir.resolve(".deepeval").resolve(".latest_test_run.json");
+
+        manager.createTestRun("run-id", "EvalTest.java", false);
+        manager.saveTestRun(file, TestRunManager.LATEST_TEST_RUN_DATA_KEY);
+        var loaded = manager.getLatestTestRunData(file);
+
+        assertAll(
+                () -> assertEquals("run-id", loaded.identifier()),
+                () -> assertEquals("EvalTest.java", loaded.testFile()),
+                () -> assertEquals(List.of(), loaded.testCases()),
+                () -> assertEquals(0.0, loaded.runDuration()));
+    }
+
+    @Test
+    void getLatestTestRunDataReturnsNullWhenFileOrKeyIsMissing() throws Exception {
+        var manager = new TestRunManager();
+        var missing = tempDir.resolve(".deepeval").resolve(".latest_test_run.json");
+        var linkOnly = tempDir.resolve("latest_with_link.json");
+
+        Files.writeString(linkOnly, "{\"" + TestRunManager.LATEST_TEST_RUN_LINK_KEY + "\":\"https://example.test\"}");
+
+        assertAll(
+                () -> assertNull(manager.getLatestTestRunData(missing)),
+                () -> assertNull(manager.getLatestTestRunData(linkOnly)));
+    }
 }

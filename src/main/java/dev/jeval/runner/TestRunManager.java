@@ -103,6 +103,19 @@ public final class TestRunManager {
         return link == null ? null : String.valueOf(link);
     }
 
+    public TestRun getLatestTestRunData(Path path) {
+        try {
+            if (!Files.exists(path)) {
+                return null;
+            }
+            var data = JSON.readValue(path.toFile(), Map.class);
+            var testRunData = data.get(LATEST_TEST_RUN_DATA_KEY);
+            return testRunData == null ? null : JSON.convertValue(testRunData, TestRun.class);
+        } catch (RuntimeException | IOException error) {
+            return null;
+        }
+    }
+
     public void updateTestRun(LlmApiTestCase apiTestCase, LlmTestCase testCase) {
         if (shouldSkip(apiTestCase)) {
             return;
