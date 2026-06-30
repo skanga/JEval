@@ -267,10 +267,35 @@ class SynthesizerTest {
         assertEquals(List.of("Answer one", "Answer two"), goldens.stream().map(Golden::expectedOutput).toList());
         assertEquals(List.of(List.of("alpha beta"), List.of("gamma delta")),
                 goldens.stream().map(Golden::context).toList());
-        assertEquals(List.of("policy.md", "policy.md"), goldens.stream().map(Golden::sourceFile).toList());
+        assertEquals(List.of(document.toString(), document.toString()),
+                goldens.stream().map(Golden::sourceFile).toList());
         assertEquals(List.of(0.0, 0.0), goldens.stream()
                 .map(golden -> golden.additionalMetadata().get("context_quality"))
                 .toList());
+    }
+
+    @Test
+    void generateGoldensFromDocsPreservesDocumentPathSourceLabelsLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta");
+        var model = new ScriptedModel(List.of("{\"data\":[{\"input\":\"Question one?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocs(
+                List.of(document),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 2, 0, 0.5, 0.0, 3));
+
+        assertEquals(document.toString(), goldens.getFirst().sourceFile());
+        assertEquals(List.of(document.toString()),
+                goldens.getFirst().additionalMetadata().get("context_source_files"));
     }
 
     @Test
@@ -320,7 +345,7 @@ class SynthesizerTest {
 
         assertEquals("What does the PDF say?", goldens.getFirst().input());
         assertTrue(goldens.getFirst().context().getFirst().contains("PDF policy allows refunds"));
-        assertEquals("policy.pdf", goldens.getFirst().sourceFile());
+        assertEquals(document.toString(), goldens.getFirst().sourceFile());
         assertTrue(model.prompts().getFirst().contains("PDF policy allows refunds"));
     }
 
@@ -345,7 +370,7 @@ class SynthesizerTest {
 
         assertEquals("What does the DOCX require?", goldens.getFirst().input());
         assertTrue(goldens.getFirst().context().getFirst().contains("DOCX handbook requires citations"));
-        assertEquals("handbook.docx", goldens.getFirst().sourceFile());
+        assertEquals(document.toString(), goldens.getFirst().sourceFile());
         assertTrue(model.prompts().getFirst().contains("DOCX handbook requires citations"));
     }
 
@@ -447,7 +472,7 @@ class SynthesizerTest {
         assertEquals(1, goldens.size());
         assertEquals("What is in the good doc?", goldens.getFirst().input());
         assertEquals(List.of("alpha beta"), goldens.getFirst().context());
-        assertEquals("good.md", goldens.getFirst().sourceFile());
+        assertEquals(good.toString(), goldens.getFirst().sourceFile());
         assertTrue(model.prompts().getFirst().contains("alpha beta"));
         assertEquals(false, model.prompts().getFirst().contains("short"));
     }
@@ -459,7 +484,9 @@ class SynthesizerTest {
         Files.writeString(policy, "policy chunk");
         Files.writeString(faq, "faq chunk");
         var model = new ScriptedModel(List.of(
-                "{\"data\":[{\"input\":\"How do policy and FAQ connect?\",\"used_source_files\":[\"policy.md\",\"faq.md\"]}]}"));
+                """
+                {"data":[{"input":"How do policy and FAQ connect?","used_source_files":["%s","%s"]}]}
+                """.formatted(jsonString(policy), jsonString(faq))));
         var synthesizer = new Synthesizer(
                 model,
                 null,
@@ -476,13 +503,13 @@ class SynthesizerTest {
 
         assertEquals(1, goldens.size());
         assertEquals(List.of("policy chunk", "faq chunk"), goldens.getFirst().context());
-        assertEquals("policy.md", goldens.getFirst().sourceFile());
-        assertEquals(List.of("policy.md", "faq.md"),
+        assertEquals(policy.toString(), goldens.getFirst().sourceFile());
+        assertEquals(List.of(policy.toString(), faq.toString()),
                 goldens.getFirst().additionalMetadata().get("context_source_files"));
-        assertEquals(List.of("policy.md", "faq.md"),
+        assertEquals(List.of(policy.toString(), faq.toString()),
                 goldens.getFirst().additionalMetadata().get("used_source_files"));
-        assertTrue(model.prompts().getFirst().contains("[SOURCE: policy.md] policy chunk"));
-        assertTrue(model.prompts().getFirst().contains("[SOURCE: faq.md] faq chunk"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: " + policy + "] policy chunk"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: " + faq + "] faq chunk"));
         assertTrue(model.prompts().getFirst().contains("at least 2 different source files"));
     }
 
@@ -577,8 +604,8 @@ class SynthesizerTest {
         Files.writeString(faq, "faq chunk");
         var model = new ScriptedModel(List.of(
                 """
-                {"data":[{"scenario":"policy and FAQ support","turns":[{"role":"user","content":"Need both"}],"used_source_files":["policy.md","faq.md"]}]}
-                """));
+                {"data":[{"scenario":"policy and FAQ support","turns":[{"role":"user","content":"Need both"}],"used_source_files":["%s","%s"]}]}
+                """.formatted(jsonString(policy), jsonString(faq))));
         var synthesizer = new Synthesizer(
                 model,
                 null,
@@ -595,12 +622,12 @@ class SynthesizerTest {
 
         assertEquals(1, goldens.size());
         assertEquals(List.of("policy chunk", "faq chunk"), goldens.getFirst().context());
-        assertEquals(List.of("policy.md", "faq.md"),
+        assertEquals(List.of(policy.toString(), faq.toString()),
                 goldens.getFirst().additionalMetadata().get("context_source_files"));
-        assertEquals(List.of("policy.md", "faq.md"),
+        assertEquals(List.of(policy.toString(), faq.toString()),
                 goldens.getFirst().additionalMetadata().get("used_source_files"));
-        assertTrue(model.prompts().getFirst().contains("[SOURCE: policy.md] policy chunk"));
-        assertTrue(model.prompts().getFirst().contains("[SOURCE: faq.md] faq chunk"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: " + policy + "] policy chunk"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: " + faq + "] faq chunk"));
         assertTrue(model.prompts().getFirst().contains("at least 2 different source files"));
     }
 
@@ -678,7 +705,7 @@ class SynthesizerTest {
                 new ContextConstructionConfig(1, 1, 2, 0, 0.5, 0.0, 3)).join();
 
         assertEquals(List.of("Async doc question?"), goldens.stream().map(Golden::input).toList());
-        assertEquals(List.of("async-policy.md"), goldens.stream().map(Golden::sourceFile).toList());
+        assertEquals(List.of(document.toString()), goldens.stream().map(Golden::sourceFile).toList());
     }
 
     @Test
@@ -1337,6 +1364,10 @@ class SynthesizerTest {
 
     private static FiltrationConfig noFiltrationConfig() {
         return new FiltrationConfig(0.5, 0, null);
+    }
+
+    private static String jsonString(Path path) {
+        return path.toString().replace("\\", "\\\\");
     }
 
     private static void writePdf(Path path, String text) throws Exception {

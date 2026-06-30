@@ -259,7 +259,7 @@ class EvaluationDatasetTest {
                 dataset.goldens().stream().map(Golden::input).toList());
         assertEquals(List.of(List.of("alpha beta"), List.of("gamma delta")),
                 dataset.goldens().stream().map(Golden::context).toList());
-        assertEquals(List.of("policy.md", "policy.md"),
+        assertEquals(List.of(document.toString(), document.toString()),
                 dataset.goldens().stream().map(Golden::sourceFile).toList());
     }
 

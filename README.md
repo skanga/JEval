@@ -185,8 +185,10 @@ Plain-text document chunking is available through the CLI, including DeepEval's
 multi-document generation run cannot meet the minimum context count, JEval skips
 that document and continues with the remaining valid documents; a run where no
 document can produce contexts still fails with the DeepEval-style validation
-message. Multi-turn generation expects model JSON with `scenario`, optional
-`turns`, and optional `expected_outcome`.
+message. Document-generated source labels preserve the original path string
+provided to the generator, matching DeepEval metadata. Multi-turn generation
+expects model JSON with `scenario`, optional `turns`, and optional
+`expected_outcome`.
 
 ## Tracing
 

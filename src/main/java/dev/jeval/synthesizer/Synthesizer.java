@@ -823,7 +823,7 @@ public final class Synthesizer {
                 break;
             }
             contexts.add(contextChunks(chunks, i, contextLength));
-            sourceFiles.add(file.getFileName().toString());
+            sourceFiles.add(file.toString());
             contextScores.add(0.0);
         }
     }
