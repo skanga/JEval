@@ -136,4 +136,35 @@ class TestRunManagerTest {
                 () -> assertFalse(wrapped.containsKey("test_file")),
                 () -> assertFalse(wrapped.containsKey("evaluationCost")));
     }
+
+    @Test
+    void saveAndReadFinalTestRunLinkUseDeepEvalLatestRunKeys() throws Exception {
+        var manager = new TestRunManager();
+        var file = tempDir.resolve(".deepeval").resolve(".latest_test_run.json");
+
+        manager.saveFinalTestRunLink(file, "https://app.confident-ai.com/test-runs/run-id");
+        var saved = JSON.readValue(file.toFile(), Map.class);
+
+        assertAll(
+                () -> assertTrue(Files.exists(file)),
+                () -> assertEquals(Map.of(
+                        TestRunManager.LATEST_TEST_RUN_LINK_KEY,
+                        "https://app.confident-ai.com/test-runs/run-id"), saved),
+                () -> assertEquals(
+                        "https://app.confident-ai.com/test-runs/run-id",
+                        manager.getLatestTestRunLink(file)));
+    }
+
+    @Test
+    void getLatestTestRunLinkReturnsNullWhenFileOrKeyIsMissing() throws Exception {
+        var manager = new TestRunManager();
+        var missing = tempDir.resolve(".deepeval").resolve(".latest_test_run.json");
+        var dataOnly = tempDir.resolve("latest_with_data.json");
+
+        Files.writeString(dataOnly, "{\"" + TestRunManager.LATEST_TEST_RUN_DATA_KEY + "\":{}}");
+
+        assertAll(
+                () -> assertNull(manager.getLatestTestRunLink(missing)),
+                () -> assertNull(manager.getLatestTestRunLink(dataOnly)));
+    }
 }

@@ -1,5 +1,6 @@
 package dev.jeval.runner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ConversationalApiTestCase;
 import dev.jeval.ConversationalTestCase;
 import dev.jeval.LlmApiTestCase;
@@ -15,6 +16,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
 public final class TestRunManager {
+    public static final String LATEST_TEST_RUN_DATA_KEY = "testRunData";
+    public static final String LATEST_TEST_RUN_LINK_KEY = "testRunLink";
+    private static final ObjectMapper JSON = new ObjectMapper();
     private TestRun testRun;
     private boolean disableRequest;
 
@@ -82,15 +86,21 @@ public final class TestRunManager {
             return;
         }
         var wrapper = Map.of(saveUnderKey, getTestRun().modelDump(true, true));
-        var bytes = Utils.serializeToJson(wrapper).getBytes(StandardCharsets.UTF_8);
-        try (var channel = FileChannel.open(
-                path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-            var buffer = ByteBuffer.wrap(bytes);
-            while (buffer.hasRemaining()) {
-                channel.write(buffer);
-            }
-            channel.force(true);
+        writeJson(path, wrapper);
+    }
+
+    public void saveFinalTestRunLink(Path path, String link) throws IOException {
+        createParentDirectories(path);
+        writeJson(path, Map.of(LATEST_TEST_RUN_LINK_KEY, link));
+    }
+
+    public String getLatestTestRunLink(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            return null;
         }
+        var data = JSON.readValue(path.toFile(), Map.class);
+        var link = data.get(LATEST_TEST_RUN_LINK_KEY);
+        return link == null ? null : String.valueOf(link);
     }
 
     public void updateTestRun(LlmApiTestCase apiTestCase, LlmTestCase testCase) {
@@ -125,6 +135,18 @@ public final class TestRunManager {
         var parent = path.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
+        }
+    }
+
+    private static void writeJson(Path path, Object value) throws IOException {
+        var bytes = Utils.serializeToJson(value).getBytes(StandardCharsets.UTF_8);
+        try (var channel = FileChannel.open(
+                path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+            var buffer = ByteBuffer.wrap(bytes);
+            while (buffer.hasRemaining()) {
+                channel.write(buffer);
+            }
+            channel.force(true);
         }
     }
 }
