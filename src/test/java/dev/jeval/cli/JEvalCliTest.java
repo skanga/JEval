@@ -28,6 +28,17 @@ class JEvalCliTest {
     }
 
     @Test
+    void usageListsProviderBackedGenerationCommands() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("set-openai|set-anthropic|set-gemini|set-ollama|set-openrouter"));
+    }
+
+    @Test
     void exitsNonZeroWhenEvaluationFails() throws Exception {
         var file = tempDir.resolve("judgment_eval.json");
         Files.writeString(file, """
