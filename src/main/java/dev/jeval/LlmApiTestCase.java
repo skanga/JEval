@@ -68,6 +68,34 @@ public record LlmApiTestCase(
         return copyWith(updatedSuccess, metricsData, runDuration, evaluationCost);
     }
 
+    public LlmApiTestCase withOrder(Integer order) {
+        return new LlmApiTestCase(
+                name,
+                input,
+                actualOutput,
+                expectedOutput,
+                context,
+                retrievalContext,
+                toolsCalled,
+                expectedTools,
+                tokenCost,
+                completionTime,
+                imagesMapping,
+                success,
+                metricsData,
+                runDuration,
+                evaluationCost,
+                order,
+                metadata,
+                comments,
+                tags,
+                trace,
+                mcpServers,
+                mcpToolsCalled,
+                mcpResourcesCalled,
+                mcpPromptsCalled);
+    }
+
     public Map<String, Object> modelDump(boolean byAlias) {
         var dump = new LinkedHashMap<String, Object>();
         dump.put("name", name);

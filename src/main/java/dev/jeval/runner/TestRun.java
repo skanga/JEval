@@ -5,9 +5,14 @@ import dev.jeval.LlmApiTestCase;
 import dev.jeval.MetricData;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public record TestRun(
         String testFile,
@@ -68,6 +73,15 @@ public record TestRun(
         return new MetricsScoresAggregation(copyWithMetricsScores(updatedMetricsScores), validScores);
     }
 
+    public TestRun sortTestCases() {
+        return copyWithSortedTestCases(
+                assignUniqueOrders(sortByOrder(testCases), LlmApiTestCase::order, LlmApiTestCase::withOrder),
+                assignUniqueOrders(
+                        sortByOrder(conversationalTestCases),
+                        ConversationalApiTestCase::order,
+                        ConversationalApiTestCase::withOrder));
+    }
+
     private Double addEvaluationCost(Double additional) {
         if (additional == null) {
             return evaluationCost;
@@ -116,6 +130,26 @@ public record TestRun(
                 official);
     }
 
+    private TestRun copyWithSortedTestCases(
+            List<LlmApiTestCase> testCases, List<ConversationalApiTestCase> conversationalTestCases) {
+        return new TestRun(
+                testFile,
+                testCases,
+                conversationalTestCases,
+                metricsScores,
+                traceMetricsScores,
+                identifier,
+                hyperparameters,
+                prompts,
+                testPassed,
+                testFailed,
+                runDuration,
+                evaluationCost,
+                datasetAlias,
+                datasetId,
+                official);
+    }
+
     private static int aggregateMetricData(List<Object> metricsData, Map<String, MetricScoresAggregator> aggregators) {
         var validScores = 0;
         if (metricsData == null) {
@@ -144,6 +178,49 @@ public record TestRun(
         var updated = new java.util.ArrayList<T>(values == null ? List.of() : values);
         updated.add(value);
         return updated;
+    }
+
+    private static <T> List<T> sortByOrder(List<T> testCases) {
+        return testCases.stream()
+                .sorted(Comparator.comparingInt(testCase -> orderOf(testCase).orElse(Integer.MAX_VALUE)))
+                .toList();
+    }
+
+    private static OptionalInt orderOf(Object testCase) {
+        if (testCase instanceof LlmApiTestCase apiTestCase && apiTestCase.order() != null) {
+            return OptionalInt.of(apiTestCase.order());
+        }
+        if (testCase instanceof ConversationalApiTestCase apiTestCase && apiTestCase.order() != null) {
+            return OptionalInt.of(apiTestCase.order());
+        }
+        return OptionalInt.empty();
+    }
+
+    private static <T> List<T> assignUniqueOrders(
+            List<T> sortedTestCases, Function<T, Integer> orderGetter, BiFunction<T, Integer, T> orderSetter) {
+        var assigned = new ArrayList<T>();
+        var highestOrder = 0;
+        for (var testCase : sortedTestCases) {
+            var order = orderGetter.apply(testCase);
+            if (order == null) {
+                order = highestOrder;
+                testCase = orderSetter.apply(testCase, order);
+            }
+            highestOrder = order + 1;
+            assigned.add(testCase);
+        }
+
+        var seen = new HashSet<Integer>();
+        var hasDuplicates = assigned.stream().map(orderGetter).anyMatch(order -> !seen.add(order));
+        if (!hasDuplicates) {
+            return assigned;
+        }
+
+        var renumbered = new ArrayList<T>();
+        for (var i = 0; i < assigned.size(); i++) {
+            renumbered.add(orderSetter.apply(assigned.get(i), i));
+        }
+        return renumbered;
     }
 
     public record MetricsScoresAggregation(TestRun testRun, int validScores) {}

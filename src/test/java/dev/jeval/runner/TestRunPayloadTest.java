@@ -106,6 +106,43 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void sortTestCasesMatchesDeepEvalOrderGapAndDuplicateRules() {
+        var explicitSingleTurn = llmApi("ordered", 2);
+        var duplicateSingleTurnA = llmApi("duplicate-a", 0);
+        var duplicateSingleTurnB = llmApi("duplicate-b", 0);
+        var missingSingleTurn = llmApi("missing", null);
+        var missingConversation = conversationalApi("missing-conversation", null);
+        var explicitConversation = conversationalApi("ordered-conversation", 1);
+
+        var sorted = new TestRun()
+                .addTestCase(explicitSingleTurn)
+                .addTestCase(duplicateSingleTurnA)
+                .addTestCase(missingSingleTurn)
+                .addTestCase(duplicateSingleTurnB)
+                .addTestCase(missingConversation)
+                .addTestCase(explicitConversation)
+                .sortTestCases();
+
+        assertAll(
+                () -> assertEquals(
+                        List.of("duplicate-a", "duplicate-b", "ordered", "missing"),
+                        sorted.testCases().stream().map(LlmApiTestCase::name).toList()),
+                () -> assertEquals(
+                        List.of(0, 1, 2, 3),
+                        sorted.testCases().stream().map(LlmApiTestCase::order).toList()),
+                () -> assertEquals(
+                        List.of("ordered-conversation", "missing-conversation"),
+                        sorted.conversationalTestCases().stream().map(ConversationalApiTestCase::name).toList()),
+                () -> assertEquals(
+                        List.of(1, 2),
+                        sorted.conversationalTestCases().stream().map(ConversationalApiTestCase::order).toList()),
+                () -> assertEquals(2, explicitSingleTurn.order()),
+                () -> assertEquals(0, duplicateSingleTurnA.order()),
+                () -> assertEquals(0, duplicateSingleTurnB.order()),
+                () -> assertEquals(1, explicitConversation.order()));
+    }
+
+    @Test
     void traceMetricScoresDefensivelyCopiesNestedScoreMaps() {
         var scores = new MetricScores("faithfulness", List.of(1.0), 1, 0, 0);
         var nested = new java.util.LinkedHashMap<String, MetricScores>();
@@ -133,8 +170,17 @@ class TestRunPayloadTest {
     }
 
     private static LlmApiTestCase llmApi(Double evaluationCost, List<Object> metricsData) {
+        return llmApi("case", null, evaluationCost, metricsData);
+    }
+
+    private static LlmApiTestCase llmApi(String name, Integer order) {
+        return llmApi(name, order, null, List.of());
+    }
+
+    private static LlmApiTestCase llmApi(
+            String name, Integer order, Double evaluationCost, List<Object> metricsData) {
         return new LlmApiTestCase(
-                "case",
+                name,
                 "input",
                 null,
                 null,
@@ -149,7 +195,7 @@ class TestRunPayloadTest {
                 metricsData,
                 null,
                 evaluationCost,
-                null,
+                order,
                 null,
                 null,
                 null,
@@ -169,14 +215,23 @@ class TestRunPayloadTest {
     }
 
     private static ConversationalApiTestCase conversationalApi(Double evaluationCost, List<Object> metricsData) {
+        return conversationalApi("conversation", null, evaluationCost, metricsData);
+    }
+
+    private static ConversationalApiTestCase conversationalApi(String name, Integer order) {
+        return conversationalApi(name, order, null, List.of());
+    }
+
+    private static ConversationalApiTestCase conversationalApi(
+            String name, Integer order, Double evaluationCost, List<Object> metricsData) {
         return new ConversationalApiTestCase(
-                "conversation",
+                name,
                 true,
                 metricsData,
                 0.0,
                 evaluationCost,
                 List.of(),
-                null,
+                order,
                 null,
                 null,
                 null,

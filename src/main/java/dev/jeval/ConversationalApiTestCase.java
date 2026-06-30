@@ -50,6 +50,26 @@ public record ConversationalApiTestCase(
         return copyWith(success, metricsData, updatedRunDuration, evaluationCost);
     }
 
+    public ConversationalApiTestCase withOrder(Integer order) {
+        return new ConversationalApiTestCase(
+                name,
+                success,
+                metricsData,
+                runDuration,
+                evaluationCost,
+                turns,
+                order,
+                scenario,
+                expectedOutcome,
+                userDescription,
+                context,
+                comments,
+                metadata,
+                imagesMapping,
+                tags,
+                mcpServers);
+    }
+
     public Map<String, Object> modelDump(boolean byAlias) {
         var dump = new LinkedHashMap<String, Object>();
         dump.put("name", name);
