@@ -8,6 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
@@ -227,6 +230,11 @@ class RetryPolicyTest {
                         "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "0.01")));
         assertTimeoutSettings(new RetryPolicy.TimeoutSettings(false, 88.5, 180.0, 27.0),
                 RetryPolicy.timeoutSettings(Map.of("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "bogus")));
+        assertEquals(128, RetryPolicy.timeoutSettings(Map.of()).threadLimit());
+        assertEquals(5.0, RetryPolicy.timeoutSettings(Map.of()).semaphoreWarnAfterSeconds(), 1e-9);
+        assertEquals(1, RetryPolicy.timeoutSettings(Map.of("DEEPEVAL_TIMEOUT_THREAD_LIMIT", "1")).threadLimit());
+        assertEquals(0.0, RetryPolicy.timeoutSettings(Map.of(
+                "DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS", "0")).semaphoreWarnAfterSeconds(), 1e-9);
     }
 
     @Test
@@ -321,6 +329,54 @@ class RetryPolicyTest {
         assertEquals(1, calls.get());
     }
 
+    @Test
+    void timeoutWorkerLimitBlocksAdditionalTimedCallsUntilPermitIsReleased() throws Exception {
+        var timeoutSettings = new RetryPolicy.TimeoutSettings(false, 1.0, 10.0, 10.0, 1, 0.0);
+        var settings = new RetryPolicy.RetrySettings(1, 0.0, 2.0, 0.0, 0.0);
+        var policies = Map.of("openai", testPolicy(true));
+        var firstStarted = new CountDownLatch(1);
+        var releaseFirst = new CountDownLatch(1);
+        var secondStarted = new AtomicInteger();
+        var executor = Executors.newFixedThreadPool(2);
+
+        try {
+            var first = executor.submit(() -> RetryPolicy.executeWithRetry(
+                    "openai",
+                    () -> {
+                        firstStarted.countDown();
+                        releaseFirst.await();
+                        return "first";
+                    },
+                    policies,
+                    Set.of(),
+                    settings,
+                    timeoutSettings));
+            assertTrue(firstStarted.await(1, TimeUnit.SECONDS));
+
+            var second = executor.submit(() -> RetryPolicy.executeWithRetry(
+                    "openai",
+                    () -> {
+                        secondStarted.incrementAndGet();
+                        return "second";
+                    },
+                    policies,
+                    Set.of(),
+                    settings,
+                    timeoutSettings));
+
+            Thread.sleep(50);
+            assertEquals(0, secondStarted.get());
+
+            releaseFirst.countDown();
+            assertEquals("first", first.get(1, TimeUnit.SECONDS));
+            assertEquals("second", second.get(1, TimeUnit.SECONDS));
+            assertEquals(1, secondStarted.get());
+        } finally {
+            releaseFirst.countDown();
+            executor.shutdownNow();
+        }
+    }
+
     private static RetryPolicy.ErrorPolicy testPolicy(boolean retry5xx) {
         return RetryPolicy.errorPolicy(
                 Set.of(AuthError.class),
@@ -337,6 +393,8 @@ class RetryPolicyTest {
         assertEquals(expected.perAttemptSeconds(), actual.perAttemptSeconds(), 1e-9);
         assertEquals(expected.perTaskSeconds(), actual.perTaskSeconds(), 1e-9);
         assertEquals(expected.gatherBufferSeconds(), actual.gatherBufferSeconds(), 1e-9);
+        assertEquals(expected.threadLimit(), actual.threadLimit());
+        assertEquals(expected.semaphoreWarnAfterSeconds(), actual.semaphoreWarnAfterSeconds(), 1e-9);
     }
 
     private static final class JsonResponse {

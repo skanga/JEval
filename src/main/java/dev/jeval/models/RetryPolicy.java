@@ -7,8 +7,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
@@ -19,6 +21,7 @@ public final class RetryPolicy {
     private static final double DEFAULT_TASK_TIMEOUT_SECONDS = 180.0;
     private static final double TIMEOUT_SAFETY_SECONDS = 1.0;
     private static final ThreadLocal<Long> OUTER_DEADLINE_NANOS = new ThreadLocal<>();
+    private static final ConcurrentHashMap<Integer, Semaphore> TIMEOUT_LIMITERS = new ConcurrentHashMap<>();
     private static final Pattern PROVIDER_SEPARATOR = Pattern.compile("[,;\\s]+");
     private static final Pattern SLUG_SEPARATOR = Pattern.compile("[^a-z0-9]+");
 
@@ -138,7 +141,9 @@ public final class RetryPolicy {
                 readEnvBoolean(env, "DEEPEVAL_DISABLE_TIMEOUTS", false),
                 perAttempt,
                 perTask,
-                gatherBuffer);
+                gatherBuffer,
+                readEnvInt(env, "DEEPEVAL_TIMEOUT_THREAD_LIMIT", 128, 1),
+                readEnvFloat(env, "DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS", 5.0, 0.0));
     }
 
     public static OuterDeadlineToken setOuterDeadlineSeconds(double seconds, TimeoutSettings settings) {
@@ -388,12 +393,20 @@ public final class RetryPolicy {
         if (timeoutSeconds <= 0.0) {
             return operation.call();
         }
+        var limiter = TIMEOUT_LIMITERS.computeIfAbsent(settings.threadLimit(), Semaphore::new);
+        acquireTimeoutPermit(limiter, settings);
         var executor = Executors.newSingleThreadExecutor(task -> {
             var thread = new Thread(task, "jeval-timeout-worker");
             thread.setDaemon(true);
             return thread;
         });
-        var future = executor.submit(operation);
+        var future = executor.submit(() -> {
+            try {
+                return operation.call();
+            } finally {
+                limiter.release();
+            }
+        });
         try {
             return future.get(
                     Math.round(timeoutSeconds * 1_000_000_000.0),
@@ -413,6 +426,18 @@ public final class RetryPolicy {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    private static void acquireTimeoutPermit(Semaphore limiter, TimeoutSettings settings) throws InterruptedException {
+        if (settings.semaphoreWarnAfterSeconds() > 0.0) {
+            var acquired = limiter.tryAcquire(
+                    Math.round(settings.semaphoreWarnAfterSeconds() * 1_000_000_000.0),
+                    TimeUnit.NANOSECONDS);
+            if (acquired) {
+                return;
+            }
+        }
+        limiter.acquire();
     }
 
     private static Object attribute(Object target, String name) {
@@ -554,9 +579,19 @@ public final class RetryPolicy {
             boolean disabled,
             double perAttemptSeconds,
             double perTaskSeconds,
-            double gatherBufferSeconds) {
+            double gatherBufferSeconds,
+            int threadLimit,
+            double semaphoreWarnAfterSeconds) {
         public TimeoutSettings(boolean disabled, double perAttemptSeconds) {
             this(disabled, perAttemptSeconds, 0.0, 0.0);
+        }
+
+        public TimeoutSettings(
+                boolean disabled,
+                double perAttemptSeconds,
+                double perTaskSeconds,
+                double gatherBufferSeconds) {
+            this(disabled, perAttemptSeconds, perTaskSeconds, gatherBufferSeconds, 128, 5.0);
         }
     }
 
