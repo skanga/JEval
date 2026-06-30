@@ -312,6 +312,8 @@ final class GenerateCommand {
         return new ContextConstructionConfig(
                 integer(args, "--max-contexts-per-document", ContextConstructionConfig.DEFAULT.maxContextsPerDocument()),
                 integer(args, "--min-contexts-per-document", ContextConstructionConfig.DEFAULT.minContextsPerDocument()),
+                integer(args, "--max-context-length", ContextConstructionConfig.DEFAULT.maxContextLength()),
+                integer(args, "--min-context-length", ContextConstructionConfig.DEFAULT.minContextLength()),
                 integer(args, "--chunk-size", ContextConstructionConfig.DEFAULT.chunkSize()),
                 integer(args, "--chunk-overlap", ContextConstructionConfig.DEFAULT.chunkOverlap()),
                 decimal(args, "--context-quality-threshold", ContextConstructionConfig.DEFAULT.contextQualityThreshold()),

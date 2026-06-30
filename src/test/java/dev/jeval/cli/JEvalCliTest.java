@@ -849,6 +849,8 @@ class JEvalCliTest {
                 "generate", "--method", "docs", "--variation", "single-turn",
                 "--max-contexts-per-document", "5",
                 "--min-contexts-per-document", "2",
+                "--max-context-length", "4",
+                "--min-context-length", "2",
                 "--chunk-size", "256",
                 "--chunk-overlap", "32",
                 "--context-quality-threshold", "0.72",
@@ -858,6 +860,8 @@ class JEvalCliTest {
 
         assertEquals(5, accessor(config, "maxContextsPerDocument"));
         assertEquals(2, accessor(config, "minContextsPerDocument"));
+        assertEquals(4, accessor(config, "maxContextLength"));
+        assertEquals(2, accessor(config, "minContextLength"));
         assertEquals(256, accessor(config, "chunkSize"));
         assertEquals(32, accessor(config, "chunkOverlap"));
         assertEquals(0.72, (Double) accessor(config, "contextQualityThreshold"), 0.0001);

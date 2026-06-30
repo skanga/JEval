@@ -815,12 +815,14 @@ public final class Synthesizer {
         validateChunkOverlap(config.chunkSize(), config.chunkOverlap());
         var chunks = chunkDocumentText(readDocumentText(file), config.chunkSize(), config.chunkOverlap());
         validateMinContexts(chunks.size(), config.minContextsPerDocument());
+        validateContextLength(chunks.size(), config.minContextLength(), file);
         var count = 0;
-        for (var chunk : chunks) {
+        var contextLength = Math.min(config.maxContextLength(), chunks.size());
+        for (var i = 0; i < chunks.size(); i++) {
             if (count++ >= config.maxContextsPerDocument()) {
                 break;
             }
-            contexts.add(List.of(chunk));
+            contexts.add(contextChunks(chunks, i, contextLength));
             sourceFiles.add(file.getFileName().toString());
             contextScores.add(0.0);
         }
@@ -929,6 +931,24 @@ public final class Synthesizer {
                     .append(".");
         }
         throw new IllegalArgumentException(message.toString());
+    }
+
+    private static void validateContextLength(int numChunks, int minContextLength, Path path) {
+        if (numChunks >= minContextLength) {
+            return;
+        }
+        throw new IllegalArgumentException(path + " has " + numChunks
+                + " chunks, which is less than the minimum context size of " + minContextLength
+                + "\nAdjust the `min_context_length` to no more than " + numChunks
+                + ", or reduce `chunk_size`.");
+    }
+
+    private static List<String> contextChunks(List<String> chunks, int start, int contextLength) {
+        var context = new ArrayList<String>();
+        for (var offset = 0; offset < chunks.size() && context.size() < contextLength; offset++) {
+            context.add(chunks.get((start + offset) % chunks.size()));
+        }
+        return List.copyOf(context);
     }
 
     private record DocumentContexts(

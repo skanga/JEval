@@ -3,6 +3,8 @@ package dev.jeval.synthesizer;
 public record ContextConstructionConfig(
         int maxContextsPerDocument,
         int minContextsPerDocument,
+        int maxContextLength,
+        int minContextLength,
         int chunkSize,
         int chunkOverlap,
         double contextQualityThreshold,
@@ -12,7 +14,7 @@ public record ContextConstructionConfig(
         Integer targetFilesPerContext,
         int maxFilesPerContext) {
     public static final ContextConstructionConfig DEFAULT =
-            new ContextConstructionConfig(3, 1, 1024, 0, 0.5, 0.0, 3, false, null, 3);
+            new ContextConstructionConfig(3, 1, 3, 1, 1024, 0, 0.5, 0.0, 3, false, null, 3);
 
     public ContextConstructionConfig(
             int maxContextsPerDocument,
@@ -22,8 +24,38 @@ public record ContextConstructionConfig(
             double contextQualityThreshold,
             double contextSimilarityThreshold,
             int maxRetries) {
-        this(maxContextsPerDocument, minContextsPerDocument, chunkSize, chunkOverlap,
+        this(maxContextsPerDocument, minContextsPerDocument, 1, 1, chunkSize, chunkOverlap,
                 contextQualityThreshold, contextSimilarityThreshold, maxRetries, false, null, 3);
+    }
+
+    public ContextConstructionConfig(
+            int maxContextsPerDocument,
+            int minContextsPerDocument,
+            int maxContextLength,
+            int minContextLength,
+            int chunkSize,
+            int chunkOverlap,
+            double contextQualityThreshold,
+            double contextSimilarityThreshold,
+            int maxRetries) {
+        this(maxContextsPerDocument, minContextsPerDocument, maxContextLength, minContextLength, chunkSize, chunkOverlap,
+                contextQualityThreshold, contextSimilarityThreshold, maxRetries, false, null, 3);
+    }
+
+    public ContextConstructionConfig(
+            int maxContextsPerDocument,
+            int minContextsPerDocument,
+            int chunkSize,
+            int chunkOverlap,
+            double contextQualityThreshold,
+            double contextSimilarityThreshold,
+            int maxRetries,
+            boolean allowCrossFileContexts,
+            Integer targetFilesPerContext,
+            int maxFilesPerContext) {
+        this(maxContextsPerDocument, minContextsPerDocument, 1, 1, chunkSize, chunkOverlap,
+                contextQualityThreshold, contextSimilarityThreshold, maxRetries,
+                allowCrossFileContexts, targetFilesPerContext, maxFilesPerContext);
     }
 
     public ContextConstructionConfig {
@@ -32,6 +64,15 @@ public record ContextConstructionConfig(
         }
         if (minContextsPerDocument < 0) {
             throw new IllegalArgumentException("min_contexts_per_document must be non-negative");
+        }
+        if (maxContextLength < 1) {
+            throw new IllegalArgumentException("max_context_length must be at least 1");
+        }
+        if (minContextLength < 1) {
+            throw new IllegalArgumentException("min_context_length must be at least 1");
+        }
+        if (minContextLength > maxContextLength) {
+            throw new IllegalArgumentException("min_context_length must not exceed max_context_length.");
         }
         if (chunkSize < 1) {
             throw new IllegalArgumentException("chunk_size must be at least 1");

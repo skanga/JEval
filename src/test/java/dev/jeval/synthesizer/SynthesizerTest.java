@@ -274,6 +274,32 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromDocsBuildsMultiChunkContextsLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta");
+        var model = new ScriptedModel(List.of("{\"data\":[{\"input\":\"Question from combined context?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocs(
+                List.of(document),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 2, 2, 1, 0, 0.5, 0.0, 3));
+
+        assertEquals(1, goldens.size());
+        assertEquals(List.of("alpha", "beta"), goldens.getFirst().context());
+        assertTrue(model.prompts().getFirst().contains("alpha"));
+        assertTrue(model.prompts().getFirst().contains("beta"));
+        assertEquals(false, model.prompts().getFirst().contains("gamma"));
+    }
+
+    @Test
     void generateGoldensFromPdfDocsExtractsTextLikeDeepEval() throws Exception {
         var document = tempDir.resolve("policy.pdf");
         writePdf(document, "PDF policy allows refunds");

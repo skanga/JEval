@@ -13,6 +13,8 @@ class ContextConstructionConfigTest {
         assertEquals(false, config.allowCrossFileContexts());
         assertEquals(null, config.targetFilesPerContext());
         assertEquals(3, config.maxFilesPerContext());
+        assertEquals(3, config.maxContextLength());
+        assertEquals(1, config.minContextLength());
     }
 
     @Test
@@ -22,6 +24,18 @@ class ContextConstructionConfigTest {
         assertEquals(false, config.allowCrossFileContexts());
         assertEquals(null, config.targetFilesPerContext());
         assertEquals(3, config.maxFilesPerContext());
+        assertEquals(1, config.maxContextLength());
+        assertEquals(1, config.minContextLength());
+    }
+
+    @Test
+    void validatesContextLengthOptionsLikeDeepEval() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 0, 1, 1024, 0, 0.5, 0.0, 3));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 2, 0, 1024, 0, 0.5, 0.0, 3));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 1, 2, 1024, 0, 0.5, 0.0, 3));
     }
 
     @Test
