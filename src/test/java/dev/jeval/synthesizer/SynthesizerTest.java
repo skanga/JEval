@@ -570,6 +570,79 @@ class SynthesizerTest {
     }
 
     @Test
+    void asyncGenerateConversationalGoldensFromContextsReturnsFutureLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"async refund help","turns":[
+                  {"role":"user","content":"Can I get a refund?"}
+                ]}]}
+                """));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateConversationalGoldensFromContextsAsync(
+                List.of(List.of("Refunds are available within 30 days.")), false, 1, null).join();
+
+        assertEquals(List.of("async refund help"),
+                goldens.stream().map(ConversationalGolden::scenario).toList());
+        assertEquals("user", goldens.getFirst().turns().getFirst().role());
+    }
+
+    @Test
+    void asyncGenerateConversationalGoldensFromScratchReturnsFutureLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"async flight booking","turns":[
+                  {"role":"user","content":"Book a flight"}
+                ]}]}
+                """,
+                "{\"scenario\":\"async flight booking\"}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                new ConversationalStylingConfig("travel support", "book flights", "traveler and agent", null),
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateConversationalGoldensFromScratchAsync(1).join();
+
+        assertEquals(List.of("async flight booking"),
+                goldens.stream().map(ConversationalGolden::scenario).toList());
+        assertEquals("Book a flight", goldens.getFirst().turns().getFirst().content());
+    }
+
+    @Test
+    void asyncGenerateConversationalGoldensFromDocsReturnsFutureLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("async-conversation-policy.md");
+        Files.writeString(document, "refund policy");
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"async doc refund","turns":[
+                  {"role":"user","content":"Refund question"}
+                ]}]}
+                """));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateConversationalGoldensFromDocsAsync(
+                List.of(document),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 2, 0, 0.5, 0.0, 3)).join();
+
+        assertEquals(List.of("async doc refund"),
+                goldens.stream().map(ConversationalGolden::scenario).toList());
+        assertEquals(List.of(List.of("refund policy")),
+                goldens.stream().map(ConversationalGolden::context).toList());
+    }
+
+    @Test
     void generatesConversationalExpectedOutcomeSeparatelyLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 """

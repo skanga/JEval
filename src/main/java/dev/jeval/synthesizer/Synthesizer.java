@@ -278,9 +278,45 @@ public final class Synthesizer {
         return retainConversationalGoldens(goldens);
     }
 
+    public CompletableFuture<List<ConversationalGolden>> generateConversationalGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles) {
+        return CompletableFuture.supplyAsync(() -> generateConversationalGoldensFromContexts(
+                contexts,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                sourceFiles));
+    }
+
     public List<ConversationalGolden> generateConversationalGoldensFromDocs(List<Path> documentPaths)
             throws IOException {
         return generateConversationalGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT);
+    }
+
+    public CompletableFuture<List<ConversationalGolden>> generateConversationalGoldensFromDocsAsync(
+            List<Path> documentPaths) {
+        return generateConversationalGoldensFromDocsAsync(
+                documentPaths, true, 2, ContextConstructionConfig.DEFAULT);
+    }
+
+    public CompletableFuture<List<ConversationalGolden>> generateConversationalGoldensFromDocsAsync(
+            List<Path> documentPaths,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            ContextConstructionConfig contextConstructionConfig) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return generateConversationalGoldensFromDocs(
+                        documentPaths,
+                        includeExpectedOutcome,
+                        maxGoldensPerContext,
+                        contextConstructionConfig);
+            } catch (IOException error) {
+                throw new CompletionException(error);
+            }
+        });
     }
 
     public List<ConversationalGolden> generateConversationalGoldensFromDocs(
@@ -350,6 +386,10 @@ public final class Synthesizer {
                     goldens.size()));
         }
         return retainConversationalGoldens(goldens);
+    }
+
+    public CompletableFuture<List<ConversationalGolden>> generateConversationalGoldensFromScratchAsync(int numGoldens) {
+        return CompletableFuture.supplyAsync(() -> generateConversationalGoldensFromScratch(numGoldens));
     }
 
     public List<ConversationalGolden> generateConversationalGoldensFromGoldens(
