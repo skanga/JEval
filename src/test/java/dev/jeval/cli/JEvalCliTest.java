@@ -100,6 +100,34 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunWritesDeepEvalLatestTestRunData() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "spec-name",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"},
+                    {"name": "bad", "input": "q", "actualOutput": "a", "expectedOutput": "b"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--identifier", "release-smoke", "--quiet"}, out, err);
+
+        assertEquals(1, exit, text(err));
+        var latest = tempDir.resolve(".deepeval").resolve(".latest_test_run.json");
+        var latestText = Files.readString(latest);
+        assertTrue(latestText.contains("\"testRunData\""));
+        assertTrue(latestText.contains("\"identifier\":\"release-smoke\""));
+        assertTrue(latestText.contains("\"testPassed\":1"));
+        assertTrue(latestText.contains("\"testFailed\":1"));
+        assertTrue(latestText.contains("\"metric\":\"Exact Match\""));
+    }
+
+    @Test
     void testRunSupportsDeepEvalIdentifierAlias() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

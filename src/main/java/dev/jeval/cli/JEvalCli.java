@@ -1,7 +1,11 @@
 package dev.jeval.cli;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.jeval.LlmApiTestCase;
+import dev.jeval.MetricData;
 import dev.jeval.report.EvaluationReportWriter;
+import dev.jeval.runner.TestRun;
+import dev.jeval.runner.TestRunManager;
 import dev.jeval.runner.TestRunner;
 import dev.jeval.runner.TestRunResult;
 import dev.jeval.store.LocalRunStore;
@@ -86,6 +90,7 @@ public final class JEvalCli {
             var localRunStore = new LocalRunStore(storeRoot);
             localRunStore.write(result);
             localRunStore.writeConfigured(result, options.resultsFolder(), options.resultsSubfolder());
+            saveLatestTestRunData(storeRoot, result);
             var report = report(displayed(result, options.display()), options.format());
             if (options.output() != null) {
                 Files.createDirectories(options.output());
@@ -364,6 +369,80 @@ public final class JEvalCli {
         err.println("       jeval set-openai|set-ollama|set-anthropic ... [-s|--save dotenv:.env]");
         err.println("       jeval generate --method contexts|docs|scratch|goldens --variation single-turn|multi-turn [-s|--save dotenv:.env] ...");
         err.println("       jeval generate --method docs --documents file [--allow-cross-file-contexts] [--target-files-per-context n] [--max-files-per-context n] ...");
+    }
+
+    private static void saveLatestTestRunData(Path storeRoot, TestRunResult result) throws IOException {
+        var manager = new TestRunManager();
+        manager.setTestRun(toTestRun(result).constructMetricsScores().testRun().sortTestCases());
+        manager.saveTestRun(
+                storeRoot.resolve(".deepeval").resolve(".latest_test_run.json"),
+                TestRunManager.LATEST_TEST_RUN_DATA_KEY);
+    }
+
+    private static TestRun toTestRun(TestRunResult result) {
+        var cases = java.util.stream.IntStream.range(0, result.results().size())
+                .mapToObj(index -> toApiTestCase(result.results().get(index), index))
+                .toList();
+        return new TestRun(
+                null,
+                cases,
+                null,
+                null,
+                null,
+                result.name(),
+                null,
+                null,
+                result.summary().passed(),
+                result.summary().failed(),
+                0.0,
+                null,
+                null,
+                null,
+                false);
+    }
+
+    private static LlmApiTestCase toApiTestCase(TestRunResult.TestCaseResult result, int index) {
+        return new LlmApiTestCase(
+                result.name(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                result.success(),
+                result.metricResults().stream().map(JEvalCli::toMetricData).map(Object.class::cast).toList(),
+                null,
+                null,
+                index,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    private static MetricData toMetricData(dev.jeval.MetricResult result) {
+        return new MetricData(
+                result.name(),
+                result.threshold(),
+                result.success(),
+                result.score(),
+                result.reason(),
+                false,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 
     private record Options(

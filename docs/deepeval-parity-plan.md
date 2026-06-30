@@ -39,6 +39,7 @@ Current Java parity:
 - Test-run manager latest-link persistence using DeepEval's `.latest_test_run.json` `testRunLink` and `testRunData` keys
 - Test-run manager latest test-run data loading from DeepEval's `.latest_test_run.json` `testRunData` wrapper with null-on-missing/invalid behavior
 - Test-run manager local wrap-up finalization for duration, metric aggregation, pass/fail counts, sorted cases, and `.latest_test_run.json` `testRunData` persistence
+- CLI `test run` latest test-run data persistence to DeepEval's `.deepeval/.latest_test_run.json` `testRunData` wrapper for local runs
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling
 - `RetrievedContextData` value type with DeepEval-style string serialization, source-preserving dataset markers, and single-turn, multi-turn, and golden retrieval-context builder support
 - `Contestant`, `ArenaTestCase`, and `Arena` with DeepEval-style unique-name, shared-input, shared-expected-output, and multimodal propagation rules
