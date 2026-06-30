@@ -13,6 +13,7 @@ Implemented:
 - `Evaluator.evaluate(...)`, `Evaluator.evaluateConversations(...)`, arena evaluation, and assertion helpers
 - Deterministic metrics: exact match, pattern match, JSON correctness, tool correctness, and DAG verdict paths
 - Model-backed metric shells and prompt/schema parsing paths for the ported DeepEval single-turn, conversational, arena, MCP, trace, and DAG metrics
+- Multimodal image metrics: text-to-image, image editing, image coherence, image helpfulness, and image reference
 - Optimizer algorithm configuration, prompt configuration/report value types, and tie-breaker policy surfaces for SIMBA, COPRO, and GEPA
 - Shared DeepEval-style validation and formatting utilities
 
@@ -232,6 +233,33 @@ var mmlu = new MMLU(Map.of("abstract_algebra", goldens));
 var mmluResult = mmlu.evaluate(model);
 var batched = mmlu.evaluate(model, 16);
 ```
+
+## Multimodal image metrics
+
+JEval supports DeepEval-style image placeholders through `MllmImage` and the
+multimodal image metrics ported from DeepEval:
+
+- `TextToImageMetric`
+- `ImageEditingMetric`
+- `ImageCoherenceMetric`
+- `ImageHelpfulnessMetric`
+- `ImageReferenceMetric`
+
+```java
+import dev.jeval.LlmTestCase;
+import dev.jeval.MllmImage;
+import dev.jeval.metrics.TextToImageMetric;
+
+var image = new MllmImage("base64-encoded-png", "image/png");
+var testCase = LlmTestCase.builder("Draw a red car")
+        .actualOutput("Generated image: " + image)
+        .build();
+
+var result = new TextToImageMetric(model).measure(testCase);
+```
+
+These metrics use the local `EvaluationModel` abstraction for prompt execution
+and validate the same input-image/output-image cardinality rules as DeepEval.
 
 ## LangChain4j providers
 
