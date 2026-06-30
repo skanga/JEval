@@ -6,10 +6,23 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.jeval.synthesizer.ContextConstructionConfig;
+import dev.jeval.synthesizer.Evolution;
+import dev.jeval.synthesizer.EvolutionConfig;
+import dev.jeval.synthesizer.FiltrationConfig;
+import dev.jeval.synthesizer.StylingConfig;
+import dev.jeval.synthesizer.Synthesizer;
+import dev.jeval.synthesizer.SynthesizerOptions;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class EvaluationDatasetTest {
+    @TempDir
+    Path tempDir;
 
     @Test
     void singleTurnDatasetEvaluatesStoredTestCases() {
@@ -199,6 +212,57 @@ class EvaluationDatasetTest {
                 () -> new EvaluationDataset().evaluate(List.of(new ActualEqualsExpectedMetric())));
     }
 
+    @Test
+    void datasetGeneratesGoldensFromContextsLikeDeepEval() {
+        var dataset = new EvaluationDataset();
+        dataset.addGolden(Golden.builder("existing").build());
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"What is France's capital?\"}]}")));
+
+        dataset.generateGoldensFromContexts(
+                List.of(List.of("Paris is the capital of France.")), false, 1, synthesizer);
+
+        assertEquals(2, dataset.goldens().size());
+        assertEquals("existing", dataset.goldens().getFirst().input());
+        assertEquals("What is France's capital?", dataset.goldens().get(1).input());
+        assertEquals(List.of("Paris is the capital of France."), dataset.goldens().get(1).context());
+    }
+
+    @Test
+    void datasetGeneratesGoldensFromScratchLikeDeepEval() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = synthesizer(
+                new ScriptedModel(List.of(
+                        "{\"data\":[{\"input\":\"first\"},{\"input\":\"second\"}]}",
+                        "{\"input\":\"first\"}",
+                        "{\"input\":\"second\"}")),
+                new StylingConfig("students learning geography", "ask study questions", "one question", null));
+
+        dataset.generateGoldensFromScratch(2, synthesizer);
+
+        assertEquals(List.of("first", "second"), dataset.goldens().stream().map(Golden::input).toList());
+    }
+
+    @Test
+    void datasetGeneratesGoldensFromDocsLikeDeepEval() throws Exception {
+        var dataset = new EvaluationDataset();
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta");
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"Question one?\"}]}",
+                "{\"data\":[{\"input\":\"Question two?\"}]}")));
+        var config = new ContextConstructionConfig(2, 1, 2, 0, 0.5, 0.0, 3);
+
+        dataset.generateGoldensFromDocs(List.of(document), false, 1, config, synthesizer);
+
+        assertEquals(List.of("Question one?", "Question two?"),
+                dataset.goldens().stream().map(Golden::input).toList());
+        assertEquals(List.of(List.of("alpha beta"), List.of("gamma delta")),
+                dataset.goldens().stream().map(Golden::context).toList());
+        assertEquals(List.of("policy.md", "policy.md"),
+                dataset.goldens().stream().map(Golden::sourceFile).toList());
+    }
+
     private static final class ActualEqualsExpectedMetric implements Metric {
         @Override
         public MetricResult measure(LlmTestCase testCase) {
@@ -212,6 +276,35 @@ class EvaluationDatasetTest {
         public MetricResult measure(ConversationalTestCase testCase) {
             var success = !testCase.turns().getFirst().content().isEmpty();
             return new MetricResult("non-empty first turn", success ? 1.0 : 0.0, 1.0, success, "");
+        }
+    }
+
+    private static Synthesizer synthesizer(EvaluationModel model) {
+        return synthesizer(model, null);
+    }
+
+    private static Synthesizer synthesizer(EvaluationModel model, StylingConfig stylingConfig) {
+        return new Synthesizer(
+                model,
+                stylingConfig,
+                null,
+                new EvolutionConfig(0, List.of(Evolution.REASONING)),
+                new FiltrationConfig(0.5, 0, null),
+                new SynthesizerOptions(false, 100, false));
+    }
+
+    private static final class ScriptedModel implements EvaluationModel {
+        private final List<String> responses;
+        private final List<String> prompts = new ArrayList<>();
+
+        private ScriptedModel(List<String> responses) {
+            this.responses = responses;
+        }
+
+        @Override
+        public String generate(String prompt) {
+            prompts.add(prompt);
+            return responses.get(prompts.size() - 1);
         }
     }
 }

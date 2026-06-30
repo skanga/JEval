@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import dev.jeval.synthesizer.ContextConstructionConfig;
+import dev.jeval.synthesizer.Synthesizer;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +17,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public final class EvaluationDataset {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -125,6 +128,45 @@ public final class EvaluationDataset {
             throw new IllegalStateException("Unable to evaluate dataset with no conversational test cases.");
         }
         return Evaluator.evaluateConversations(cases, metrics);
+    }
+
+    public void generateGoldensFromDocs(List<Path> documentPaths, Synthesizer synthesizer) throws IOException {
+        generateGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT, synthesizer);
+    }
+
+    public void generateGoldensFromDocs(
+            List<Path> documentPaths,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            ContextConstructionConfig contextConstructionConfig,
+            Synthesizer synthesizer) throws IOException {
+        var generated = requireSynthesizer(synthesizer).generateGoldensFromDocs(
+                documentPaths,
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                contextConstructionConfig);
+        generated.forEach(this::addGolden);
+    }
+
+    public void generateGoldensFromContexts(List<List<String>> contexts, Synthesizer synthesizer) {
+        generateGoldensFromContexts(contexts, true, 2, synthesizer);
+    }
+
+    public void generateGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            Synthesizer synthesizer) {
+        var generated = requireSynthesizer(synthesizer).generateGoldensFromContexts(
+                contexts,
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                null);
+        generated.forEach(this::addGolden);
+    }
+
+    public void generateGoldensFromScratch(int numGoldens, Synthesizer synthesizer) {
+        requireSynthesizer(synthesizer).generateGoldensFromScratch(numGoldens).forEach(this::addGolden);
     }
 
     public void addTestCasesFromJsonFile(
@@ -1540,5 +1582,9 @@ public final class EvaluationDataset {
 
     private static String nullIfBlank(String value) {
         return blank(value) ? null : value;
+    }
+
+    private static Synthesizer requireSynthesizer(Synthesizer synthesizer) {
+        return Objects.requireNonNull(synthesizer, "synthesizer");
     }
 }
