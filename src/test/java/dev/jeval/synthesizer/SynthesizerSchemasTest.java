@@ -80,6 +80,35 @@ class SynthesizerSchemasTest {
     }
 
     @Test
+    void contextPromptIncludesDeepEvalStyleUsedSourceFilesExample() {
+        var prompt = SynthesizerPrompts.generateSyntheticInputs(
+                List.of("Policy text", "FAQ text"),
+                1,
+                false,
+                List.of("policy.md", "faq.md"),
+                2);
+
+        assertTrue(prompt.contains("used_source_files"));
+        assertTrue(prompt.contains("\"used_source_files\": [\"policy.md\", \"faq.md\"]"));
+        assertTrue(prompt.contains("at least 2 different source files"));
+    }
+
+    @Test
+    void conversationalPromptIncludesDeepEvalStyleUsedSourceFilesExample() {
+        var prompt = SynthesizerPrompts.generateSyntheticConversationalScenarios(
+                List.of("Policy text", "FAQ text"),
+                1,
+                new ConversationalStylingConfig("support", "answer using docs", "user and assistant", null),
+                false,
+                List.of("policy.md", "faq.md"),
+                2);
+
+        assertTrue(prompt.contains("used_source_files"));
+        assertTrue(prompt.contains("\"used_source_files\": [\"policy.md\", \"faq.md\"]"));
+        assertTrue(prompt.contains("at least 2 different source files"));
+    }
+
+    @Test
     void conversationalExpectedOutcomePromptIncludesConfiguredFormat() {
         var prompt = SynthesizerPrompts.generateConversationalExpectedOutcome(
                 "refund support",

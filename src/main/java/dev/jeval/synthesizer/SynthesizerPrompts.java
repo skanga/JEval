@@ -208,13 +208,49 @@ final class SynthesizerPrompts {
                         + " different source files. Ensure ATLEAST "
                         + targetFilesPerContext
                         + " source files are used in the `" + itemKey + "`.";
+        var exampleSources = sourceFiles.stream()
+                .limit(Math.max(2, targetFilesPerContext == null ? 2 : targetFilesPerContext))
+                .toList();
         return """
 
                 This context is constructed from multiple files with these source labels: %s.
                 %s
                 For each generated item, include a `used_source_files` key listing only the source labels actually used to form that `%s`.
                 `used_source_files` MUST be a JSON array of strings and each value MUST come from: %s.
-                """.formatted(sourceFiles, targetInstruction, itemKey, sourceFiles);
+                Example item: {"%s": "...", "used_source_files": %s}.
+                """.formatted(
+                sourceFiles,
+                targetInstruction,
+                itemKey,
+                sourceFiles,
+                itemKey,
+                jsonStringArray(exampleSources));
+    }
+
+    private static String jsonStringArray(List<String> values) {
+        var items = new ArrayList<String>();
+        for (var value : values) {
+            items.add("\"" + escapeJson(value) + "\"");
+        }
+        return "[" + String.join(", ", items) + "]";
+    }
+
+    private static String escapeJson(String value) {
+        var escaped = new StringBuilder();
+        for (var i = 0; i < value.length(); i++) {
+            var ch = value.charAt(i);
+            switch (ch) {
+                case '"' -> escaped.append("\\\"");
+                case '\\' -> escaped.append("\\\\");
+                case '\b' -> escaped.append("\\b");
+                case '\f' -> escaped.append("\\f");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> escaped.append(ch);
+            }
+        }
+        return escaped.toString();
     }
 
     private static List<String> formatContextWithSources(List<String> context, List<String> sourceFiles) {
