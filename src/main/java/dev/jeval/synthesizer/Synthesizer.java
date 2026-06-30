@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.IntFunction;
+import java.util.regex.Pattern;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -804,7 +805,7 @@ public final class Synthesizer {
             List<Double> contextScores,
             Path file) throws IOException {
         validateChunkOverlap(config.chunkSize(), config.chunkOverlap());
-        var chunks = Utils.chunkText(readDocumentText(file), config.chunkSize(), config.chunkOverlap());
+        var chunks = chunkDocumentText(readDocumentText(file), config.chunkSize(), config.chunkOverlap());
         validateMinContexts(chunks.size(), config.minContextsPerDocument());
         var count = 0;
         for (var chunk : chunks) {
@@ -863,10 +864,38 @@ public final class Synthesizer {
         return text != null && text.startsWith("\uFEFF") ? text.substring(1) : text;
     }
 
+    private static List<String> chunkDocumentText(String text, int chunkSize, int chunkOverlap) {
+        if (text == null || text.isBlank()) {
+            return List.of();
+        }
+        var tokens = new ArrayList<TokenSpan>();
+        var matcher = Pattern.compile("\\S+").matcher(text);
+        while (matcher.find()) {
+            tokens.add(new TokenSpan(matcher.start(), matcher.end()));
+        }
+        if (tokens.isEmpty()) {
+            return List.of();
+        }
+        var chunks = new ArrayList<String>();
+        var step = chunkSize - chunkOverlap;
+        for (var i = 0; i < tokens.size(); i += step) {
+            if (i > 0 && tokens.size() - i <= chunkOverlap) {
+                break;
+            }
+            var start = tokens.get(i).start();
+            var end = tokens.get(Math.min(i + chunkSize, tokens.size()) - 1).end();
+            chunks.add(text.substring(start, end));
+        }
+        return List.copyOf(chunks);
+    }
+
     private static String documentExtension(Path path) {
         var fileName = path.getFileName().toString();
         var dot = fileName.lastIndexOf('.');
         return dot < 0 ? "" : fileName.substring(dot).toLowerCase(Locale.ROOT);
+    }
+
+    private record TokenSpan(int start, int end) {
     }
 
     private static void validateChunkOverlap(int chunkSize, int chunkOverlap) {

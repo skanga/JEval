@@ -351,6 +351,31 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromMarkdownFamilyPreservesTableFormattingLikeDeepEval() throws Exception {
+        for (var extension : List.of(".md", ".markdown", ".mdx")) {
+            var document = tempDir.resolve("sample" + extension);
+            Files.writeString(document, "# T\n\n| A | B |\n| - | - |\n| 1 | 2 |\n");
+            var model = new ScriptedModel(List.of("{\"data\":[{\"input\":\"What table is loaded?\"}]}"));
+            var synthesizer = new Synthesizer(
+                    model,
+                    null,
+                    null,
+                    noEvolutionConfig(),
+                    noFiltrationConfig(),
+                    new SynthesizerOptions(false, 100, false));
+
+            var goldens = synthesizer.generateGoldensFromDocs(
+                    List.of(document),
+                    false,
+                    1,
+                    new ContextConstructionConfig(1, 1, 50, 0, 0.5, 0.0, 3));
+
+            assertTrue(goldens.getFirst().context().getFirst().contains("| A | B |\n| - | - |\n| 1 | 2 |"));
+            assertTrue(model.prompts().getFirst().contains("| A | B |\n| - | - |\n| 1 | 2 |"));
+        }
+    }
+
+    @Test
     void generateGoldensFromDocsRejectsUnsupportedFileExtensionLikeDeepEval() throws Exception {
         var document = tempDir.resolve("policy.xyz");
         Files.writeString(document, "unsupported");
