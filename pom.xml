@@ -45,6 +45,11 @@
             <version>${langchain4j.version}</version>
         </dependency>
         <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-bedrock</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-core-http-jdk-httpclient</artifactId>
             <version>${azure.core.http.jdk.version}</version>

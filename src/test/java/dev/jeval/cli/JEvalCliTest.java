@@ -36,7 +36,7 @@ class JEvalCliTest {
 
         assertEquals(2, exit);
         assertTrue(text(err).contains(
-                "set-openai|set-azure-openai|set-anthropic|set-gemini|set-grok|set-moonshot|set-deepseek|set-litellm|set-portkey|set-ollama|set-local-model|set-openrouter"));
+                "set-openai|set-azure-openai|set-bedrock|set-anthropic|set-gemini|set-grok|set-moonshot|set-deepseek|set-litellm|set-portkey|set-ollama|set-local-model|set-openrouter"));
     }
 
     @Test
@@ -2671,6 +2671,36 @@ class JEvalCliTest {
         assertEquals(0, run(new String[] {"unset-azure-openai", "-s", "dotenv:" + env}, out, err));
         assertEquals(false, readDotenv(env).containsKey("USE_AZURE_OPENAI"));
         assertEquals(false, readDotenv(env).containsKey("AZURE_MODEL_VERSION"));
+    }
+
+    @Test
+    void bedrockProviderRoundtripUsesExclusiveFlagsAndRegion() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-bedrock", "--model", "amazon.nova-lite-v1:0",
+                "--region", "us-west-2", "--save", "dotenv:" + env
+        }, out, err));
+        assertDotenv(env, "USE_AWS_BEDROCK_MODEL", "YES");
+        assertDotenv(env, "AWS_BEDROCK_MODEL_NAME", "amazon.nova-lite-v1:0");
+        assertDotenv(env, "AWS_BEDROCK_REGION", "us-west-2");
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENAI_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_MODEL_NAME"));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-bedrock", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_AWS_BEDROCK_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("AWS_BEDROCK_MODEL_NAME"));
+        assertEquals(false, readDotenv(env).containsKey("AWS_BEDROCK_REGION"));
     }
 
     @Test

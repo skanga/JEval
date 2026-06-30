@@ -51,6 +51,25 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void createsBedrockModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_AWS_BEDROCK_MODEL=YES
+                AWS_BEDROCK_MODEL_NAME=anthropic.claude-3-5-haiku-20241022-v1:0
+                AWS_BEDROCK_REGION=us-east-1
+                AWS_ACCESS_KEY_ID=access-test
+                AWS_SECRET_ACCESS_KEY=secret-test
+                TEMPERATURE=0.2
+                MAX_TOKENS=128
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void createsOllamaModelFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -271,6 +290,22 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void usesModelOverrideForBedrockGenerationLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_AWS_BEDROCK_MODEL=YES
+                AWS_BEDROCK_REGION=us-west-2
+                AWS_ACCESS_KEY_ID=access-test
+                AWS_SECRET_ACCESS_KEY=secret-test
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "amazon.nova-lite-v1:0");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForAnthropicGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -420,7 +455,7 @@ class LangChain4jProviderModelsTest {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));
 
-        assertEquals("No supported provider is configured; run set-openai, set-azure-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-portkey, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
+        assertEquals("No supported provider is configured; run set-openai, set-azure-openai, set-bedrock, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-portkey, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
 }

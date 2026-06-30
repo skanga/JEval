@@ -5,11 +5,17 @@ import dev.jeval.EvaluationModel;
 import dev.jeval.langchain4j.LangChain4jEvaluationModel;
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
+import dev.langchain4j.model.bedrock.BedrockChatModel;
+import dev.langchain4j.model.bedrock.BedrockChatRequestParameters;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import java.io.IOException;
 import java.util.Map;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 final class LangChain4jProviderModels {
     private LangChain4jProviderModels() {
@@ -26,6 +32,9 @@ final class LangChain4jProviderModels {
         }
         if ("YES".equals(config.get("USE_AZURE_OPENAI"))) {
             return new LangChain4jEvaluationModel(azureOpenAi(config, modelOverride));
+        }
+        if ("YES".equals(config.get("USE_AWS_BEDROCK_MODEL"))) {
+            return new LangChain4jEvaluationModel(bedrock(config, modelOverride));
         }
         if ("YES".equals(config.get("USE_OPENROUTER_MODEL"))) {
             return new LangChain4jEvaluationModel(openRouter(config, modelOverride));
@@ -61,7 +70,7 @@ final class LangChain4jProviderModels {
             }
         }
         throw new IllegalArgumentException(
-                "No supported provider is configured; run set-openai, set-azure-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-portkey, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
+                "No supported provider is configured; run set-openai, set-azure-openai, set-bedrock, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-portkey, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
     }
 
     private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
@@ -82,6 +91,24 @@ final class LangChain4jProviderModels {
                 .httpClientProvider(new JdkHttpClientProvider());
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
+        return builder.build();
+    }
+
+    private static BedrockChatModel bedrock(Map<String, String> config, String modelOverride) {
+        var region = Region.of(value(config, "AWS_BEDROCK_REGION", "us-east-1"));
+        var builder = BedrockChatModel.builder()
+                .client(BedrockRuntimeClient.builder()
+                        .region(region)
+                        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
+                                required(config, "AWS_ACCESS_KEY_ID"),
+                                required(config, "AWS_SECRET_ACCESS_KEY"))))
+                        .build())
+                .region(region)
+                .modelId(modelName(config, "AWS_BEDROCK_MODEL_NAME", modelOverride, null));
+        var parameters = BedrockChatRequestParameters.builder();
+        optionalDouble(config, "TEMPERATURE", parameters::temperature);
+        optionalInteger(config, "MAX_TOKENS", parameters::maxOutputTokens);
+        builder.defaultRequestParameters(parameters.build());
         return builder.build();
     }
 
