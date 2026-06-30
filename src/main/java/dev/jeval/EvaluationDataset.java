@@ -304,6 +304,13 @@ public final class EvaluationDataset {
                         .toolsCalled(toolListFromCsv(row.get(toolsCalledColName), "tools_called", ";"))
                         .expectedTools(toolListFromCsv(row.get(expectedToolsColName), "expected_tools", ";"))
                         .additionalMetadata(objectMapFromCsv(row.get(additionalMetadataColName), "additional_metadata"))
+                        .comments(nullIfBlank(row.get("comments")))
+                        .tokenCost(doubleFromCsv(row.get("token_cost"), "token_cost"))
+                        .completionTime(doubleFromCsv(row.get("completion_time"), "completion_time"))
+                        .customColumnKeyValues(stringMapFromCsv(row.get("custom_column_key_values")))
+                        .trace(objectMapFromCsv(row.get("trace"), "trace"))
+                        .name(nullIfBlank(row.get("name")))
+                        .tags(csvListOrNull(row.get("tags"), ";"))
                         .build());
             }
         } catch (IOException error) {
@@ -1422,6 +1429,17 @@ public final class EvaluationDataset {
             return MAPPER.convertValue(node, new TypeReference<>() {});
         } catch (JsonProcessingException error) {
             throw new IllegalArgumentException("'custom_column_key_values' must contain a JSON object", error);
+        }
+    }
+
+    private static Double doubleFromCsv(String value, String key) {
+        if (blank(value)) {
+            return null;
+        }
+        try {
+            return Double.valueOf(value);
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException("'" + key + "' must be a number", error);
         }
     }
 

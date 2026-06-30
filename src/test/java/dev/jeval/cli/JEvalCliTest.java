@@ -279,8 +279,8 @@ class JEvalCliTest {
     void testRunCsvDatasetPreservesDeepEvalToolAndMetadataFieldsInLatestData() throws Exception {
         var dataset = tempDir.resolve("cases.csv");
         Files.writeString(dataset, """
-                input,actual_output,expected_output,tools_called,expected_tools,metadata
-                q,a,b,"[{""name"":""PolicySearch"",""input_parameters"":{""query"":""refund""},""output"":""30 days""}]","[{""name"":""PolicySearch""}]","{""suite"":""csv""}"
+                name,tags,input,actual_output,expected_output,tools_called,expected_tools,metadata,comments,token_cost,completion_time,custom_column_key_values,trace
+                csv-bad,smoke;csv,q,a,b,"[{""name"":""PolicySearch"",""input_parameters"":{""query"":""refund""},""output"":""30 days""}]","[{""name"":""PolicySearch""}]","{""suite"":""csv""}",csv comment,0.52,4.5,"{""risk"":""medium""}","{""name"":""root"",""spans"":[{""name"":""retriever"",""score"":0.8}]}"
                 """);
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
@@ -299,6 +299,8 @@ class JEvalCliTest {
         assertEquals(1, exit, text(err));
         var latestText = Files.readString(tempDir.resolve(".deepeval").resolve(".latest_test_run.json"));
         assertTrue(latestText.contains("\"identifier\":\"csv-release\""));
+        assertTrue(latestText.contains("\"name\":\"csv-bad\""));
+        assertTrue(latestText.contains("\"tags\":[\"smoke\",\"csv\"]"));
         assertTrue(latestText.contains("\"toolsCalled\":[{"));
         assertTrue(latestText.contains("\"expectedTools\":[{"));
         assertTrue(latestText.contains("\"name\":\"PolicySearch\""));
@@ -306,6 +308,11 @@ class JEvalCliTest {
         assertTrue(latestText.contains("\"output\":\"30 days\""));
         assertTrue(latestText.contains("\"metadata\":{"));
         assertTrue(latestText.contains("\"suite\":\"csv\""));
+        assertTrue(latestText.contains("\"comments\":\"csv comment\""));
+        assertTrue(latestText.contains("\"tokenCost\":0.52"));
+        assertTrue(latestText.contains("\"completionTime\":4.5"));
+        assertTrue(latestText.contains("\"customColumnKeyValues\":{\"risk\":\"medium\"}"));
+        assertTrue(latestText.contains("\"trace\":{\"name\":\"root\""));
     }
 
     @Test
