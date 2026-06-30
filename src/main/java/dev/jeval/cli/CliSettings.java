@@ -10,6 +10,10 @@ import java.util.Locale;
 import java.util.Map;
 
 final class CliSettings {
+    private static final Map<String, String> DEPRECATED_COMPUTED_SETTING_KEYS = Map.of(
+            "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS", "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE",
+            "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS", "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE",
+            "DEEPEVAL_TASK_GATHER_BUFFER_SECONDS", "DEEPEVAL_TASK_GATHER_BUFFER_SECONDS_OVERRIDE");
     private static final List<String> DEBUG_KEYS = List.of(
             "LOG_LEVEL",
             "DEEPEVAL_VERBOSE_MODE",
@@ -51,6 +55,7 @@ final class CliSettings {
             var parsed = parse(args, 1);
             var dotenv = new DotenvFile(parsed.save());
             var updates = new LinkedHashMap<String, String>();
+            var explicitUpdates = new java.util.HashSet<String>();
             var removals = new java.util.ArrayList<String>();
             for (var update : parsed.updates()) {
                 var index = update.indexOf('=');
@@ -58,7 +63,15 @@ final class CliSettings {
                     err.println("Expected key=value: " + update);
                     return 2;
                 }
-                updates.put(settingKey(update.substring(0, index)), settingValue(update.substring(0, index), update.substring(index + 1)));
+                var rawKey = update.substring(0, index);
+                var key = settingKey(rawKey);
+                if (deprecatedComputedSettingKey(rawKey) && explicitUpdates.contains(key)) {
+                    continue;
+                }
+                updates.put(key, settingValue(rawKey, update.substring(index + 1)));
+                if (!deprecatedComputedSettingKey(rawKey)) {
+                    explicitUpdates.add(key);
+                }
             }
             for (var unset : parsed.unsets()) {
                 removals.add(settingKey(unset));
@@ -200,6 +213,15 @@ final class CliSettings {
     }
 
     private static String settingKey(String key) {
+        var normalized = normalizeSettingKey(key);
+        return DEPRECATED_COMPUTED_SETTING_KEYS.getOrDefault(normalized, normalized);
+    }
+
+    private static boolean deprecatedComputedSettingKey(String key) {
+        return DEPRECATED_COMPUTED_SETTING_KEYS.containsKey(normalizeSettingKey(key));
+    }
+
+    private static String normalizeSettingKey(String key) {
         return key.strip().toUpperCase(Locale.ROOT).replace("-", "_");
     }
 

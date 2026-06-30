@@ -1938,6 +1938,62 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsCanonicalizesDeepEvalDeprecatedComputedTimeoutAliases() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "-u", "deepeval-per-task-timeout-seconds=42",
+                "-u", "deepeval-per-attempt-timeout-seconds=5",
+                "-u", "deepeval-task-gather-buffer-seconds=12",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "42");
+        assertDotenv(env, "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "5");
+        assertDotenv(env, "DEEPEVAL_TASK_GATHER_BUFFER_SECONDS_OVERRIDE", "12");
+        assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS"));
+        assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS"));
+        assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_TASK_GATHER_BUFFER_SECONDS"));
+    }
+
+    @Test
+    void settingsExplicitTimeoutOverrideWinsOverDeprecatedAlias() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "-u", "deepeval-per-task-timeout-seconds=999",
+                "-u", "deepeval-per-task-timeout-seconds-override=7",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "7");
+        assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS"));
+
+        var reversedEnv = tempDir.resolve(".env.reversed");
+        out.reset();
+        err.reset();
+
+        exit = run(new String[] {
+                "settings",
+                "-u", "deepeval-per-task-timeout-seconds-override=7",
+                "-u", "deepeval-per-task-timeout-seconds=999",
+                "--save", "dotenv:" + reversedEnv
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(reversedEnv, "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "7");
+        assertEquals(false, readDotenv(reversedEnv).containsKey("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS"));
+    }
+
+    @Test
     void setDebugQuietUpdatesDotenvWithoutOutput() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

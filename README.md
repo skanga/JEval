@@ -122,6 +122,10 @@ Provider retry helpers honor DeepEval-style environment settings:
 `DEEPEVAL_TIMEOUT_THREAD_LIMIT`,
 `DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS`, and `DEEPEVAL_DISABLE_TIMEOUTS`
 (`openai`, `azure-openai`, or `*` to delegate retries to provider SDKs).
+When saved through `settings -u`, DeepEval's deprecated computed timeout keys
+`DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS`, `DEEPEVAL_PER_TASK_TIMEOUT_SECONDS`,
+and `DEEPEVAL_TASK_GATHER_BUFFER_SECONDS` are persisted as their
+`*_OVERRIDE` keys; explicit override keys win over deprecated aliases.
 The retry executor retries transient provider failures up to the configured
 attempt cap, treats per-attempt timeouts as retryable, derives DeepEval-style
 task timeout/gather budgets, bounds timeout worker concurrency, and leaves
