@@ -168,6 +168,24 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void createsLiteLlmModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_LITELLM=YES
+                LITELLM_MODEL_NAME=gpt-4o-mini
+                LITELLM_API_BASE=http://localhost:4000
+                LITELLM_API_KEY=litellm-test
+                TEMPERATURE=0.2
+                MAX_TOKENS=128
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForOpenRouterGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -253,6 +271,37 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void usesModelOverrideForLiteLlmGenerationLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_LITELLM=YES
+                LITELLM_API_BASE=http://localhost:4000
+                LITELLM_API_KEY=litellm-test
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "openai/gpt-4.1");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
+    void createsLiteLlmModelFromProxyBaseSetting() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_LITELLM=YES
+                LITELLM_MODEL_NAME=anthropic/claude-3-5-haiku
+                LITELLM_PROXY_API_BASE=http://localhost:4000
+                LITELLM_PROXY_API_KEY=proxy-test
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForOllamaGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -286,7 +335,7 @@ class LangChain4jProviderModelsTest {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));
 
-        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
+        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
 }
