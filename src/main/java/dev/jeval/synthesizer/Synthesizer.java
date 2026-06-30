@@ -239,6 +239,7 @@ public final class Synthesizer {
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                 SynthesizerPrompts.generateSyntheticConversationalScenarios(
                         context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome)));
+        data = rewriteScenarios(context, data);
         for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(conversationalGolden(item, context, sourceFile, includeExpectedOutcome));
         }
@@ -253,11 +254,13 @@ public final class Synthesizer {
             throw new IllegalStateException(
                     "ConversationalStylingConfig with scenarioContext, conversationalTask, and participantRoles is required for conversational scratch generation");
         }
-        return SynthesizerSchemas.parseConversationalData(model.generate(
+        var data = SynthesizerSchemas.parseConversationalData(model.generate(
                         SynthesizerPrompts.generateSyntheticConversationalScenariosFromScratch(
-                                conversationalStylingConfig, numGoldens)))
+                                conversationalStylingConfig, numGoldens)));
+        data = rewriteScenarios(List.of(), data);
+        return data
                 .stream()
-                .map(data -> conversationalGolden(data, null, null, false))
+                .map(item -> conversationalGolden(item, null, null, false))
                 .collect(java.util.stream.Collectors.collectingAndThen(
                         java.util.stream.Collectors.toList(),
                         this::retainConversationalGoldens));
@@ -284,6 +287,7 @@ public final class Synthesizer {
             var data = SynthesizerSchemas.parseConversationalData(model.generate(
                     SynthesizerPrompts.generateSyntheticConversationalScenariosFromGoldens(
                             scenarios, scenarios.size() * maxGoldensPerGolden, includeExpectedOutcome)));
+            data = rewriteScenarios(scenarios, data);
             for (var item : data) {
                 generated.add(conversationalGolden(item, null, null, includeExpectedOutcome));
             }
@@ -374,6 +378,35 @@ public final class Synthesizer {
                 rewritten = true;
             }
             filtered.add(new SyntheticData(input, rewritten ? null : item.expectedOutput(), item.usedSourceFiles()));
+        }
+        return List.copyOf(filtered);
+    }
+
+    private List<ConversationalData> rewriteScenarios(List<String> context, List<ConversationalData> data) {
+        if (filtrationConfig.maxQualityRetries() == 0) {
+            return data;
+        }
+        var filtered = new ArrayList<ConversationalData>();
+        var critic = filtrationConfig.criticModel() == null ? model : filtrationConfig.criticModel();
+        for (var item : data) {
+            var scenario = item.scenario();
+            var rewritten = false;
+            for (var i = 0; i < filtrationConfig.maxQualityRetries(); i++) {
+                var feedback = SynthesizerSchemas.parseScenarioFeedback(
+                        critic.generate(SynthesizerPrompts.evaluateSyntheticScenario(scenario)));
+                if (feedback.score() >= filtrationConfig.syntheticInputQualityThreshold()) {
+                    break;
+                }
+                scenario = SynthesizerSchemas.parseRewrittenScenario(model.generate(
+                        SynthesizerPrompts.rewriteSyntheticScenario(context, scenario, feedback.feedback())));
+                rewritten = true;
+            }
+            filtered.add(new ConversationalData(
+                    scenario,
+                    rewritten ? null : item.expectedOutcome(),
+                    item.userDescription(),
+                    item.turns(),
+                    item.usedSourceFiles()));
         }
         return List.copyOf(filtered);
     }

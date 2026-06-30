@@ -114,6 +114,33 @@ final class SynthesizerPrompts {
                 String.join("\n", context));
     }
 
+    static String evaluateSyntheticScenario(String scenario) {
+        return """
+                Evaluate the provided conversational scenario for clarity, conversational nature, and appropriateness.
+                Return only JSON in this shape: {"feedback":"...","score":0.0}.
+                The score must be between 0 and 1, where 1 is a clear, natural multi-turn scenario.
+
+                Scenario:
+                %s
+                """.formatted(scenario);
+    }
+
+    static String rewriteSyntheticScenario(List<String> context, String scenario, String feedback) {
+        return """
+                Rewrite the conversational scenario using only the context and feedback.
+                Return only JSON in this shape: {"rewritten_scenario":"..."}.
+
+                Context:
+                %s
+
+                Scenario:
+                %s
+
+                Feedback:
+                %s
+                """.formatted(String.join("\n", context == null ? List.of() : context), scenario, feedback);
+    }
+
     static String generateSyntheticConversationalScenariosFromScratch(
             ConversationalStylingConfig stylingConfig,
             int numGoldens) {

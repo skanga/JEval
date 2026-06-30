@@ -209,6 +209,7 @@ class SynthesizerTest {
                 null,
                 null,
                 new EvolutionConfig(),
+                noFiltrationConfig(),
                 new SynthesizerOptions(false, 100, false));
 
         var goldens = synthesizer.generateConversationalGoldensFromDocs(
@@ -349,7 +350,8 @@ class SynthesizerTest {
                 ],"used_source_files":["refund.md"]}]}
                 """,
                 "Help the user get a refund"));
-        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
 
         var goldens = synthesizer.generateConversationalGoldensFromContexts(
                 List.of(List.of("Refunds are available within 30 days.")), true, 1, List.of("refund.md"));
@@ -364,6 +366,37 @@ class SynthesizerTest {
     }
 
     @Test
+    void rewritesLowQualityConversationalScenariosLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"refund question","turns":[
+                  {"role":"user","content":"Can I get a refund?"},
+                  {"role":"assistant","content":"I can help."}
+                ],"used_source_files":["refund.md"]}]}
+                """,
+                "{\"feedback\":\"The scenario does not identify participants or setting.\",\"score\":0.2}",
+                "{\"rewritten_scenario\":\"A customer contacts a support agent about refund eligibility for a recent purchase\"}",
+                "{\"feedback\":\"The rewritten scenario is conversational and clear.\",\"score\":0.9}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                new FiltrationConfig(0.5, 3, null),
+                SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateConversationalGoldensFromContexts(
+                List.of(List.of("Refunds are available within 30 days.")), false, 1, List.of("refund.md"));
+
+        assertEquals("A customer contacts a support agent about refund eligibility for a recent purchase",
+                goldens.getFirst().scenario());
+        assertEquals(List.of("refund.md"), goldens.getFirst().additionalMetadata().get("used_source_files"));
+        assertTrue(model.prompts().get(1).contains("Evaluate the provided conversational scenario"));
+        assertTrue(model.prompts().get(2).contains("The scenario does not identify participants or setting."));
+        assertEquals(4, model.prompts().size());
+    }
+
+    @Test
     void capsConversationalScenariosReturnedForContextLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 """
@@ -372,7 +405,8 @@ class SynthesizerTest {
                   {"scenario":"second scenario","turns":[{"role":"user","content":"Two"}]}
                 ]}
                 """));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
 
         var goldens = synthesizer.generateConversationalGoldensFromContexts(
                 List.of(List.of("Refunds are available within 30 days.")), false, 1, null);
@@ -399,8 +433,13 @@ class SynthesizerTest {
                   {"role":"assistant","content":"Where to?"}
                 ],"expected_outcome":"Flight search started"}]}
                 """));
-        var synthesizer = new Synthesizer(model,
-                new ConversationalStylingConfig("travel support", "book flights", "traveler and agent", null));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                new ConversationalStylingConfig("travel support", "book flights", "traveler and agent", null),
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
 
         var goldens = synthesizer.generateConversationalGoldensFromScratch(1);
 
@@ -425,7 +464,8 @@ class SynthesizerTest {
                   {"role":"assistant","content":"Yes, within 30 days."}
                 ],"expected_outcome":"Refund eligibility explained"}]}
                 """));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var original = ConversationalGolden.builder("old refund scenario")
                 .context(List.of("Refunds are available within 30 days."))
                 .build();
@@ -447,7 +487,8 @@ class SynthesizerTest {
                   {"role":"assistant","content":"I can help with that."}
                 ]}]}
                 """));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var original = ConversationalGolden.builder("traveler wants to rebook a flight").build();
 
         var goldens = synthesizer.generateConversationalGoldensFromGoldens(List.of(original), 1, false);
@@ -466,7 +507,8 @@ class SynthesizerTest {
                   {"role":"user","content":"Ask about context"}
                 ],"expected_outcome":"Context explained"}]}
                 """));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var contextual = ConversationalGolden.builder("old context")
                 .context(List.of("context"))
                 .build();

@@ -35,6 +35,22 @@ final class SynthesizerSchemas {
         }
     }
 
+    static ScenarioFeedback parseScenarioFeedback(String json) {
+        try {
+            return JSON.readValue(json, ScenarioFeedback.class);
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Unable to parse scenario feedback JSON", error);
+        }
+    }
+
+    static String parseRewrittenScenario(String json) {
+        try {
+            return JSON.readValue(json, RewrittenScenario.class).rewrittenScenario();
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Unable to parse rewritten scenario JSON", error);
+        }
+    }
+
     static List<ConversationalData> parseConversationalData(String json) {
         try {
             return JSON.readValue(json, ConversationalDataList.class).data();
@@ -56,6 +72,12 @@ final class SynthesizerSchemas {
     }
 
     record InputFeedback(String feedback, double score) {
+    }
+
+    record ScenarioFeedback(String feedback, double score) {
+    }
+
+    private record RewrittenScenario(@JsonAlias("rewritten_scenario") String rewrittenScenario) {
     }
 
     record ConversationalData(

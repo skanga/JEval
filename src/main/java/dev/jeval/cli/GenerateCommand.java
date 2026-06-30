@@ -496,6 +496,10 @@ final class GenerateCommand {
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("\"score\""))) {
                 return "{\"feedback\":\"The synthetic query is clear.\",\"score\":1.0}";
             }
+            if (isSyntheticScenarioEvaluationPrompt(prompt)
+                    && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("\"score\""))) {
+                return "{\"feedback\":\"The conversational scenario is clear.\",\"score\":1.0}";
+            }
             if (isRewritePrompt(prompt)
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("rewritten_input"))) {
                 return "{\"rewritten_input\":\"" + escapeJson(rewriteInput(prompt)) + "\"}";
@@ -513,6 +517,10 @@ final class GenerateCommand {
 
     private static boolean isSyntheticInputEvaluationPrompt(String prompt) {
         return prompt.startsWith("Evaluate the provided synthetic query");
+    }
+
+    private static boolean isSyntheticScenarioEvaluationPrompt(String prompt) {
+        return prompt.startsWith("Evaluate the provided conversational scenario");
     }
 
     private static String rewriteInput(String prompt) {
