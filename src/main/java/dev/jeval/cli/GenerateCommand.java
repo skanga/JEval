@@ -316,7 +316,10 @@ final class GenerateCommand {
                 integer(args, "--chunk-overlap", ContextConstructionConfig.DEFAULT.chunkOverlap()),
                 decimal(args, "--context-quality-threshold", ContextConstructionConfig.DEFAULT.contextQualityThreshold()),
                 decimal(args, "--context-similarity-threshold", ContextConstructionConfig.DEFAULT.contextSimilarityThreshold()),
-                integer(args, "--max-retries", ContextConstructionConfig.DEFAULT.maxRetries()));
+                integer(args, "--max-retries", ContextConstructionConfig.DEFAULT.maxRetries()),
+                has(args, "--allow-cross-file-contexts"),
+                optionalInteger(args, "--target-files-per-context"),
+                integer(args, "--max-files-per-context", ContextConstructionConfig.DEFAULT.maxFilesPerContext()));
     }
 
     private static void loadGoldens(EvaluationDataset dataset, Path file) {
@@ -387,6 +390,11 @@ final class GenerateCommand {
 
     private static int integer(String[] args, String name, int fallback) {
         return Integer.parseInt(option(args, name, Integer.toString(fallback)));
+    }
+
+    private static Integer optionalInteger(String[] args, String name) {
+        var value = option(args, name, null);
+        return value == null ? null : Integer.parseInt(value);
     }
 
     private static double decimal(String[] args, String name, double fallback) {

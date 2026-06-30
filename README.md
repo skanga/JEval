@@ -120,6 +120,7 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save 
 java -jar target/jeval-0.1.0-SNAPSHOT.jar settings -u openai-api-key=$env:OPENAI_API_KEY --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation single-turn --contexts-file contexts.json --save=dotenv:.env --output-dir generated
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method docs --variation single-turn --documents docs\knowledge.md --chunk-size 200 --save dotenv:.env --output-dir generated
+java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method docs --variation single-turn --documents docs\policy.md --documents docs\faq.md --allow-cross-file-contexts --target-files-per-context 2 --max-files-per-context 2 --save dotenv:.env --output-dir generated
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation multi-turn --contexts-file contexts.json --save dotenv:.env --output-dir generated
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation single-turn --contexts-file contexts.json --responses-file responses.txt --no-include-expected --output-dir generated
 ```

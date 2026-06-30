@@ -339,7 +339,8 @@ public final class JEvalCli {
         err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval unset-debug [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval set-openai|set-ollama|set-anthropic ... [-s|--save dotenv:.env]");
-        err.println("       jeval generate --method contexts|scratch|goldens --variation single-turn [-s|--save dotenv:.env] ...");
+        err.println("       jeval generate --method contexts|docs|scratch|goldens --variation single-turn|multi-turn [-s|--save dotenv:.env] ...");
+        err.println("       jeval generate --method docs --documents file [--allow-cross-file-contexts] [--target-files-per-context n] [--max-files-per-context n] ...");
     }
 
     private record Options(

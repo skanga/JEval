@@ -1505,6 +1505,57 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateDocsSupportsCrossFileContextOptionsLikeDeepEval() throws Exception {
+        var policy = tempDir.resolve("policy.md");
+        var faq = tempDir.resolve("faq.md");
+        Files.writeString(policy, "policy refund");
+        Files.writeString(faq, "faq timeline");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"How do policy and FAQ connect?","expected_output":"Use both files","used_source_files":["policy.md","faq.md"]}]}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--documents", policy.toString(), "--documents", faq.toString(),
+                "--chunk-size", "2", "--max-contexts-per-document", "1",
+                "--allow-cross-file-contexts", "--target-files-per-context", "2", "--max-files-per-context", "2",
+                "--responses-file", responses.toString(), "--output-dir", output.toString(),
+                "--file-name", "cross-docs"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("cross-docs.json"));
+        assertTrue(generated.contains("How do policy and FAQ connect?"));
+        assertTrue(generated.contains("policy.md"));
+        assertTrue(generated.contains("faq.md"));
+        assertTrue(generated.contains("used_source_files"));
+    }
+
+    @Test
+    void generateDocsValidatesCrossFileTargetCountLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "policy refund");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Question?\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--document-path", document.toString(),
+                "--allow-cross-file-contexts", "--target-files-per-context", "1",
+                "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("target_files_per_context must be at least 2 when provided."));
+    }
+
+    @Test
     void generateDocsHonorsMaxContextsPerDocumentLikeDeepEval() throws Exception {
         var document = tempDir.resolve("policy.md");
         Files.writeString(document, "alpha beta gamma delta epsilon zeta");
