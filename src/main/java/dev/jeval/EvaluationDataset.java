@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 public final class EvaluationDataset {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -120,6 +121,10 @@ public final class EvaluationDataset {
         return Evaluator.evaluate(cases, metrics);
     }
 
+    public CompletableFuture<List<EvaluationResult>> aEvaluate(List<? extends Metric> metrics) {
+        return CompletableFuture.supplyAsync(() -> evaluate(metrics));
+    }
+
     public List<ConversationalEvaluationResult> evaluateConversations(List<? extends ConversationalMetric> metrics) {
         var cases = conversationalTestCases.isEmpty()
                 ? conversationalTestCasesFromGoldens()
@@ -128,6 +133,11 @@ public final class EvaluationDataset {
             throw new IllegalStateException("Unable to evaluate dataset with no conversational test cases.");
         }
         return Evaluator.evaluateConversations(cases, metrics);
+    }
+
+    public CompletableFuture<List<ConversationalEvaluationResult>> aEvaluateConversations(
+            List<? extends ConversationalMetric> metrics) {
+        return CompletableFuture.supplyAsync(() -> evaluateConversations(metrics));
     }
 
     public void generateGoldensFromDocs(List<Path> documentPaths, Synthesizer synthesizer) throws IOException {

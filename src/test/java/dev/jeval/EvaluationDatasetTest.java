@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -35,6 +36,20 @@ class EvaluationDatasetTest {
         assertAll(
                 () -> assertFalse(dataset.multiTurn()),
                 () -> assertEquals(2, dataset.testCases().size()),
+                () -> assertTrue(results.getFirst().success()),
+                () -> assertFalse(results.getLast().success()));
+    }
+
+    @Test
+    void singleTurnDatasetEvaluatesStoredTestCasesAsync() {
+        var dataset = new EvaluationDataset();
+        dataset.addTestCase(new LlmTestCase("2+2?", "4", "4"));
+        dataset.addTestCase(new LlmTestCase("2+2?", "5", "4"));
+
+        var results = dataset.aEvaluate(List.of(new ActualEqualsExpectedMetric())).join();
+
+        assertAll(
+                () -> assertEquals(2, results.size()),
                 () -> assertTrue(results.getFirst().success()),
                 () -> assertFalse(results.getLast().success()));
     }
@@ -61,6 +76,20 @@ class EvaluationDatasetTest {
         assertAll(
                 () -> assertTrue(dataset.multiTurn()),
                 () -> assertEquals(2, dataset.conversationalTestCases().size()),
+                () -> assertTrue(results.getFirst().success()),
+                () -> assertFalse(results.getLast().success()));
+    }
+
+    @Test
+    void conversationalDatasetEvaluatesStoredTestCasesAsync() {
+        var dataset = new EvaluationDataset();
+        dataset.addTestCase(ConversationalTestCase.builder(List.of(new Turn("user", "hello"))).build());
+        dataset.addTestCase(ConversationalTestCase.builder(List.of(new Turn("user", ""))).build());
+
+        var results = dataset.aEvaluateConversations(List.of(new NonEmptyFirstTurnMetric())).join();
+
+        assertAll(
+                () -> assertEquals(2, results.size()),
                 () -> assertTrue(results.getFirst().success()),
                 () -> assertFalse(results.getLast().success()));
     }
@@ -128,6 +157,20 @@ class EvaluationDatasetTest {
         dataset.addGolden(Golden.builder("2+2?").actualOutput("5").expectedOutput("4").build());
 
         var results = dataset.evaluate(List.of(new ActualEqualsExpectedMetric()));
+
+        assertAll(
+                () -> assertEquals(2, results.size()),
+                () -> assertTrue(results.getFirst().success()),
+                () -> assertFalse(results.getLast().success()));
+    }
+
+    @Test
+    void singleTurnDatasetEvaluatesStoredGoldensAsync() {
+        var dataset = new EvaluationDataset();
+        dataset.addGolden(Golden.builder("2+2?").actualOutput("4").expectedOutput("4").build());
+        dataset.addGolden(Golden.builder("2+2?").actualOutput("5").expectedOutput("4").build());
+
+        var results = dataset.aEvaluate(List.of(new ActualEqualsExpectedMetric())).join();
 
         assertAll(
                 () -> assertEquals(2, results.size()),
@@ -207,9 +250,35 @@ class EvaluationDatasetTest {
     }
 
     @Test
+    void conversationalDatasetEvaluatesStoredGoldensAsync() {
+        var dataset = new EvaluationDataset();
+        dataset.addGolden(ConversationalGolden.builder("greeting")
+                .turns(List.of(new Turn("user", "hello")))
+                .build());
+        dataset.addGolden(ConversationalGolden.builder("empty")
+                .turns(List.of(new Turn("user", "")))
+                .build());
+
+        var results = dataset.aEvaluateConversations(List.of(new NonEmptyFirstTurnMetric())).join();
+
+        assertAll(
+                () -> assertEquals(2, results.size()),
+                () -> assertTrue(results.getFirst().success()),
+                () -> assertFalse(results.getLast().success()));
+    }
+
+    @Test
     void emptyDatasetCannotBeEvaluated() {
         assertThrows(IllegalStateException.class,
                 () -> new EvaluationDataset().evaluate(List.of(new ActualEqualsExpectedMetric())));
+    }
+
+    @Test
+    void emptyDatasetEvaluationAsyncPropagatesFailure() {
+        var error = assertThrows(CompletionException.class,
+                () -> new EvaluationDataset().aEvaluate(List.of(new ActualEqualsExpectedMetric())).join());
+
+        assertEquals(IllegalStateException.class, error.getCause().getClass());
     }
 
     @Test
