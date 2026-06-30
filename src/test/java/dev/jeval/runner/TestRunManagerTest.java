@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ApiTestCases;
+import dev.jeval.LlmApiTestCase;
 import dev.jeval.LlmTestCase;
 import dev.jeval.MetricData;
 import java.nio.file.Files;
@@ -195,5 +196,43 @@ class TestRunManagerTest {
         assertAll(
                 () -> assertNull(manager.getLatestTestRunData(missing)),
                 () -> assertNull(manager.getLatestTestRunData(linkOnly)));
+    }
+
+    @Test
+    void wrapUpTestRunFinalizesRunAndSavesLatestDataLikeDeepEvalLocalRuns() throws Exception {
+        var manager = new TestRunManager();
+        var latest = tempDir.resolve(".deepeval").resolve(".latest_test_run.json");
+        var passSource = LlmTestCase.builder("q1")
+                .name("later")
+                .actualOutput("yes")
+                .expectedOutput("yes")
+                .build();
+        var failSource = LlmTestCase.builder("q2")
+                .name("earlier")
+                .actualOutput("no")
+                .expectedOutput("yes")
+                .build();
+        var passMetric = new MetricData("exact_match", 1.0, true, 1.0, "ok", false, "local", null, 0.2, null, null, null);
+        var failMetric =
+                new MetricData("exact_match", 1.0, false, 0.0, "bad", false, "local", null, 0.3, null, null, null);
+
+        manager.createTestRun("run-id", "EvalTest.java", false);
+        manager.updateTestRun(ApiTestCases.from(passSource, 2).updateMetricData(passMetric), passSource);
+        manager.updateTestRun(ApiTestCases.from(failSource, 1).updateMetricData(failMetric), failSource);
+        var finalized = manager.wrapUpTestRun(12.34, latest);
+        var loaded = manager.getLatestTestRunData(latest);
+
+        assertAll(
+                () -> assertEquals(12.34, finalized.runDuration()),
+                () -> assertEquals(1, finalized.testPassed()),
+                () -> assertEquals(1, finalized.testFailed()),
+                () -> assertEquals(List.of("earlier", "later"),
+                        finalized.testCases().stream().map(LlmApiTestCase::name).toList()),
+                () -> assertEquals("exact_match", finalized.metricsScores().getFirst().metric()),
+                () -> assertEquals(List.of(1.0, 0.0), finalized.metricsScores().getFirst().scores()),
+                () -> assertEquals(0.5, finalized.evaluationCost()),
+                () -> assertEquals("run-id", loaded.identifier()),
+                () -> assertEquals(12.34, loaded.runDuration()),
+                () -> assertEquals(2, loaded.testCases().size()));
     }
 }

@@ -188,6 +188,25 @@ public record TestRun(
         return copyWithPassFailCounts(passed, failed);
     }
 
+    public TestRun withRunDuration(double runDuration) {
+        return new TestRun(
+                testFile,
+                testCases,
+                conversationalTestCases,
+                metricsScores,
+                traceMetricsScores,
+                identifier,
+                hyperparameters,
+                prompts,
+                testPassed,
+                testFailed,
+                runDuration,
+                evaluationCost,
+                datasetAlias,
+                datasetId,
+                official);
+    }
+
     private Double addEvaluationCost(Double additional) {
         if (additional == null) {
             return evaluationCost;

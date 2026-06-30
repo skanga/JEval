@@ -116,6 +116,20 @@ public final class TestRunManager {
         }
     }
 
+    public TestRun wrapUpTestRun(double runDuration, Path latestTestRunFile) throws IOException {
+        var run = getTestRun();
+        if (run.testCases().isEmpty() && run.conversationalTestCases().isEmpty()) {
+            return null;
+        }
+        testRun = run.constructMetricsScores()
+                .testRun()
+                .withRunDuration(runDuration)
+                .calculateTestPassesAndFails()
+                .sortTestCases();
+        saveTestRun(latestTestRunFile, LATEST_TEST_RUN_DATA_KEY);
+        return testRun;
+    }
+
     public void updateTestRun(LlmApiTestCase apiTestCase, LlmTestCase testCase) {
         if (shouldSkip(apiTestCase)) {
             return;
