@@ -284,10 +284,12 @@ class SynthesizerTest {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"first\"},{\"input\":\"second\"}]}",
                 "{\"rewritten_input\":\"first evolved\"}",
-                "{\"rewritten_input\":\"second evolved\"}"));
+                "{\"input\":\"first evolved\"}",
+                "{\"rewritten_input\":\"second evolved\"}",
+                "{\"input\":\"second evolved\"}"));
         var synthesizer = new Synthesizer(
                 model,
-                new StylingConfig(null, null, null, null),
+                new StylingConfig("students learning geography", "ask study questions", "one question", null),
                 null,
                 new EvolutionConfig(1, List.of(Evolution.REASONING, Evolution.COMPARATIVE)),
                 noFiltrationConfig(),
@@ -350,7 +352,28 @@ class SynthesizerTest {
     void scratchGenerationRequiresStylingConfig() {
         var synthesizer = new Synthesizer(prompt -> "{}");
 
-        assertThrows(IllegalStateException.class, () -> synthesizer.generateGoldensFromScratch(1));
+        var error = assertThrows(IllegalStateException.class, () -> synthesizer.generateGoldensFromScratch(1));
+
+        assertEquals(
+                "`scenario`, `task`, and `input_format` in `styling_config` must not be None when generation goldens from scratch.",
+                error.getMessage());
+    }
+
+    @Test
+    void scratchGenerationRequiresAllStylingFieldsLikeDeepEval() {
+        var synthesizer = new Synthesizer(
+                prompt -> "{}",
+                new StylingConfig("students learning geography", "ask study questions", null, null),
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+
+        var error = assertThrows(IllegalStateException.class, () -> synthesizer.generateGoldensFromScratch(1));
+
+        assertEquals(
+                "`scenario`, `task`, and `input_format` in `styling_config` must not be None when generation goldens from scratch.",
+                error.getMessage());
     }
 
     @Test
@@ -651,7 +674,12 @@ class SynthesizerTest {
     void conversationalScratchRequiresStylingConfig() {
         var synthesizer = new Synthesizer(prompt -> "{}");
 
-        assertThrows(IllegalStateException.class, () -> synthesizer.generateConversationalGoldensFromScratch(1));
+        var error = assertThrows(IllegalStateException.class,
+                () -> synthesizer.generateConversationalGoldensFromScratch(1));
+
+        assertEquals(
+                "`scenario_context`, `conversational_task`, and `participant_roles` in `conversational_styling_config` must not be None when generating conversational goldens from scratch.",
+                error.getMessage());
     }
 
     @Test

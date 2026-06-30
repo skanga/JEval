@@ -179,9 +179,7 @@ public final class Synthesizer {
     }
 
     public List<Golden> generateGoldensFromScratch(int numGoldens) {
-        if (stylingConfig == null) {
-            throw new IllegalStateException("StylingConfig is required for scratch generation");
-        }
+        validateScratchStylingConfig();
         var data = SynthesizerSchemas.parseSyntheticData(model.generate(
                 SynthesizerPrompts.generateSyntheticInputsFromScratch(
                         stylingConfig.scenario(), stylingConfig.task(), stylingConfig.inputFormat(), numGoldens)));
@@ -300,13 +298,7 @@ public final class Synthesizer {
     }
 
     public List<ConversationalGolden> generateConversationalGoldensFromScratch(int numGoldens) {
-        if (conversationalStylingConfig == null
-                || conversationalStylingConfig.scenarioContext() == null
-                || conversationalStylingConfig.conversationalTask() == null
-                || conversationalStylingConfig.participantRoles() == null) {
-            throw new IllegalStateException(
-                    "ConversationalStylingConfig with scenarioContext, conversationalTask, and participantRoles is required for conversational scratch generation");
-        }
+        validateConversationalScratchStylingConfig();
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                         SynthesizerPrompts.generateSyntheticConversationalScenariosFromScratch(
                                 conversationalStylingConfig, numGoldens)));
@@ -647,6 +639,26 @@ public final class Synthesizer {
     private Evolution evolution(int index) {
         var evolutions = evolutionConfig.evolutions();
         return evolutions.get(index % evolutions.size());
+    }
+
+    private void validateScratchStylingConfig() {
+        if (stylingConfig == null
+                || stylingConfig.scenario() == null
+                || stylingConfig.task() == null
+                || stylingConfig.inputFormat() == null) {
+            throw new IllegalStateException(
+                    "`scenario`, `task`, and `input_format` in `styling_config` must not be None when generation goldens from scratch.");
+        }
+    }
+
+    private void validateConversationalScratchStylingConfig() {
+        if (conversationalStylingConfig == null
+                || conversationalStylingConfig.scenarioContext() == null
+                || conversationalStylingConfig.conversationalTask() == null
+                || conversationalStylingConfig.participantRoles() == null) {
+            throw new IllegalStateException(
+                    "`scenario_context`, `conversational_task`, and `participant_roles` in `conversational_styling_config` must not be None when generating conversational goldens from scratch.");
+        }
     }
 
     private static boolean shouldStyle(StylingConfig config) {
