@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.ConversationalApiTestCase;
 import dev.jeval.LlmApiTestCase;
+import dev.jeval.MetricData;
 import dev.jeval.prompt.PromptInterpolationType;
 import dev.jeval.prompt.PromptMessage;
 import java.util.ArrayList;
@@ -80,6 +81,31 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void constructMetricsScoresAggregatesMetricDataAcrossTestCaseTypes() {
+        var singleTurn = llmApi(List.of(
+                metricData("faithfulness", 0.9, true),
+                metricData("faithfulness", 0.2, false),
+                metricData("answer relevancy", null, true)));
+        var conversational = conversationalApi(List.of(
+                metricData("faithfulness", 0.8, true),
+                metricData("conversation completeness", 1.0, true)));
+
+        var aggregation = new TestRun()
+                .addTestCase(singleTurn)
+                .addTestCase(conversational)
+                .constructMetricsScores();
+
+        assertAll(
+                () -> assertEquals(4, aggregation.validScores()),
+                () -> assertEquals(List.of(
+                                new MetricScores("faithfulness", List.of(0.9, 0.2, 0.8), 2, 1, 0),
+                                new MetricScores("answer relevancy", List.of(), 0, 0, 1),
+                                new MetricScores("conversation completeness", List.of(1.0), 1, 0, 0)),
+                        aggregation.testRun().metricsScores()),
+                () -> assertEquals(List.of(), new TestRun().metricsScores()));
+    }
+
+    @Test
     void traceMetricScoresDefensivelyCopiesNestedScoreMaps() {
         var scores = new MetricScores("faithfulness", List.of(1.0), 1, 0, 0);
         var nested = new java.util.LinkedHashMap<String, MetricScores>();
@@ -99,6 +125,14 @@ class TestRunPayloadTest {
     }
 
     private static LlmApiTestCase llmApi(Double evaluationCost) {
+        return llmApi(evaluationCost, List.of());
+    }
+
+    private static LlmApiTestCase llmApi(List<Object> metricsData) {
+        return llmApi(null, metricsData);
+    }
+
+    private static LlmApiTestCase llmApi(Double evaluationCost, List<Object> metricsData) {
         return new LlmApiTestCase(
                 "case",
                 "input",
@@ -112,7 +146,7 @@ class TestRunPayloadTest {
                 null,
                 null,
                 true,
-                List.of(),
+                metricsData,
                 null,
                 evaluationCost,
                 null,
@@ -127,10 +161,18 @@ class TestRunPayloadTest {
     }
 
     private static ConversationalApiTestCase conversationalApi(Double evaluationCost) {
+        return conversationalApi(evaluationCost, List.of());
+    }
+
+    private static ConversationalApiTestCase conversationalApi(List<Object> metricsData) {
+        return conversationalApi(null, metricsData);
+    }
+
+    private static ConversationalApiTestCase conversationalApi(Double evaluationCost, List<Object> metricsData) {
         return new ConversationalApiTestCase(
                 "conversation",
                 true,
-                List.of(),
+                metricsData,
                 0.0,
                 evaluationCost,
                 List.of(),
@@ -144,5 +186,9 @@ class TestRunPayloadTest {
                 null,
                 null,
                 null);
+    }
+
+    private static MetricData metricData(String name, Double score, boolean success) {
+        return new MetricData(name, 0.5, success, score, null, false, null, null, null, null, null, null);
     }
 }
