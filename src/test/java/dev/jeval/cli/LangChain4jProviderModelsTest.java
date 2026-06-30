@@ -32,6 +32,25 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void createsAzureOpenAiModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_AZURE_OPENAI=YES
+                AZURE_OPENAI_ENDPOINT=https://jeval.openai.azure.com/
+                AZURE_OPENAI_API_KEY=azure-test
+                AZURE_DEPLOYMENT_NAME=prod-deployment
+                OPENAI_API_VERSION=2024-06-01
+                TEMPERATURE=0.2
+                MAX_TOKENS=128
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void createsOllamaModelFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -201,6 +220,39 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void usesModelOverrideForAzureOpenAiDeploymentLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_AZURE_OPENAI=YES
+                AZURE_OPENAI_ENDPOINT=https://jeval.openai.azure.com/
+                AZURE_OPENAI_API_KEY=azure-test
+                OPENAI_API_VERSION=2024-06-01
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "prod-deployment");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
+    void usesAzureModelNameWhenDeploymentNameIsMissing() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_AZURE_OPENAI=YES
+                AZURE_OPENAI_ENDPOINT=https://jeval.openai.azure.com/
+                AZURE_OPENAI_API_KEY=azure-test
+                AZURE_MODEL_NAME=gpt-4.1
+                OPENAI_API_VERSION=2024-06-01
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForAnthropicGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -335,7 +387,7 @@ class LangChain4jProviderModelsTest {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));
 
-        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
+        assertEquals("No supported provider is configured; run set-openai, set-azure-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
 }

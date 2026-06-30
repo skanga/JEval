@@ -16,6 +16,7 @@
         <junit.version>6.0.1</junit.version>
         <jackson.version>2.22.0</jackson.version>
         <langchain4j.version>1.17.0</langchain4j.version>
+        <azure.core.http.jdk.version>1.0.2</azure.core.http.jdk.version>
         <log4j.version>2.24.3</log4j.version>
         <pdfbox.version>3.0.6</pdfbox.version>
         <poi.version>5.5.1</poi.version>
@@ -37,6 +38,16 @@
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
             <version>${langchain4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-azure-open-ai</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-core-http-jdk-httpclient</artifactId>
+            <version>${azure.core.http.jdk.version}</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>

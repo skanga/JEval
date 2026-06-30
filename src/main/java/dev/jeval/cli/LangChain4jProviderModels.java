@@ -1,8 +1,10 @@
 package dev.jeval.cli;
 
+import com.azure.core.http.jdk.httpclient.JdkHttpClientProvider;
 import dev.jeval.EvaluationModel;
 import dev.jeval.langchain4j.LangChain4jEvaluationModel;
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
+import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -21,6 +23,9 @@ final class LangChain4jProviderModels {
         var config = dotenv.read();
         if ("YES".equals(config.get("USE_OPENAI_MODEL"))) {
             return new LangChain4jEvaluationModel(openAi(config, modelOverride));
+        }
+        if ("YES".equals(config.get("USE_AZURE_OPENAI"))) {
+            return new LangChain4jEvaluationModel(azureOpenAi(config, modelOverride));
         }
         if ("YES".equals(config.get("USE_OPENROUTER_MODEL"))) {
             return new LangChain4jEvaluationModel(openRouter(config, modelOverride));
@@ -53,13 +58,25 @@ final class LangChain4jProviderModels {
             }
         }
         throw new IllegalArgumentException(
-                "No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
+                "No supported provider is configured; run set-openai, set-azure-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
     }
 
     private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
         var builder = OpenAiChatModel.builder()
                 .apiKey(required(config, "OPENAI_API_KEY"))
                 .modelName(modelName(config, "OPENAI_MODEL_NAME", modelOverride, "gpt-4o-mini"));
+        optionalDouble(config, "TEMPERATURE", builder::temperature);
+        optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
+        return builder.build();
+    }
+
+    private static AzureOpenAiChatModel azureOpenAi(Map<String, String> config, String modelOverride) {
+        var builder = AzureOpenAiChatModel.builder()
+                .endpoint(required(config, "AZURE_OPENAI_ENDPOINT"))
+                .apiKey(required(config, "AZURE_OPENAI_API_KEY"))
+                .deploymentName(deploymentName(config, modelOverride))
+                .serviceVersion(value(config, "OPENAI_API_VERSION", "2024-06-01"))
+                .httpClientProvider(new JdkHttpClientProvider());
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
         return builder.build();
@@ -183,6 +200,14 @@ final class LangChain4jProviderModels {
             throw new IllegalArgumentException(key + " is required for provider-backed generation.");
         }
         return value;
+    }
+
+    private static String deploymentName(Map<String, String> config, String modelOverride) {
+        var value = value(config, "AZURE_DEPLOYMENT_NAME", null);
+        if (value != null) {
+            return value;
+        }
+        return modelName(config, "AZURE_MODEL_NAME", modelOverride, null);
     }
 
     private static String value(Map<String, String> config, String key, String fallback) {
