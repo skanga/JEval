@@ -215,7 +215,7 @@ public final class EvaluationDataset {
                     .retrievalContext(textListOrNull(row, retrievalContextKeyName))
                     .toolsCalled(toolListOrEmptyIfMissing(row, toolsCalledKeyName, false))
                     .expectedTools(toolListOrEmptyIfMissing(row, expectedToolsKeyName, false))
-                    .additionalMetadata(objectMapOrNull(row, additionalMetadataKeyName))
+                    .additionalMetadata(metadataMapOrNull(row, additionalMetadataKeyName))
                     .comments(textOrNull(row, "comments"))
                     .tokenCost(doubleOrNull(row, "token_cost"))
                     .completionTime(doubleOrNull(row, "completion_time"))
@@ -303,7 +303,7 @@ public final class EvaluationDataset {
                         .retrievalContext(csvListOrNull(row.get(retrievalContextColName), retrievalContextDelimiter))
                         .toolsCalled(toolListFromCsv(row.get(toolsCalledColName), "tools_called", ";"))
                         .expectedTools(toolListFromCsv(row.get(expectedToolsColName), "expected_tools", ";"))
-                        .additionalMetadata(objectMapFromCsv(row.get(additionalMetadataColName), "additional_metadata"))
+                        .additionalMetadata(metadataMapFromCsv(row, additionalMetadataColName))
                         .comments(nullIfBlank(row.get("comments")))
                         .tokenCost(doubleFromCsv(row.get("token_cost"), "token_cost"))
                         .completionTime(doubleFromCsv(row.get("completion_time"), "completion_time"))
@@ -1363,6 +1363,14 @@ public final class EvaluationDataset {
         return MAPPER.convertValue(node, new TypeReference<>() {});
     }
 
+    private static Map<String, Object> metadataMapOrNull(JsonNode row, String key) {
+        if (key == null) {
+            return null;
+        }
+        var alias = metadataAlias(key);
+        return row.has(key) || alias == null ? objectMapOrNull(row, key) : objectMapOrNull(row, alias);
+    }
+
     private static Map<String, Object> objectMapFromCsv(String value, String key) {
         if (blank(value)) {
             return null;
@@ -1376,6 +1384,28 @@ public final class EvaluationDataset {
         } catch (JsonProcessingException error) {
             throw new IllegalArgumentException("'" + key + "' must contain a JSON object", error);
         }
+    }
+
+    private static Map<String, Object> metadataMapFromCsv(Map<String, String> row, String key) {
+        if (key == null) {
+            return null;
+        }
+        var value = row.get(key);
+        var alias = metadataAlias(key);
+        if (blank(value) && alias != null) {
+            value = row.get(alias);
+        }
+        return objectMapFromCsv(value, key);
+    }
+
+    private static String metadataAlias(String key) {
+        if ("metadata".equals(key)) {
+            return "additional_metadata";
+        }
+        if ("additional_metadata".equals(key)) {
+            return "metadata";
+        }
+        return null;
     }
 
     private static List<Map<String, Object>> objectListFromCsv(String value, String key) {

@@ -320,6 +320,61 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunDatasetsAcceptDeepEvalAdditionalMetadataAlias() throws Exception {
+        var jsonDataset = tempDir.resolve("alias-cases.json");
+        Files.writeString(jsonDataset, """
+                [
+                  {"input": "q", "actual_output": "a", "expected_output": "b",
+                   "additional_metadata": {"suite": "json-alias"}}
+                ]
+                """);
+        var jsonSpec = tempDir.resolve("alias-json-eval.json");
+        Files.writeString(jsonSpec, """
+                {
+                  "name": "json-alias-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "dataset": "alias-cases.json"
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", jsonSpec.toString(), "--identifier", "json-alias", "--quiet"},
+                out, err);
+
+        assertEquals(1, exit, text(err));
+        var latestText = Files.readString(tempDir.resolve(".deepeval").resolve(".latest_test_run.json"));
+        assertTrue(latestText.contains("\"identifier\":\"json-alias\""));
+        assertTrue(latestText.contains("\"metadata\":{"));
+        assertTrue(latestText.contains("\"suite\":\"json-alias\""));
+
+        var csvDataset = tempDir.resolve("alias-cases.csv");
+        Files.writeString(csvDataset, """
+                input,actual_output,expected_output,additional_metadata
+                q,a,b,"{""suite"":""csv-alias""}"
+                """);
+        var csvSpec = tempDir.resolve("alias-csv-eval.json");
+        Files.writeString(csvSpec, """
+                {
+                  "name": "csv-alias-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "dataset": "alias-cases.csv"
+                }
+                """);
+        out.reset();
+        err.reset();
+
+        exit = run(new String[] {"test", "run", csvSpec.toString(), "--identifier", "csv-alias", "--quiet"},
+                out, err);
+
+        assertEquals(1, exit, text(err));
+        latestText = Files.readString(tempDir.resolve(".deepeval").resolve(".latest_test_run.json"));
+        assertTrue(latestText.contains("\"identifier\":\"csv-alias\""));
+        assertTrue(latestText.contains("\"metadata\":{"));
+        assertTrue(latestText.contains("\"suite\":\"csv-alias\""));
+    }
+
+    @Test
     void testRunSupportsDeepEvalIdentifierAlias() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

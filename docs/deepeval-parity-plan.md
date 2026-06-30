@@ -44,6 +44,7 @@ Current Java parity:
 - CLI/test-runner latest test-run data preserves single-turn context and retrieval context from inline specs and dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn tags and comments from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn metadata from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
+- CLI/test-runner JSON, JSONL, and CSV dataset metadata imports accept both DeepEval `metadata` and older `additional_metadata` keys
 - CLI/test-runner latest test-run data preserves single-turn token cost and completion time from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn custom column values from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn tool calls and expected tools from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
