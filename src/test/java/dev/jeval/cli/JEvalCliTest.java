@@ -1418,11 +1418,38 @@ class JEvalCliTest {
                 "--file-name", "docs"
         }, out, err);
 
-        assertEquals(0, exit);
+        assertEquals(0, exit, text(err));
         var generated = Files.readString(output.resolve("docs.json"));
         assertTrue(generated.contains("Question one?"));
         assertTrue(generated.contains("Question two?"));
         assertTrue(generated.contains("policy.md"));
+    }
+
+    @Test
+    void generateDocsDoesNotConsumeNextBatchResponseForExpectedOutputFallback() throws Exception {
+        var document = tempDir.resolve("policy.md");
+        Files.writeString(document, "alpha beta gamma delta");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"Question one?","expected_output":"Answer one"}]}
+                {"data":[{"input":"Question two?","expected_output":"Answer two"}]}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "docs", "--variation", "single-turn",
+                "--document-path", document.toString(), "--chunk-size", "2",
+                "--responses-file", responses.toString(), "--output-dir", output.toString(),
+                "--file-name", "docs-expected-fallback"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("docs-expected-fallback.json"));
+        assertTrue(generated.contains("Question one?"));
+        assertTrue(generated.contains("Question two?"));
+        assertTrue(generated.contains("\"expected_output\" : \"Generated expected output\""));
     }
 
     @Test

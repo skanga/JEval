@@ -520,14 +520,17 @@ final class GenerateCommand {
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("\"scenario\""))) {
                 return "{\"scenario\":\"" + escapeJson(styledScenario(prompt)) + "\"}";
             }
-            if (isConversationalExpectedOutcomePrompt(prompt) && nextResponse >= responses.size()) {
+            if (isConversationalExpectedOutcomePrompt(prompt)
+                    && (nextResponse >= responses.size() || responses.get(nextResponse).contains("\"data\""))) {
                 return "Generated conversational expected outcome";
             }
-            if (isExpectedOutputPrompt(prompt) && nextResponse >= responses.size()) {
+            if (isExpectedOutputPrompt(prompt)
+                    && (nextResponse >= responses.size() || responses.get(nextResponse).contains("\"data\""))) {
                 return "Generated expected output";
             }
             if (nextResponse >= responses.size()) {
-                throw new IllegalArgumentException("No scripted response for prompt " + prompts.size());
+                throw new IllegalArgumentException("No scripted response for prompt " + prompts.size()
+                        + ": " + prompt.lines().findFirst().orElse(prompt));
             }
             return responses.get(nextResponse++);
         }
