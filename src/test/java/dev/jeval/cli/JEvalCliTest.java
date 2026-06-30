@@ -125,6 +125,9 @@ class JEvalCliTest {
         assertTrue(latestText.contains("\"testPassed\":1"));
         assertTrue(latestText.contains("\"testFailed\":1"));
         assertTrue(latestText.contains("\"metric\":\"Exact Match\""));
+        assertTrue(latestText.contains("\"input\":\"q\""));
+        assertTrue(latestText.contains("\"actualOutput\":\"a\""));
+        assertTrue(latestText.contains("\"expectedOutput\":\"b\""));
     }
 
     @Test

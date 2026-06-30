@@ -17,7 +17,17 @@ public record TestRunResult(
         return summary.failed() == 0;
     }
 
-    public record TestCaseResult(String name, boolean success, List<MetricResult> metricResults) {
+    public record TestCaseResult(
+            String name,
+            boolean success,
+            List<MetricResult> metricResults,
+            String input,
+            String actualOutput,
+            String expectedOutput) {
+        public TestCaseResult(String name, boolean success, List<MetricResult> metricResults) {
+            this(name, success, metricResults, null, null, null);
+        }
+
         public TestCaseResult {
             metricResults = List.copyOf(metricResults);
         }

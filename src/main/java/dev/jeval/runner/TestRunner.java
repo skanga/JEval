@@ -260,7 +260,10 @@ public final class TestRunner {
             return new TestCaseResult(
                     testCase.name(),
                     false,
-                    List.of(new MetricResult("Error", 0.0, 1.0, false, "Evaluation error: " + error.getMessage())));
+                    List.of(new MetricResult("Error", 0.0, 1.0, false, "Evaluation error: " + error.getMessage())),
+                    testCase.input(),
+                    testCase.actualOutput(),
+                    testCase.expectedOutput());
         } catch (RuntimeException error) {
             if (!ignoreErrors) {
                 throw error;
@@ -268,7 +271,10 @@ public final class TestRunner {
             return new TestCaseResult(
                     testCase.name(),
                     false,
-                    List.of(new MetricResult("Error", 0.0, 1.0, false, "Evaluation error: " + error.getMessage())));
+                    List.of(new MetricResult("Error", 0.0, 1.0, false, "Evaluation error: " + error.getMessage())),
+                    testCase.input(),
+                    testCase.actualOutput(),
+                    testCase.expectedOutput());
         }
     }
 
@@ -303,7 +309,13 @@ public final class TestRunner {
 
     private static TestCaseResult runCase(LlmTestCase testCase, List<Metric> metrics) {
         var result = Evaluator.evaluate(testCase, metrics);
-        return new TestCaseResult(testCase.name(), result.success(), result.metricResults());
+        return new TestCaseResult(
+                testCase.name(),
+                result.success(),
+                result.metricResults(),
+                testCase.input(),
+                testCase.actualOutput(),
+                testCase.expectedOutput());
     }
 
     private static List<LlmTestCase> dataset(Path parent, String dataset) {

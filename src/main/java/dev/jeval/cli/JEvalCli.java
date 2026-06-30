@@ -404,9 +404,9 @@ public final class JEvalCli {
     private static LlmApiTestCase toApiTestCase(TestRunResult.TestCaseResult result, int index) {
         return new LlmApiTestCase(
                 result.name(),
-                null,
-                null,
-                null,
+                result.input(),
+                result.actualOutput(),
+                result.expectedOutput(),
                 null,
                 null,
                 null,
