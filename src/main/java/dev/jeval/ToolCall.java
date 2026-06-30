@@ -1,5 +1,9 @@
 package dev.jeval;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -21,7 +25,13 @@ public final class ToolCall {
         this(name, null, null, inputParameters, output);
     }
 
-    public ToolCall(String name, String description, String reasoning, Map<?, ?> inputParameters, Object output) {
+    @JsonCreator
+    public ToolCall(
+            @JsonProperty("name") String name,
+            @JsonProperty("description") String description,
+            @JsonProperty("reasoning") String reasoning,
+            @JsonProperty("inputParameters") @JsonAlias("input_parameters") Map<?, ?> inputParameters,
+            @JsonProperty("output") Object output) {
         if (name == null) {
             throw new IllegalArgumentException("'name' is required");
         }
@@ -52,6 +62,7 @@ public final class ToolCall {
         return output;
     }
 
+    @JsonValue
     public Map<String, Object> modelDump() {
         return modelDump(false);
     }

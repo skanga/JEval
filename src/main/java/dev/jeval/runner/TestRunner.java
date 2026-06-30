@@ -9,6 +9,7 @@ import dev.jeval.LlmTestCase;
 import dev.jeval.Metric;
 import dev.jeval.MetricResult;
 import dev.jeval.MissingTestCaseParamsException;
+import dev.jeval.ToolCall;
 import dev.jeval.metrics.ExactMatchMetric;
 import dev.jeval.metrics.PatternMatchMetric;
 import dev.jeval.runner.TestRunResult.MetricAggregate;
@@ -272,7 +273,9 @@ public final class TestRunner {
                     testCase.comments(),
                     testCase.tokenCost(),
                     testCase.completionTime(),
-                    testCase.customColumnKeyValues());
+                    testCase.customColumnKeyValues(),
+                    testCase.toolsCalled(),
+                    testCase.expectedTools());
         } catch (RuntimeException error) {
             if (!ignoreErrors) {
                 throw error;
@@ -291,7 +294,9 @@ public final class TestRunner {
                     testCase.comments(),
                     testCase.tokenCost(),
                     testCase.completionTime(),
-                    testCase.customColumnKeyValues());
+                    testCase.customColumnKeyValues(),
+                    testCase.toolsCalled(),
+                    testCase.expectedTools());
         }
     }
 
@@ -326,6 +331,8 @@ public final class TestRunner {
                 .tokenCost(spec.tokenCost())
                 .completionTime(spec.completionTime())
                 .customColumnKeyValues(spec.customColumnKeyValues())
+                .toolsCalled(spec.toolsCalled())
+                .expectedTools(spec.expectedTools())
                 .name(spec.name())
                 .tags(spec.tags())
                 .build();
@@ -347,7 +354,9 @@ public final class TestRunner {
                 testCase.comments(),
                 testCase.tokenCost(),
                 testCase.completionTime(),
-                testCase.customColumnKeyValues());
+                testCase.customColumnKeyValues(),
+                testCase.toolsCalled(),
+                testCase.expectedTools());
     }
 
     private static List<LlmTestCase> dataset(Path parent, String dataset) {
@@ -470,6 +479,8 @@ public final class TestRunner {
             String comments,
             @JsonAlias("token_cost") Double tokenCost,
             @JsonAlias("completion_time") Double completionTime,
-            @JsonAlias("custom_column_key_values") Map<String, String> customColumnKeyValues) {
+            @JsonAlias("custom_column_key_values") Map<String, String> customColumnKeyValues,
+            @JsonAlias("tools_called") List<ToolCall> toolsCalled,
+            @JsonAlias("expected_tools") List<ToolCall> expectedTools) {
     }
 }

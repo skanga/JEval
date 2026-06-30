@@ -112,7 +112,9 @@ class JEvalCliTest {
                      "context": ["document context"], "retrieval_context": ["retrieved fact"],
                      "metadata": {"suite": "nightly", "priority": 2}, "comments": "investigate drift",
                      "token_cost": 0.12, "completion_time": 1.5,
-                     "custom_column_key_values": {"risk": "high", "case_id": "case-17"}}
+                     "custom_column_key_values": {"risk": "high", "case_id": "case-17"},
+                     "tools_called": [{"name": "PolicySearch", "input_parameters": {"query": "refund"}, "output": "30 days"}],
+                     "expected_tools": [{"name": "PolicySearch"}]}
                   ]
                 }
                 """);
@@ -144,6 +146,11 @@ class JEvalCliTest {
         assertTrue(latestText.contains("\"customColumnKeyValues\":{"));
         assertTrue(latestText.contains("\"risk\":\"high\""));
         assertTrue(latestText.contains("\"case_id\":\"case-17\""));
+        assertTrue(latestText.contains("\"toolsCalled\":[{"));
+        assertTrue(latestText.contains("\"expectedTools\":[{"));
+        assertTrue(latestText.contains("\"name\":\"PolicySearch\""));
+        assertTrue(latestText.contains("\"inputParameters\":{\"query\":\"refund\"}"));
+        assertTrue(latestText.contains("\"output\":\"30 days\""));
     }
 
     @Test

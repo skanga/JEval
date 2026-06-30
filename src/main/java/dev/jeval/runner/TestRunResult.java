@@ -1,6 +1,7 @@
 package dev.jeval.runner;
 
 import dev.jeval.MetricResult;
+import dev.jeval.ToolCall;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -33,9 +34,12 @@ public record TestRunResult(
             String comments,
             Double tokenCost,
             Double completionTime,
-            Map<String, String> customColumnKeyValues) {
+            Map<String, String> customColumnKeyValues,
+            List<ToolCall> toolsCalled,
+            List<ToolCall> expectedTools) {
         public TestCaseResult(String name, boolean success, List<MetricResult> metricResults) {
-            this(name, success, metricResults, null, null, null, null, null, null, null, null, null, null, null);
+            this(name, success, metricResults, null, null, null, null, null, null, null, null, null, null, null,
+                    null, null);
         }
 
         public TestCaseResult {
@@ -47,6 +51,8 @@ public record TestRunResult(
             customColumnKeyValues = customColumnKeyValues == null
                     ? null
                     : Map.copyOf(new LinkedHashMap<>(customColumnKeyValues));
+            toolsCalled = toolsCalled == null ? null : List.copyOf(toolsCalled);
+            expectedTools = expectedTools == null ? null : List.copyOf(expectedTools);
         }
     }
 
