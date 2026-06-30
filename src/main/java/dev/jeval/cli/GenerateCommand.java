@@ -9,7 +9,9 @@ import dev.jeval.EvaluationModel;
 import dev.jeval.Golden;
 import dev.jeval.synthesizer.ConversationalStylingConfig;
 import dev.jeval.synthesizer.ContextConstructionConfig;
+import dev.jeval.synthesizer.Evolution;
 import dev.jeval.synthesizer.EvolutionConfig;
+import dev.jeval.synthesizer.FiltrationConfig;
 import dev.jeval.synthesizer.StylingConfig;
 import dev.jeval.synthesizer.Synthesizer;
 import dev.jeval.synthesizer.SynthesizerOptions;
@@ -150,8 +152,47 @@ final class GenerateCommand {
                 model,
                 stylingConfig(args),
                 conversationalStylingConfig(args),
-                new EvolutionConfig(),
+                evolutionConfig(args),
+                filtrationConfig(args),
                 synthesizerOptions(args));
+    }
+
+    private static EvolutionConfig evolutionConfig(String[] args) {
+        return new EvolutionConfig(
+                integer(args, "--num-evolutions", new EvolutionConfig().numEvolutions()),
+                evolutions(args));
+    }
+
+    private static List<Evolution> evolutions(String[] args) {
+        var value = option(args, "--evolutions", null);
+        if (value == null || value.isBlank()) {
+            return new EvolutionConfig().evolutions();
+        }
+        var parsed = new ArrayList<Evolution>();
+        for (var part : value.split(",")) {
+            parsed.add(evolution(part));
+        }
+        return List.copyOf(parsed);
+    }
+
+    private static Evolution evolution(String value) {
+        var normalized = value.strip().toLowerCase(Locale.ROOT).replace("_", "-");
+        for (var evolution : Evolution.values()) {
+            if (evolution.name().toLowerCase(Locale.ROOT).replace("_", "-").equals(normalized)
+                    || evolution.value().toLowerCase(Locale.ROOT).equals(normalized)) {
+                return evolution;
+            }
+        }
+        throw new IllegalArgumentException("Unsupported evolution: " + value);
+    }
+
+    private static FiltrationConfig filtrationConfig(String[] args) {
+        var defaults = new FiltrationConfig();
+        return new FiltrationConfig(
+                decimal(args, "--synthetic-input-quality-threshold",
+                        defaults.syntheticInputQualityThreshold()),
+                integer(args, "--max-quality-retries", defaults.maxQualityRetries()),
+                null);
     }
 
     private static SynthesizerOptions synthesizerOptions(String[] args) {

@@ -1178,6 +1178,64 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateHonorsEvolutionOptionsLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(),
+                "--responses-file", responses.toString(),
+                "--num-evolutions", "2",
+                "--evolutions", "comparative,constrained",
+                "--no-include-expected",
+                "--output-dir", output.toString(), "--file-name", "evolved"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("evolved.json"));
+        assertTrue(generated.contains("\"Comparative\""));
+        assertTrue(generated.contains("\"Constrained\""));
+        assertFalse(generated.contains("\"Reasoning\""));
+    }
+
+    @Test
+    void generateHonorsFiltrationOptionsLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"Too vague"}]}
+                {"feedback":"Needs a specific answerable question.","score":0.9}
+                {"rewritten_input":"Which city is the capital of France?"}
+                {"feedback":"Clear and answerable.","score":0.99}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(),
+                "--responses-file", responses.toString(),
+                "--synthetic-input-quality-threshold", "0.95",
+                "--max-quality-retries", "2",
+                "--no-include-expected",
+                "--output-dir", output.toString(), "--file-name", "filtered"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("filtered.json"));
+        assertTrue(generated.contains("Which city is the capital of France?"));
+        assertTrue(generated.contains("\"synthetic_input_quality\" : 0.99"));
+    }
+
+    @Test
     void generateParsesDocsContextConstructionOptionsLikeDeepEval() throws Exception {
         var method = GenerateCommand.class.getDeclaredMethod("contextConstructionConfig", String[].class);
         method.setAccessible(true);
