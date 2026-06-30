@@ -2,6 +2,7 @@ package dev.jeval.cli;
 
 import dev.jeval.EvaluationModel;
 import dev.jeval.langchain4j.LangChain4jEvaluationModel;
+import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import java.io.IOException;
@@ -23,12 +24,15 @@ final class LangChain4jProviderModels {
         if ("YES".equals(config.get("USE_OPENROUTER_MODEL"))) {
             return new LangChain4jEvaluationModel(openRouter(config, modelOverride));
         }
+        if ("YES".equals(config.get("USE_ANTHROPIC_MODEL"))) {
+            return new LangChain4jEvaluationModel(anthropic(config, modelOverride));
+        }
         if ("YES".equals(config.get("USE_LOCAL_MODEL"))
                 && (present(config, "OLLAMA_MODEL_NAME") || present(modelOverride))) {
             return new LangChain4jEvaluationModel(ollama(config, modelOverride));
         }
         throw new IllegalArgumentException(
-                "No supported provider is configured; run set-openai, set-ollama, or set-openrouter, or pass --responses-file.");
+                "No supported provider is configured; run set-openai, set-anthropic, set-ollama, or set-openrouter, or pass --responses-file.");
     }
 
     private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
@@ -45,6 +49,15 @@ final class LangChain4jProviderModels {
                 .apiKey(required(config, "OPENROUTER_API_KEY"))
                 .modelName(modelName(config, "OPENROUTER_MODEL_NAME", modelOverride, null))
                 .baseUrl(value(config, "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"));
+        optionalDouble(config, "TEMPERATURE", builder::temperature);
+        optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
+        return builder.build();
+    }
+
+    private static AnthropicChatModel anthropic(Map<String, String> config, String modelOverride) {
+        var builder = AnthropicChatModel.builder()
+                .apiKey(required(config, "ANTHROPIC_API_KEY"))
+                .modelName(modelName(config, "ANTHROPIC_MODEL_NAME", modelOverride, "claude-3-5-haiku-latest"));
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
         return builder.build();

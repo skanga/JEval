@@ -64,6 +64,22 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void createsAnthropicModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_ANTHROPIC_MODEL=YES
+                ANTHROPIC_MODEL_NAME=claude-3-5-haiku-latest
+                ANTHROPIC_API_KEY=sk-ant-test
+                TEMPERATURE=0.2
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForOpenRouterGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -73,6 +89,20 @@ class LangChain4jProviderModelsTest {
                 """);
 
         var model = LangChain4jProviderModels.from(new DotenvFile(env), "openai/gpt-4.1");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
+    void usesModelOverrideForAnthropicGenerationLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_ANTHROPIC_MODEL=YES
+                ANTHROPIC_API_KEY=sk-ant-test
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "claude-3-5-haiku-latest");
 
         assertNotNull(model);
         assertInstanceOf(LangChain4jEvaluationModel.class, model);
@@ -97,7 +127,7 @@ class LangChain4jProviderModelsTest {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));
 
-        assertEquals("No supported provider is configured; run set-openai, set-ollama, or set-openrouter, or pass --responses-file.",
+        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-ollama, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
 }
