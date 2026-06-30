@@ -142,7 +142,8 @@ Docs generation accepts either JEval's `--document-path` or DeepEval's repeatabl
 `--include-expected/--no-include-expected` flag pair. Document loading supports
 DeepEval-style PDF, DOCX, text, and Markdown inputs (`.pdf`, `.docx`, `.txt`,
 `.md`, `.markdown`, `.mdx`) and rejects unsupported extensions with
-DeepEval-style errors.
+DeepEval-style errors; text and Markdown inputs strip a leading UTF-8 BOM like
+DeepEval's autodetecting text loader.
 
 ```powershell
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save dotenv:.env

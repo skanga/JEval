@@ -840,7 +840,7 @@ public final class Synthesizer {
     private static String readDocumentText(Path path) throws IOException {
         var extension = documentExtension(path);
         if (TEXT_DOCUMENT_EXTENSIONS.contains(extension)) {
-            return Files.readString(path);
+            return stripLeadingBom(Files.readString(path));
         }
         if (".pdf".equals(extension)) {
             try (var document = Loader.loadPDF(path.toFile())) {
@@ -857,6 +857,10 @@ public final class Synthesizer {
             }
         }
         throw new IllegalArgumentException("Unsupported file format: " + extension);
+    }
+
+    private static String stripLeadingBom(String text) {
+        return text != null && text.startsWith("\uFEFF") ? text.substring(1) : text;
     }
 
     private static String documentExtension(Path path) {

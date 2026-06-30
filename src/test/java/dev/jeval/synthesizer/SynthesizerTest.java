@@ -324,6 +324,33 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromTextDocsStripsUtf8BomLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("bom.md");
+        Files.write(document, new byte[] {
+                (byte) 0xEF, (byte) 0xBB, (byte) 0xBF,
+                'H', 'e', 'l', 'l', 'o', ' ', 'p', 'o', 'l', 'i', 'c', 'y'
+        });
+        var model = new ScriptedModel(List.of("{\"data\":[{\"input\":\"What is loaded?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocs(
+                List.of(document),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 50, 0, 0.5, 0.0, 3));
+
+        assertEquals("Hello policy", goldens.getFirst().context().getFirst());
+        assertTrue(model.prompts().getFirst().contains("Hello policy"));
+        assertEquals(false, model.prompts().getFirst().contains("\uFEFF"));
+    }
+
+    @Test
     void generateGoldensFromDocsRejectsUnsupportedFileExtensionLikeDeepEval() throws Exception {
         var document = tempDir.resolve("policy.xyz");
         Files.writeString(document, "unsupported");
