@@ -3,6 +3,7 @@ package dev.jeval.cli;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.LlmApiTestCase;
 import dev.jeval.MetricData;
+import dev.jeval.RetrievedContextData;
 import dev.jeval.report.EvaluationReportWriter;
 import dev.jeval.runner.TestRun;
 import dev.jeval.runner.TestRunManager;
@@ -407,8 +408,8 @@ public final class JEvalCli {
                 result.input(),
                 result.actualOutput(),
                 result.expectedOutput(),
-                null,
-                null,
+                result.context(),
+                RetrievedContextData.textValues(result.retrievalContext()),
                 null,
                 null,
                 null,
@@ -421,7 +422,7 @@ public final class JEvalCli {
                 index,
                 null,
                 null,
-                null,
+                result.tags(),
                 null,
                 null,
                 null,

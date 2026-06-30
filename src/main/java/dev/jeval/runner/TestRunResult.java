@@ -23,13 +23,19 @@ public record TestRunResult(
             List<MetricResult> metricResults,
             String input,
             String actualOutput,
-            String expectedOutput) {
+            String expectedOutput,
+            List<String> context,
+            List<Object> retrievalContext,
+            List<String> tags) {
         public TestCaseResult(String name, boolean success, List<MetricResult> metricResults) {
-            this(name, success, metricResults, null, null, null);
+            this(name, success, metricResults, null, null, null, null, null, null);
         }
 
         public TestCaseResult {
             metricResults = List.copyOf(metricResults);
+            context = context == null ? null : List.copyOf(context);
+            retrievalContext = retrievalContext == null ? null : List.copyOf(retrievalContext);
+            tags = tags == null ? null : List.copyOf(tags);
         }
     }
 

@@ -107,8 +107,9 @@ class JEvalCliTest {
                   "name": "spec-name",
                   "metrics": [{"type": "exact_match"}],
                   "cases": [
-                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"},
-                    {"name": "bad", "input": "q", "actualOutput": "a", "expectedOutput": "b"}
+                    {"name": "good", "tags": ["smoke"], "input": "q", "actualOutput": "a", "expectedOutput": "a"},
+                    {"name": "bad", "tags": ["regression"], "input": "q", "actualOutput": "a", "expectedOutput": "b",
+                     "context": ["document context"], "retrieval_context": ["retrieved fact"]}
                   ]
                 }
                 """);
@@ -128,6 +129,9 @@ class JEvalCliTest {
         assertTrue(latestText.contains("\"input\":\"q\""));
         assertTrue(latestText.contains("\"actualOutput\":\"a\""));
         assertTrue(latestText.contains("\"expectedOutput\":\"b\""));
+        assertTrue(latestText.contains("\"context\":[\"document context\"]"));
+        assertTrue(latestText.contains("\"retrievalContext\":[\"retrieved fact\"]"));
+        assertTrue(latestText.contains("\"tags\":[\"regression\"]"));
     }
 
     @Test

@@ -263,7 +263,10 @@ public final class TestRunner {
                     List.of(new MetricResult("Error", 0.0, 1.0, false, "Evaluation error: " + error.getMessage())),
                     testCase.input(),
                     testCase.actualOutput(),
-                    testCase.expectedOutput());
+                    testCase.expectedOutput(),
+                    testCase.context(),
+                    testCase.retrievalContext(),
+                    testCase.tags());
         } catch (RuntimeException error) {
             if (!ignoreErrors) {
                 throw error;
@@ -274,7 +277,10 @@ public final class TestRunner {
                     List.of(new MetricResult("Error", 0.0, 1.0, false, "Evaluation error: " + error.getMessage())),
                     testCase.input(),
                     testCase.actualOutput(),
-                    testCase.expectedOutput());
+                    testCase.expectedOutput(),
+                    testCase.context(),
+                    testCase.retrievalContext(),
+                    testCase.tags());
         }
     }
 
@@ -302,6 +308,8 @@ public final class TestRunner {
         return LlmTestCase.builder(spec.input())
                 .actualOutput(spec.actualOutput())
                 .expectedOutput(spec.expectedOutput())
+                .context(spec.context())
+                .retrievalContext(spec.retrievalContext())
                 .name(spec.name())
                 .tags(spec.tags())
                 .build();
@@ -315,7 +323,10 @@ public final class TestRunner {
                 result.metricResults(),
                 testCase.input(),
                 testCase.actualOutput(),
-                testCase.expectedOutput());
+                testCase.expectedOutput(),
+                testCase.context(),
+                testCase.retrievalContext(),
+                testCase.tags());
     }
 
     private static List<LlmTestCase> dataset(Path parent, String dataset) {
@@ -431,6 +442,8 @@ public final class TestRunner {
             String input,
             @JsonAlias("actual_output") String actualOutput,
             @JsonAlias("expected_output") String expectedOutput,
+            List<String> context,
+            @JsonAlias("retrieval_context") List<String> retrievalContext,
             List<String> tags) {
     }
 }
