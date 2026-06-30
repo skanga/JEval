@@ -47,6 +47,22 @@ class SynthesizerTest {
     }
 
     @Test
+    void generatesGoldensFromContextsWithMultipleSourceFilesLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"How do the documents relate?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        List<Object> sourceFiles = List.of(List.of("policy.md", "faq.md"));
+
+        var goldens = synthesizer.generateGoldensFromContexts(
+                List.of(List.of("Policy text", "FAQ text")), false, 1, sourceFiles);
+
+        assertEquals("policy.md", goldens.getFirst().sourceFile());
+        assertEquals(List.of("policy.md", "faq.md"),
+                goldens.getFirst().additionalMetadata().get("context_source_files"));
+    }
+
+    @Test
     void rewritesLowQualitySyntheticInputsLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What about it?\",\"used_source_files\":[\"cities.txt\"]}]}",
@@ -375,6 +391,27 @@ class SynthesizerTest {
         assertEquals(List.of("refund.md"), goldens.getFirst().additionalMetadata().get("used_source_files"));
         assertEquals("user", goldens.getFirst().turns().getFirst().role());
         assertEquals(2, model.prompts().size());
+    }
+
+    @Test
+    void generatesConversationalGoldensFromContextsWithMultipleSourceFilesLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"support agent uses policy and faq","turns":[
+                  {"role":"user","content":"Can I get a refund?"},
+                  {"role":"assistant","content":"Let me check."}
+                ]}]}
+                """));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        List<Object> sourceFiles = List.of(List.of("policy.md", "faq.md"));
+
+        var goldens = synthesizer.generateConversationalGoldensFromContexts(
+                List.of(List.of("Policy text", "FAQ text")), false, 1, sourceFiles);
+
+        assertEquals("policy.md", goldens.getFirst().additionalMetadata().get("source_files"));
+        assertEquals(List.of("policy.md", "faq.md"),
+                goldens.getFirst().additionalMetadata().get("context_source_files"));
     }
 
     @Test

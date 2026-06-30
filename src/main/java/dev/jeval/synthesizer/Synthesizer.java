@@ -125,7 +125,7 @@ public final class Synthesizer {
             List<List<String>> contexts,
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
-            List<String> sourceFiles) {
+            List<?> sourceFiles) {
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateGoldensForContext(
@@ -139,7 +139,7 @@ public final class Synthesizer {
             List<List<String>> contexts,
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
-            List<String> sourceFiles,
+            List<?> sourceFiles,
             List<Double> contextScores) {
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
@@ -155,11 +155,12 @@ public final class Synthesizer {
             List<List<String>> contexts,
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
-            List<String> sourceFiles,
+            List<?> sourceFiles,
             List<Double> contextScores) {
         var goldens = new ArrayList<Golden>();
         var context = List.copyOf(contexts.get(contextIndex));
-        var sourceFile = sourceFiles != null && contextIndex < sourceFiles.size() ? sourceFiles.get(contextIndex) : null;
+        var contextSourceFiles = contextSourceFiles(sourceFiles, contextIndex);
+        var sourceFile = contextSourceFiles.isEmpty() ? null : contextSourceFiles.getFirst();
         var contextQuality = contextScores != null && contextIndex < contextScores.size()
                 ? contextScores.get(contextIndex)
                 : null;
@@ -171,6 +172,7 @@ public final class Synthesizer {
             goldens.add(golden(item.data(), context, sourceFile, includeExpectedOutput,
                     item.score(),
                     contextQuality,
+                    contextSourceFiles,
                     contextIndex * maxGoldensPerContext + goldens.size()));
         }
         return List.copyOf(goldens);
@@ -186,7 +188,7 @@ public final class Synthesizer {
         var qualifiedData = rewriteInputs(List.of(), data);
         var goldens = new ArrayList<Golden>();
         for (var item : qualifiedData) {
-            goldens.add(golden(item.data(), null, null, false, item.score(), null, goldens.size()));
+            goldens.add(golden(item.data(), null, null, false, item.score(), null, List.of(), goldens.size()));
         }
         return retainGoldens(goldens);
     }
@@ -216,7 +218,8 @@ public final class Synthesizer {
             var qualifiedData = rewriteInputs(inputs, data);
             for (var item : qualifiedData) {
                 generated.add(golden(
-                        item.data(), null, null, includeExpectedOutput, item.score(), null, generated.size()));
+                        item.data(), null, null, includeExpectedOutput, item.score(), null, List.of(),
+                        generated.size()));
             }
         }
         return retainGoldens(generated);
@@ -226,7 +229,7 @@ public final class Synthesizer {
             List<List<String>> contexts,
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
-            List<String> sourceFiles) {
+            List<?> sourceFiles) {
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
@@ -258,7 +261,7 @@ public final class Synthesizer {
             List<List<String>> contexts,
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
-            List<String> sourceFiles,
+            List<?> sourceFiles,
             List<Double> contextScores) {
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
@@ -274,11 +277,12 @@ public final class Synthesizer {
             List<List<String>> contexts,
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
-            List<String> sourceFiles,
+            List<?> sourceFiles,
             List<Double> contextScores) {
         var goldens = new ArrayList<ConversationalGolden>();
         var context = List.copyOf(contexts.get(contextIndex));
-        var sourceFile = sourceFiles != null && contextIndex < sourceFiles.size() ? sourceFiles.get(contextIndex) : null;
+        var contextSourceFiles = contextSourceFiles(sourceFiles, contextIndex);
+        var sourceFile = contextSourceFiles.isEmpty() ? null : contextSourceFiles.getFirst();
         var contextQuality = contextScores != null && contextIndex < contextScores.size()
                 ? contextScores.get(contextIndex)
                 : null;
@@ -289,7 +293,7 @@ public final class Synthesizer {
         for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(conversationalGolden(
                     item.data(), context, sourceFile, includeExpectedOutcome, item.score(), contextQuality,
-                    contextIndex * maxGoldensPerContext + goldens.size()));
+                    contextSourceFiles, contextIndex * maxGoldensPerContext + goldens.size()));
         }
         return List.copyOf(goldens);
     }
@@ -308,7 +312,8 @@ public final class Synthesizer {
         var qualifiedData = rewriteScenarios(List.of(), data);
         var goldens = new ArrayList<ConversationalGolden>();
         for (var item : qualifiedData) {
-            goldens.add(conversationalGolden(item.data(), null, null, false, item.score(), null, goldens.size()));
+            goldens.add(conversationalGolden(item.data(), null, null, false, item.score(), null, List.of(),
+                    goldens.size()));
         }
         return retainConversationalGoldens(goldens);
     }
@@ -337,7 +342,8 @@ public final class Synthesizer {
             var qualifiedData = rewriteScenarios(scenarios, data);
             for (var item : qualifiedData) {
                 generated.add(conversationalGolden(
-                        item.data(), null, null, includeExpectedOutcome, item.score(), null, generated.size()));
+                        item.data(), null, null, includeExpectedOutcome, item.score(), null, List.of(),
+                        generated.size()));
             }
         }
         return retainConversationalGoldens(generated);
@@ -362,6 +368,7 @@ public final class Synthesizer {
             boolean includeExpectedOutcome,
             Double syntheticScenarioQuality,
             Double contextQuality,
+            List<String> contextSourceFiles,
             int goldenIndex) {
         var evolutions = new ArrayList<String>();
         var scenario = data.scenario();
@@ -383,7 +390,8 @@ public final class Synthesizer {
                 .expectedOutcome(expectedOutcome)
                 .userDescription(data.userDescription())
                 .context(context)
-                .additionalMetadata(metadata(evolutions, data, sourceFile, syntheticScenarioQuality, contextQuality))
+                .additionalMetadata(metadata(
+                        evolutions, data, sourceFile, syntheticScenarioQuality, contextQuality, contextSourceFiles))
                 .build();
     }
 
@@ -394,6 +402,7 @@ public final class Synthesizer {
             boolean includeExpectedOutput,
             Double syntheticInputQuality,
             Double contextQuality,
+            List<String> contextSourceFiles,
             int goldenIndex) {
         var evolutions = new ArrayList<String>();
         var input = data.input();
@@ -407,7 +416,8 @@ public final class Synthesizer {
                 .expectedOutput(expectedOutput)
                 .context(context)
                 .sourceFile(sourceFile)
-                .additionalMetadata(metadata(evolutions, data, sourceFile, syntheticInputQuality, contextQuality))
+                .additionalMetadata(metadata(
+                        evolutions, data, sourceFile, syntheticInputQuality, contextQuality, contextSourceFiles))
                 .build();
     }
 
@@ -492,6 +502,24 @@ public final class Synthesizer {
 
     private static ContextConstructionConfig config(ContextConstructionConfig config) {
         return config == null ? ContextConstructionConfig.DEFAULT : config;
+    }
+
+    private static List<String> contextSourceFiles(List<?> sourceFiles, int contextIndex) {
+        if (sourceFiles == null || contextIndex >= sourceFiles.size()) {
+            return List.of();
+        }
+        var source = sourceFiles.get(contextIndex);
+        if (source instanceof String text) {
+            return text.isBlank() ? List.of() : List.of(text);
+        }
+        if (source instanceof List<?> values) {
+            return values.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .filter(value -> !value.isBlank())
+                    .toList();
+        }
+        return List.of();
     }
 
     private static void addDocumentContexts(
@@ -617,13 +645,14 @@ public final class Synthesizer {
             SyntheticData data,
             String sourceFile,
             Double syntheticInputQuality,
-            Double contextQuality) {
+            Double contextQuality,
+            List<String> contextSourceFiles) {
         var metadata = new LinkedHashMap<String, Object>();
         metadata.put("evolutions", List.copyOf(evolutions));
         if (syntheticInputQuality != null) {
             metadata.put("synthetic_input_quality", syntheticInputQuality);
         }
-        metadata.put("context_source_files", sourceFile == null ? List.of() : List.of(sourceFile));
+        metadata.put("context_source_files", List.copyOf(contextSourceFiles));
         metadata.put("context_quality", contextQuality);
         metadata.put("used_source_files", data.usedSourceFiles() == null ? List.of() : data.usedSourceFiles());
         return metadata;
@@ -634,14 +663,15 @@ public final class Synthesizer {
             ConversationalData data,
             String sourceFile,
             Double syntheticScenarioQuality,
-            Double contextQuality) {
+            Double contextQuality,
+            List<String> contextSourceFiles) {
         var metadata = new LinkedHashMap<String, Object>();
         metadata.put("evolutions", List.copyOf(evolutions));
         if (syntheticScenarioQuality != null) {
             metadata.put("synthetic_scenario_quality", syntheticScenarioQuality);
         }
         metadata.put("source_files", sourceFile);
-        metadata.put("context_source_files", sourceFile == null ? List.of() : List.of(sourceFile));
+        metadata.put("context_source_files", List.copyOf(contextSourceFiles));
         metadata.put("context_quality", contextQuality);
         metadata.put("used_source_files", data.usedSourceFiles() == null ? List.of() : data.usedSourceFiles());
         return metadata;
