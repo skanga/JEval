@@ -58,6 +58,35 @@ public record TestRun(
         return copyWith(testCases, updatedConversationalTestCases, addEvaluationCost(apiTestCase.evaluationCost()));
     }
 
+    public Map<String, Object> modelDump() {
+        return modelDump(false, false);
+    }
+
+    public Map<String, Object> modelDump(boolean byAlias) {
+        return modelDump(byAlias, false);
+    }
+
+    public Map<String, Object> modelDump(boolean byAlias, boolean excludeNulls) {
+        var dump = new LinkedHashMap<String, Object>();
+        put(dump, key("test_file", "testFile", byAlias), testFile, excludeNulls);
+        put(dump, key("test_cases", "testCases", byAlias), dumpLlmApiTestCases(byAlias), excludeNulls);
+        put(dump, key("conversational_test_cases", "conversationalTestCases", byAlias),
+                dumpConversationalApiTestCases(byAlias), excludeNulls);
+        put(dump, key("metrics_scores", "metricsScores", byAlias), metricsScores, excludeNulls);
+        put(dump, key("trace_metrics_scores", "traceMetricsScores", byAlias), dumpTraceMetricScores(), excludeNulls);
+        put(dump, "identifier", identifier, excludeNulls);
+        put(dump, "hyperparameters", hyperparameters, excludeNulls);
+        put(dump, "prompts", prompts, excludeNulls);
+        put(dump, key("test_passed", "testPassed", byAlias), testPassed, excludeNulls);
+        put(dump, key("test_failed", "testFailed", byAlias), testFailed, excludeNulls);
+        put(dump, key("run_duration", "runDuration", byAlias), runDuration, excludeNulls);
+        put(dump, key("evaluation_cost", "evaluationCost", byAlias), evaluationCost, excludeNulls);
+        put(dump, key("dataset_alias", "datasetAlias", byAlias), datasetAlias, excludeNulls);
+        put(dump, key("dataset_id", "datasetId", byAlias), datasetId, excludeNulls);
+        put(dump, "official", official, excludeNulls);
+        return dump;
+    }
+
     public MetricsScoresAggregation constructMetricsScores() {
         var aggregators = new LinkedHashMap<String, MetricScoresAggregator>();
         var traceAggregators = TraceMetricScoresAggregator.empty();
@@ -130,6 +159,38 @@ public record TestRun(
             return evaluationCost;
         }
         return evaluationCost == null ? additional : evaluationCost + additional;
+    }
+
+    private List<Map<String, Object>> dumpLlmApiTestCases(boolean byAlias) {
+        return testCases.stream().map(testCase -> testCase.modelDump(byAlias)).toList();
+    }
+
+    private List<Map<String, Object>> dumpConversationalApiTestCases(boolean byAlias) {
+        return conversationalTestCases.stream().map(testCase -> testCase.modelDump(byAlias)).toList();
+    }
+
+    private Map<String, Object> dumpTraceMetricScores() {
+        if (traceMetricsScores == null) {
+            return null;
+        }
+        var dump = new LinkedHashMap<String, Object>();
+        dump.put("agent", traceMetricsScores.agent());
+        dump.put("tool", traceMetricsScores.tool());
+        dump.put("retriever", traceMetricsScores.retriever());
+        dump.put("llm", traceMetricsScores.llm());
+        dump.put("base", traceMetricsScores.base());
+        return dump;
+    }
+
+    private static void put(Map<String, Object> dump, String key, Object value, boolean excludeNulls) {
+        if (excludeNulls && value == null) {
+            return;
+        }
+        dump.put(key, value);
+    }
+
+    private static String key(String snakeCase, String camelCase, boolean byAlias) {
+        return byAlias ? camelCase : snakeCase;
     }
 
     private TestRun copyWith(

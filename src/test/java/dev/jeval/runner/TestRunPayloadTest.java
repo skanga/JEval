@@ -84,6 +84,56 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void testRunModelDumpUsesDeepEvalAliasesAndCanExcludeNulls() {
+        var testCase = llmApiWithActualOutput("case", "actual");
+        var traceScores = new TraceMetricScores(
+                Map.of("planner", Map.of("faithfulness", new MetricScores("faithfulness", List.of(0.8), 1, 0, 0))),
+                null,
+                null,
+                null,
+                null);
+        var run = new TestRun(
+                "EvalTest.java",
+                List.of(testCase),
+                List.of(),
+                List.of(new MetricScores("faithfulness", List.of(0.8), 1, 0, 0)),
+                traceScores,
+                "run-id",
+                Map.of("model", "gpt"),
+                null,
+                1,
+                0,
+                2.5,
+                null,
+                "dataset",
+                "dataset-id",
+                true);
+
+        var dump = run.modelDump(true, true);
+        var nestedCase = ((List<Map<String, Object>>) dump.get("testCases")).getFirst();
+        var nestedTraceScores = (Map<String, Object>) dump.get("traceMetricsScores");
+
+        assertAll(
+                () -> assertEquals("EvalTest.java", dump.get("testFile")),
+                () -> assertEquals("run-id", dump.get("identifier")),
+                () -> assertEquals(1, dump.get("testPassed")),
+                () -> assertEquals(0, dump.get("testFailed")),
+                () -> assertEquals(2.5, dump.get("runDuration")),
+                () -> assertEquals("dataset", dump.get("datasetAlias")),
+                () -> assertEquals("dataset-id", dump.get("datasetId")),
+                () -> assertEquals(true, dump.get("official")),
+                () -> assertTrue(dump.containsKey("testCases")),
+                () -> assertTrue(dump.containsKey("conversationalTestCases")),
+                () -> assertTrue(dump.containsKey("metricsScores")),
+                () -> assertTrue(dump.containsKey("traceMetricsScores")),
+                () -> assertFalse(dump.containsKey("evaluationCost")),
+                () -> assertFalse(dump.containsKey("prompts")),
+                () -> assertEquals("actual", nestedCase.get("actualOutput")),
+                () -> assertFalse(nestedCase.containsKey("actual_output")),
+                () -> assertTrue(nestedTraceScores.containsKey("agent")));
+    }
+
+    @Test
     void constructMetricsScoresAggregatesMetricDataAcrossTestCaseTypes() {
         var singleTurn = llmApi(List.of(
                 metricData("faithfulness", 0.9, true),
@@ -287,6 +337,34 @@ class TestRunPayloadTest {
                 null,
                 null,
                 success,
+                List.of(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    private static LlmApiTestCase llmApiWithActualOutput(String name, String actualOutput) {
+        return new LlmApiTestCase(
+                name,
+                "input",
+                actualOutput,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
                 List.of(),
                 null,
                 null,
