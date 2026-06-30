@@ -20,6 +20,7 @@ public final class ConversationSimulator {
     private final String language;
     private final SimulationGraphRunner graphRunner;
     private final SimulationController stoppingController;
+    private List<ConversationalTestCase> simulatedConversations = List.of();
 
     public ConversationSimulator(ModelCallback modelCallback, EvaluationModel simulatorModel) {
         this(modelCallback, simulatorModel, "English");
@@ -47,6 +48,10 @@ public final class ConversationSimulator {
 
     public String language() {
         return language;
+    }
+
+    public List<ConversationalTestCase> simulatedConversations() {
+        return simulatedConversations;
     }
 
     public String generateFirstUserInput(ConversationalGolden golden) {
@@ -81,23 +86,45 @@ public final class ConversationSimulator {
         return turn;
     }
 
+    public List<ConversationalTestCase> simulate(List<ConversationalGolden> goldens) {
+        return simulate(goldens, 10);
+    }
+
     public List<ConversationalTestCase> simulate(List<ConversationalGolden> goldens, int maxUserSimulations) {
+        return simulate(goldens, maxUserSimulations, null);
+    }
+
+    public List<ConversationalTestCase> simulate(
+            List<ConversationalGolden> goldens,
+            int maxUserSimulations,
+            SimulationCompleteCallback onSimulationComplete) {
         if (maxUserSimulations <= 0) {
             throw new IllegalArgumentException("max_user_simulations must be a positive integer.");
         }
         Objects.requireNonNull(goldens, "goldens");
         var conversations = new ArrayList<ConversationalTestCase>();
         for (var index = 0; index < goldens.size(); index++) {
-            conversations.add(simulate(goldens.get(index), maxUserSimulations, index));
+            var conversation = simulate(goldens.get(index), maxUserSimulations, index);
+            conversations.add(conversation);
+            if (onSimulationComplete != null) {
+                onSimulationComplete.accept(conversation, index);
+            }
         }
-        return List.copyOf(conversations);
+        simulatedConversations = List.copyOf(conversations);
+        return simulatedConversations;
+    }
+
+    public ConversationalTestCase simulate(ConversationalGolden golden) {
+        return simulate(golden, 10);
     }
 
     public ConversationalTestCase simulate(ConversationalGolden golden, int maxUserSimulations) {
         if (maxUserSimulations <= 0) {
             throw new IllegalArgumentException("max_user_simulations must be a positive integer.");
         }
-        return simulate(golden, maxUserSimulations, 0);
+        var conversation = simulate(golden, maxUserSimulations, 0);
+        simulatedConversations = List.of(conversation);
+        return conversation;
     }
 
     private ConversationalTestCase simulate(ConversationalGolden golden, int maxUserSimulations, int index) {
@@ -178,6 +205,11 @@ public final class ConversationSimulator {
     @FunctionalInterface
     public interface ModelCallback {
         Turn generate(CallbackContext context);
+    }
+
+    @FunctionalInterface
+    public interface SimulationCompleteCallback {
+        void accept(ConversationalTestCase testCase, int index);
     }
 
     public record CallbackContext(

@@ -225,6 +225,50 @@ class ConversationSimulatorTest {
         assertEquals(List.of(), model.prompts());
     }
 
+    @Test
+    void simulateDefaultsToTenUserSimulationsAndRetainsConversationsLikeDeepEval() {
+        var responses = new ArrayList<String>();
+        for (var index = 1; index <= 10; index++) {
+            responses.add("{\"simulated_input\":\"question " + index + "\"}");
+        }
+        var model = new ScriptedModel(responses);
+        var simulator = new ConversationSimulator(
+                context -> new Turn("assistant", "answer to " + context.input()),
+                model);
+        var golden = ConversationalGolden.builder("long support flow").build();
+
+        var testCases = simulator.simulate(List.of(golden));
+
+        assertEquals(1, testCases.size());
+        assertEquals(20, testCases.getFirst().turns().size());
+        assertEquals("question 10", testCases.getFirst().turns().get(18).content());
+        assertEquals(testCases, simulator.simulatedConversations());
+    }
+
+    @Test
+    void simulateInvokesCompletionCallbackWithConversationAndIndexLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"simulated_input\":\"first question\"}",
+                "{\"simulated_input\":\"second question\"}"));
+        var simulator = new ConversationSimulator(
+                context -> new Turn("assistant", "answer to " + context.input()),
+                model);
+        var seenIndexes = new ArrayList<Integer>();
+        var seenScenarios = new ArrayList<String>();
+        var goldens = List.of(
+                ConversationalGolden.builder("first flow").build(),
+                ConversationalGolden.builder("second flow").build());
+
+        var testCases = simulator.simulate(goldens, 1, (testCase, index) -> {
+            seenIndexes.add(index);
+            seenScenarios.add(testCase.scenario());
+        });
+
+        assertEquals(List.of(0, 1), seenIndexes);
+        assertEquals(List.of("first flow", "second flow"), seenScenarios);
+        assertEquals(testCases, simulator.simulatedConversations());
+    }
+
     private static final class ScriptedModel implements EvaluationModel {
         private final List<String> responses;
         private final List<String> prompts = new ArrayList<>();
