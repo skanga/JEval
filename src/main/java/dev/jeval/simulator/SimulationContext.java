@@ -13,7 +13,8 @@ public record SimulationContext(
         int maxUserSimulations,
         Turn lastUserTurn,
         Turn lastAssistantTurn,
-        String language) {
+        String language,
+        ConversationSimulator simulator) {
 
     public SimulationContext {
         turns = turns == null ? List.of() : List.copyOf(turns);
@@ -28,8 +29,22 @@ public record SimulationContext(
             int simulatedUserTurns,
             int maxUserSimulations,
             Turn lastUserTurn,
+            Turn lastAssistantTurn,
+            String language) {
+        this(turns, golden, index, threadId, simulatedUserTurns, maxUserSimulations,
+                lastUserTurn, lastAssistantTurn, language, null);
+    }
+
+    public SimulationContext(
+            List<Turn> turns,
+            ConversationalGolden golden,
+            int index,
+            String threadId,
+            int simulatedUserTurns,
+            int maxUserSimulations,
+            Turn lastUserTurn,
             Turn lastAssistantTurn) {
         this(turns, golden, index, threadId, simulatedUserTurns, maxUserSimulations,
-                lastUserTurn, lastAssistantTurn, "English");
+                lastUserTurn, lastAssistantTurn, "English", null);
     }
 }

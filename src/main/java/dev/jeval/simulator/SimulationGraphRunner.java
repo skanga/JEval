@@ -28,6 +28,16 @@ public final class SimulationGraphRunner {
             ConversationalGolden golden,
             String threadId,
             String language) {
+        return run(null, state, turns, golden, threadId, language);
+    }
+
+    public TurnEmission run(
+            ConversationSimulator simulator,
+            GraphConversationState state,
+            List<Turn> turns,
+            ConversationalGolden golden,
+            String threadId,
+            String language) {
         var node = state.current();
         var visits = state.visits(node);
         if (node.maxVisits() != null && visits >= node.maxVisits()) {
@@ -42,7 +52,8 @@ public final class SimulationGraphRunner {
                 node.maxVisits() == null ? Integer.MAX_VALUE : node.maxVisits(),
                 lastTurn(turns, "user"),
                 lastTurn(turns, "assistant"),
-                language));
+                language,
+                simulator));
         state.incrementVisits(node);
         return new TurnEmission(turn, node.terminal());
     }

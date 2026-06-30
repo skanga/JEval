@@ -49,6 +49,25 @@ class SimulationGraphRunnerTest {
     }
 
     @Test
+    void graphActionReceivesOwningSimulatorLikeDeepEval() {
+        var root = SimulationNode.ofText(context -> {
+            assertTrue(context.simulator() instanceof ConversationSimulator);
+            return "simulator=" + context.simulator().language();
+        }, true, null, "simulator-aware");
+        var model = new ScriptedModel(List.of());
+        var simulator = new ConversationSimulator(
+                context -> new Turn("assistant", "reply"),
+                model,
+                "Spanish",
+                root,
+                SimulationController.custom(context -> SimulationController.proceed()));
+
+        var testCase = simulator.simulate(golden(), 1);
+
+        assertEquals("simulator=Spanish", testCase.turns().getFirst().content());
+    }
+
+    @Test
     void advanceRoutesToSelectedEdgeAndStaysOnNoneOrOutOfRangeLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 """

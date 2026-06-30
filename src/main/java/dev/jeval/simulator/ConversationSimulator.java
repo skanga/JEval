@@ -15,6 +15,17 @@ import java.util.UUID;
 
 public final class ConversationSimulator {
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final SimulationPromptTemplate DEFAULT_TEMPLATE = new SimulationPromptTemplate() {
+        @Override
+        public String simulateFirstUserTurn(ConversationalGolden golden, String language) {
+            return SimulationTemplate.simulateFirstUserTurn(golden, language);
+        }
+
+        @Override
+        public String simulateUserTurn(ConversationalGolden golden, List<Turn> turns, String language) {
+            return SimulationTemplate.simulateUserTurn(golden, turns, language);
+        }
+    };
 
     private final ModelCallback modelCallback;
     private final EvaluationModel simulatorModel;
@@ -47,6 +58,39 @@ public final class ConversationSimulator {
                 : stoppingController;
     }
 
+    public static SimulationNode defaultSimulationNode() {
+        return defaultSimulationNode(DEFAULT_TEMPLATE, false);
+    }
+
+    public static SimulationNode defaultSimulationNode(boolean terminal) {
+        return defaultSimulationNode(DEFAULT_TEMPLATE, terminal);
+    }
+
+    public static SimulationNode defaultSimulationNode(SimulationPromptTemplate template) {
+        return defaultSimulationNode(template, false);
+    }
+
+    public static SimulationNode defaultSimulationNode(SimulationPromptTemplate template, boolean terminal) {
+        return defaultSimulationNode(template, terminal, null, "default_simulation_node");
+    }
+
+    public static SimulationNode defaultSimulationNode(
+            SimulationPromptTemplate template,
+            boolean terminal,
+            Integer maxVisits,
+            String name) {
+        var promptTemplate = template == null ? DEFAULT_TEMPLATE : template;
+        return SimulationNode.ofText(context -> {
+            var simulator = context.simulator();
+            if (simulator == null) {
+                throw new IllegalArgumentException("default simulation node requires a ConversationSimulator context.");
+            }
+            return context.turns().isEmpty()
+                    ? simulator.generateFirstUserInput(context.golden(), promptTemplate)
+                    : simulator.generateNextUserInput(context.golden(), context.turns(), promptTemplate);
+        }, terminal, maxVisits, name);
+    }
+
     public String language() {
         return language;
     }
@@ -56,12 +100,20 @@ public final class ConversationSimulator {
     }
 
     public String generateFirstUserInput(ConversationalGolden golden) {
-        var prompt = SimulationTemplate.simulateFirstUserTurn(golden, language);
+        return generateFirstUserInput(golden, DEFAULT_TEMPLATE);
+    }
+
+    public String generateFirstUserInput(ConversationalGolden golden, SimulationPromptTemplate template) {
+        var prompt = (template == null ? DEFAULT_TEMPLATE : template).simulateFirstUserTurn(golden, language);
         return generateSchema(prompt).simulatedInput();
     }
 
     public String generateNextUserInput(ConversationalGolden golden, List<Turn> turns) {
-        var prompt = SimulationTemplate.simulateUserTurn(golden, turns, language);
+        return generateNextUserInput(golden, turns, DEFAULT_TEMPLATE);
+    }
+
+    public String generateNextUserInput(ConversationalGolden golden, List<Turn> turns, SimulationPromptTemplate template) {
+        var prompt = (template == null ? DEFAULT_TEMPLATE : template).simulateUserTurn(golden, turns, language);
         return generateSchema(prompt).simulatedInput();
     }
 
@@ -149,7 +201,7 @@ public final class ConversationSimulator {
             if (!turns.isEmpty() && "user".equals(turns.getLast().role())) {
                 input = turns.getLast().content();
             } else {
-                var emission = graphRunner.run(state, turns, golden, threadId, language);
+                var emission = graphRunner.run(this, state, turns, golden, threadId, language);
                 if (emission.turn() == null) {
                     break;
                 }
@@ -170,12 +222,6 @@ public final class ConversationSimulator {
             }
         }
         return toTestCase(golden, turns);
-    }
-
-    private SimulationNode defaultSimulationNode() {
-        return SimulationNode.ofText(context -> context.turns().isEmpty()
-                ? generateFirstUserInput(context.golden())
-                : generateNextUserInput(context.golden(), context.turns()), false, null, "default_simulation_node");
     }
 
     private static ConversationalTestCase toTestCase(ConversationalGolden golden, List<Turn> turns) {

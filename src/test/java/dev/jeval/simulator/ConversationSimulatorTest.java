@@ -267,6 +267,33 @@ class ConversationSimulatorTest {
     }
 
     @Test
+    void defaultSimulationNodeUsesCustomTemplateLikeDeepEval() {
+        var model = new ScriptedModel(List.of("{\"simulated_input\":\"Formal opening\"}"));
+        var template = new SimulationPromptTemplate() {
+            @Override
+            public String simulateFirstUserTurn(ConversationalGolden golden, String language) {
+                return "FORMAL_STYLE " + language + " " + golden.scenario();
+            }
+
+            @Override
+            public String simulateUserTurn(ConversationalGolden golden, List<Turn> turns, String language) {
+                return "NEXT_STYLE " + turns.size();
+            }
+        };
+        var simulator = new ConversationSimulator(
+                context -> new Turn("assistant", "reply"),
+                model,
+                "Spanish",
+                ConversationSimulator.defaultSimulationNode(template, true),
+                SimulationController.custom(context -> SimulationController.proceed()));
+
+        var testCase = simulator.simulate(ConversationalGolden.builder("ticket purchase").build(), 3);
+
+        assertEquals("Formal opening", testCase.turns().getFirst().content());
+        assertEquals(List.of("FORMAL_STYLE Spanish ticket purchase"), model.prompts());
+    }
+
+    @Test
     void simulateDefaultsToTenUserSimulationsAndRetainsConversationsLikeDeepEval() {
         var responses = new ArrayList<String>();
         for (var index = 1; index <= 10; index++) {
