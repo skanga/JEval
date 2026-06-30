@@ -80,6 +80,23 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void createsGeminiModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_GEMINI_MODEL=YES
+                GEMINI_MODEL_NAME=gemini-2.5-flash
+                GOOGLE_API_KEY=google-test
+                TEMPERATURE=0.2
+                MAX_TOKENS=128
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForOpenRouterGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -109,6 +126,20 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void usesModelOverrideForGeminiGenerationLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_GEMINI_MODEL=YES
+                GOOGLE_API_KEY=google-test
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "gemini-2.5-flash");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForOllamaGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -127,7 +158,7 @@ class LangChain4jProviderModelsTest {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));
 
-        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-ollama, or set-openrouter, or pass --responses-file.",
+        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-ollama, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
 }

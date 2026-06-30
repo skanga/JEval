@@ -3,6 +3,7 @@ package dev.jeval.cli;
 import dev.jeval.EvaluationModel;
 import dev.jeval.langchain4j.LangChain4jEvaluationModel;
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
+import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import java.io.IOException;
@@ -27,12 +28,16 @@ final class LangChain4jProviderModels {
         if ("YES".equals(config.get("USE_ANTHROPIC_MODEL"))) {
             return new LangChain4jEvaluationModel(anthropic(config, modelOverride));
         }
+        if ("YES".equals(config.get("USE_GEMINI_MODEL"))
+                && !"true".equalsIgnoreCase(value(config, "GOOGLE_GENAI_USE_VERTEXAI", "false"))) {
+            return new LangChain4jEvaluationModel(gemini(config, modelOverride));
+        }
         if ("YES".equals(config.get("USE_LOCAL_MODEL"))
                 && (present(config, "OLLAMA_MODEL_NAME") || present(modelOverride))) {
             return new LangChain4jEvaluationModel(ollama(config, modelOverride));
         }
         throw new IllegalArgumentException(
-                "No supported provider is configured; run set-openai, set-anthropic, set-ollama, or set-openrouter, or pass --responses-file.");
+                "No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-ollama, or set-openrouter, or pass --responses-file.");
     }
 
     private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
@@ -60,6 +65,15 @@ final class LangChain4jProviderModels {
                 .modelName(modelName(config, "ANTHROPIC_MODEL_NAME", modelOverride, "claude-3-5-haiku-latest"));
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
+        return builder.build();
+    }
+
+    private static GoogleAiGeminiChatModel gemini(Map<String, String> config, String modelOverride) {
+        var builder = GoogleAiGeminiChatModel.builder()
+                .apiKey(required(config, "GOOGLE_API_KEY"))
+                .modelName(modelName(config, "GEMINI_MODEL_NAME", modelOverride, "gemini-2.5-flash"));
+        optionalDouble(config, "TEMPERATURE", builder::temperature);
+        optionalInteger(config, "MAX_TOKENS", builder::maxOutputTokens);
         return builder.build();
     }
 
