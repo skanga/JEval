@@ -500,6 +500,10 @@ final class GenerateCommand {
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("\"score\""))) {
                 return "{\"feedback\":\"The conversational scenario is clear.\",\"score\":1.0}";
             }
+            if (isPromptStructureExtractionPrompt(prompt)
+                    && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("\"scenario\""))) {
+                return "{\"scenario\":\"Example users\",\"task\":\"Answer the user\",\"input_format\":\"One user request\"}";
+            }
             if (isRewritePrompt(prompt)
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("rewritten_input"))) {
                 return "{\"rewritten_input\":\"" + escapeJson(rewriteInput(prompt)) + "\"}";
@@ -551,6 +555,10 @@ final class GenerateCommand {
 
     private static boolean isSyntheticScenarioEvaluationPrompt(String prompt) {
         return prompt.startsWith("Evaluate the provided conversational scenario");
+    }
+
+    private static boolean isPromptStructureExtractionPrompt(String prompt) {
+        return prompt.startsWith("Analyze the following user inputs and infer the common prompt structure");
     }
 
     private static boolean isConversationalExpectedOutcomePrompt(String prompt) {

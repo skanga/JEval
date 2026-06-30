@@ -35,6 +35,15 @@ final class SynthesizerSchemas {
         }
     }
 
+    static StylingConfig parseStylingConfig(String json) {
+        try {
+            var styling = JSON.readValue(json, PromptStyling.class);
+            return new StylingConfig(styling.scenario(), styling.task(), styling.inputFormat(), null);
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Unable to parse prompt styling JSON", error);
+        }
+    }
+
     static InputFeedback parseInputFeedback(String json) {
         try {
             return JSON.readValue(json, InputFeedback.class);
@@ -88,6 +97,12 @@ final class SynthesizerSchemas {
     }
 
     private record SyntheticInput(String input) {
+    }
+
+    private record PromptStyling(
+            String scenario,
+            String task,
+            @JsonAlias("input_format") String inputFormat) {
     }
 
     record InputFeedback(String feedback, double score) {

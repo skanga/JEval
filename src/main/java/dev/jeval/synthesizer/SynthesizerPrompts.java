@@ -59,6 +59,16 @@ final class SynthesizerPrompts {
                 """.formatted(numGoldens, shape, String.join("\n", inputs));
     }
 
+    static String extractPromptStructureFromInputs(List<String> inputs) {
+        return """
+                Analyze the following user inputs and infer the common prompt structure.
+                Return only JSON in this shape: {"scenario":"...","task":"...","input_format":"..."}.
+
+                Inputs:
+                %s
+                """.formatted(String.join("\n", inputs));
+    }
+
     static String generateExpectedOutput(List<String> context, String input, String expectedOutputFormat) {
         return """
                 Generate the expected output for the input using only the context.

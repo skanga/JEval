@@ -427,7 +427,9 @@ class SynthesizerTest {
     @Test
     void generatesGoldensFromExistingGoldensWithoutStylingConfig() {
         var model = new ScriptedModel(List.of(
-                "{\"data\":[{\"input\":\"What is a similar question?\"}]}"));
+                "{\"scenario\":\"students learning geography\",\"task\":\"ask study questions\",\"input_format\":\"one question\"}",
+                "{\"data\":[{\"input\":\"Extracted-style question?\"}]}",
+                "{\"input\":\"Extracted-style question?\"}"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var original = Golden.builder("What is the capital of France?")
@@ -437,8 +439,32 @@ class SynthesizerTest {
         var goldens = synthesizer.generateGoldensFromGoldens(List.of(original), 1, false);
 
         assertEquals(1, goldens.size());
-        assertEquals("What is a similar question?", goldens.getFirst().input());
+        assertEquals("Extracted-style question?", goldens.getFirst().input());
         assertEquals(null, goldens.getFirst().expectedOutput());
+        assertTrue(model.prompts().getFirst().contains("infer the common prompt structure"));
+        assertTrue(model.prompts().get(1).contains("Generate 1 synthetic user inputs for this scenario"));
+    }
+
+    @Test
+    void generateGoldensFromPlainGoldensUsesScratchBranchWhenStyledLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"Scratch-style question?\"}]}",
+                "{\"input\":\"Scratch-style question?\"}"));
+        var synthesizer = new Synthesizer(
+                model,
+                new StylingConfig("students learning geography", "ask study questions", "one question", null),
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+        var original = Golden.builder("What is the capital of France?").build();
+
+        var goldens = synthesizer.generateGoldensFromGoldens(List.of(original), 2, false);
+
+        assertEquals(List.of("Scratch-style question?"), goldens.stream().map(Golden::input).toList());
+        assertTrue(model.prompts().getFirst().contains("Generate 2 synthetic user inputs for this scenario"));
+        assertTrue(model.prompts().getFirst().contains("students learning geography"));
+        assertEquals(false, model.prompts().getFirst().contains("similar in style and domain"));
     }
 
     @Test

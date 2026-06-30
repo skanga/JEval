@@ -179,14 +179,21 @@ public final class Synthesizer {
     }
 
     public List<Golden> generateGoldensFromScratch(int numGoldens) {
-        validateScratchStylingConfig();
+        validateScratchStylingConfig(stylingConfig);
+        return generateGoldensFromScratch(numGoldens, stylingConfig);
+    }
+
+    private List<Golden> generateGoldensFromScratch(int numGoldens, StylingConfig activeStylingConfig) {
         var data = SynthesizerSchemas.parseSyntheticData(model.generate(
                 SynthesizerPrompts.generateSyntheticInputsFromScratch(
-                        stylingConfig.scenario(), stylingConfig.task(), stylingConfig.inputFormat(), numGoldens)));
+                        activeStylingConfig.scenario(), activeStylingConfig.task(),
+                        activeStylingConfig.inputFormat(), numGoldens)));
         var qualifiedData = rewriteInputs(List.of(), data);
         var goldens = new ArrayList<Golden>();
         for (var item : qualifiedData) {
-            goldens.add(golden(item.data(), null, null, false, item.score(), null, List.of(), goldens.size()));
+            goldens.add(golden(
+                    item.data(), null, null, false, item.score(), null, List.of(), goldens.size(),
+                    activeStylingConfig));
         }
         return retainGoldens(goldens);
     }
@@ -210,15 +217,11 @@ public final class Synthesizer {
         if (!contexts.isEmpty()) {
             generated.addAll(generateGoldensFromContexts(contexts, includeExpectedOutput, maxGoldensPerGolden, sourceFiles));
         } else if (!inputs.isEmpty()) {
-            var data = SynthesizerSchemas.parseSyntheticData(model.generate(
-                    SynthesizerPrompts.generateSyntheticInputsFromGoldens(
-                            inputs, inputs.size() * maxGoldensPerGolden, includeExpectedOutput)));
-            var qualifiedData = rewriteInputs(inputs, data);
-            for (var item : qualifiedData) {
-                generated.add(golden(
-                        item.data(), null, null, includeExpectedOutput, item.score(), null, List.of(),
-                        generated.size()));
-            }
+            var activeStylingConfig = stylingConfig == null
+                    ? extractStylingConfig(inputs)
+                    : stylingConfig;
+            validateScratchStylingConfig(activeStylingConfig);
+            generated.addAll(generateGoldensFromScratch(inputs.size() * maxGoldensPerGolden, activeStylingConfig));
         }
         return retainGoldens(generated);
     }
@@ -401,6 +404,20 @@ public final class Synthesizer {
             Double contextQuality,
             List<String> contextSourceFiles,
             int goldenIndex) {
+        return golden(data, context, sourceFile, includeExpectedOutput, syntheticInputQuality,
+                contextQuality, contextSourceFiles, goldenIndex, stylingConfig);
+    }
+
+    private Golden golden(
+            SyntheticData data,
+            List<String> context,
+            String sourceFile,
+            boolean includeExpectedOutput,
+            Double syntheticInputQuality,
+            Double contextQuality,
+            List<String> contextSourceFiles,
+            int goldenIndex,
+            StylingConfig activeStylingConfig) {
         var evolutions = new ArrayList<String>();
         var input = data.input();
         for (var i = 0; i < evolutionConfig.numEvolutions(); i++) {
@@ -408,11 +425,11 @@ public final class Synthesizer {
             input = SynthesizerSchemas.parseRewrittenInput(model.generate(SynthesizerPrompts.evolveInput(input, evolution)));
             evolutions.add(evolution.value());
         }
-        if (shouldStyle(stylingConfig)) {
+        if (shouldStyle(activeStylingConfig)) {
             input = SynthesizerSchemas.parseInput(model.generate(
-                    SynthesizerPrompts.rewriteEvolvedInput(input, stylingConfig)));
+                    SynthesizerPrompts.rewriteEvolvedInput(input, activeStylingConfig)));
         }
-        var expectedOutput = includeExpectedOutput ? expectedOutput(data, context, input) : null;
+        var expectedOutput = includeExpectedOutput ? expectedOutput(data, context, input, activeStylingConfig) : null;
         return Golden.builder(input)
                 .expectedOutput(expectedOutput)
                 .context(context)
@@ -422,12 +439,16 @@ public final class Synthesizer {
                 .build();
     }
 
-    private String expectedOutput(SyntheticData data, List<String> context, String input) {
+    private String expectedOutput(
+            SyntheticData data,
+            List<String> context,
+            String input,
+            StylingConfig activeStylingConfig) {
         if (context == null) {
             return data.expectedOutput();
         }
         return model.generate(SynthesizerPrompts.generateExpectedOutput(
-                context, input, stylingConfig == null ? null : stylingConfig.expectedOutputFormat()));
+                context, input, activeStylingConfig == null ? null : activeStylingConfig.expectedOutputFormat()));
     }
 
     private List<QualifiedSyntheticData> rewriteInputs(List<String> context, List<SyntheticData> data) {
@@ -641,11 +662,16 @@ public final class Synthesizer {
         return evolutions.get(index % evolutions.size());
     }
 
-    private void validateScratchStylingConfig() {
-        if (stylingConfig == null
-                || stylingConfig.scenario() == null
-                || stylingConfig.task() == null
-                || stylingConfig.inputFormat() == null) {
+    private StylingConfig extractStylingConfig(List<String> inputs) {
+        return SynthesizerSchemas.parseStylingConfig(model.generate(
+                SynthesizerPrompts.extractPromptStructureFromInputs(inputs.stream().limit(10).toList())));
+    }
+
+    private void validateScratchStylingConfig(StylingConfig config) {
+        if (config == null
+                || config.scenario() == null
+                || config.task() == null
+                || config.inputFormat() == null) {
             throw new IllegalStateException(
                     "`scenario`, `task`, and `input_format` in `styling_config` must not be None when generation goldens from scratch.");
         }

@@ -1114,7 +1114,7 @@ class JEvalCliTest {
         assertEquals(0, exit, text(err));
         var generated = Files.readString(output.resolve("from-jsonl.json"));
         assertTrue(generated.contains("\"input\" : \"New question?\""));
-        assertTrue(generated.contains("\"expected_output\" : \"New answer\""));
+        assertTrue(generated.contains("\"expected_output\" : null"));
     }
 
     @Test
@@ -1139,7 +1139,7 @@ class JEvalCliTest {
         assertEquals(0, exit, text(err));
         var generated = Files.readString(output.resolve("from-csv.json"));
         assertTrue(generated.contains("\"input\" : \"Csv question?\""));
-        assertTrue(generated.contains("\"expected_output\" : \"Csv answer\""));
+        assertTrue(generated.contains("\"expected_output\" : null"));
     }
 
     @Test
