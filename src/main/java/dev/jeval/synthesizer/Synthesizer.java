@@ -166,7 +166,7 @@ public final class Synthesizer {
                 : null;
         var data = SynthesizerSchemas.parseSyntheticData(
                 model.generate(SynthesizerPrompts.generateSyntheticInputs(
-                        context, maxGoldensPerContext, includeExpectedOutput)));
+                        context, maxGoldensPerContext, includeExpectedOutput, contextSourceFiles)));
         var qualifiedData = rewriteInputs(context, data);
         for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(golden(item.data(), context, sourceFile, includeExpectedOutput,
@@ -288,7 +288,8 @@ public final class Synthesizer {
                 : null;
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                 SynthesizerPrompts.generateSyntheticConversationalScenarios(
-                        context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome)));
+                        context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome,
+                        contextSourceFiles)));
         var qualifiedData = rewriteScenarios(context, data);
         for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(conversationalGolden(

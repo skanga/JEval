@@ -60,6 +60,9 @@ class SynthesizerTest {
         assertEquals("policy.md", goldens.getFirst().sourceFile());
         assertEquals(List.of("policy.md", "faq.md"),
                 goldens.getFirst().additionalMetadata().get("context_source_files"));
+        assertTrue(model.prompts().getFirst().contains("policy.md"));
+        assertTrue(model.prompts().getFirst().contains("faq.md"));
+        assertTrue(model.prompts().getFirst().contains("used_source_files"));
     }
 
     @Test
@@ -412,6 +415,9 @@ class SynthesizerTest {
         assertEquals("policy.md", goldens.getFirst().additionalMetadata().get("source_files"));
         assertEquals(List.of("policy.md", "faq.md"),
                 goldens.getFirst().additionalMetadata().get("context_source_files"));
+        assertTrue(model.prompts().getFirst().contains("policy.md"));
+        assertTrue(model.prompts().getFirst().contains("faq.md"));
+        assertTrue(model.prompts().getFirst().contains("used_source_files"));
     }
 
     @Test

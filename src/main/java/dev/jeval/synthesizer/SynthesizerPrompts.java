@@ -10,16 +10,26 @@ final class SynthesizerPrompts {
             List<String> context,
             int maxGoldensPerContext,
             boolean includeExpectedOutput) {
+        return generateSyntheticInputs(context, maxGoldensPerContext, includeExpectedOutput, List.of());
+    }
+
+    static String generateSyntheticInputs(
+            List<String> context,
+            int maxGoldensPerContext,
+            boolean includeExpectedOutput,
+            List<String> availableSourceFiles) {
         var shape = includeExpectedOutput
                 ? "{\"data\":[{\"input\":\"...\",\"expected_output\":\"...\"}]}"
                 : "{\"data\":[{\"input\":\"...\"}]}";
+        var sourceFilesSection = sourceFilesSection(availableSourceFiles, "input");
         return """
                 Generate up to %d synthetic user inputs from the context below.
                 Return only JSON in this shape: %s.
+                %s
 
                 Context:
                 %s
-                """.formatted(maxGoldensPerContext, shape, String.join("\n", context));
+                """.formatted(maxGoldensPerContext, shape, sourceFilesSection, String.join("\n", context));
     }
 
     static String generateSyntheticInputsFromScratch(String scenario, String task, String inputFormat, int numGoldens) {
@@ -94,12 +104,24 @@ final class SynthesizerPrompts {
             int maxGoldensPerContext,
             ConversationalStylingConfig stylingConfig,
             boolean includeExpectedOutcome) {
+        return generateSyntheticConversationalScenarios(
+                context, maxGoldensPerContext, stylingConfig, includeExpectedOutcome, List.of());
+    }
+
+    static String generateSyntheticConversationalScenarios(
+            List<String> context,
+            int maxGoldensPerContext,
+            ConversationalStylingConfig stylingConfig,
+            boolean includeExpectedOutcome,
+            List<String> availableSourceFiles) {
         var shape = includeExpectedOutcome
                 ? "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}],\"expected_outcome\":\"...\"}]}"
                 : "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}]}]}";
+        var sourceFilesSection = sourceFilesSection(availableSourceFiles, "scenario");
         return """
                 Generate up to %d synthetic multi-turn conversation scenarios from the context below.
                 Return only JSON in this shape: %s.
+                %s
 
                 Scenario context: %s
                 Conversational task: %s
@@ -108,10 +130,23 @@ final class SynthesizerPrompts {
                 Context:
                 %s
                 """.formatted(maxGoldensPerContext, shape,
+                sourceFilesSection,
                 stylingConfig == null ? "" : stylingConfig.scenarioContext(),
                 stylingConfig == null ? "" : stylingConfig.conversationalTask(),
                 stylingConfig == null ? "" : stylingConfig.participantRoles(),
                 String.join("\n", context));
+    }
+
+    private static String sourceFilesSection(List<String> availableSourceFiles, String itemKey) {
+        if (availableSourceFiles == null || availableSourceFiles.size() < 2) {
+            return "";
+        }
+        return """
+
+                This context is constructed from multiple files with these source labels: %s.
+                For each generated item, include a `used_source_files` key listing only the source labels actually used to form that `%s`.
+                `used_source_files` MUST be a JSON array of strings and each value MUST come from: %s.
+                """.formatted(availableSourceFiles, itemKey, availableSourceFiles);
     }
 
     static String evaluateSyntheticScenario(String scenario) {
