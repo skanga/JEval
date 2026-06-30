@@ -1,7 +1,9 @@
 package dev.jeval.runner;
 
 import dev.jeval.ConversationalApiTestCase;
+import dev.jeval.ConversationalTestCase;
 import dev.jeval.LlmApiTestCase;
+import dev.jeval.LlmTestCase;
 import dev.jeval.MetricData;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,6 +84,18 @@ public record TestRun(
                         ConversationalApiTestCase::withOrder));
     }
 
+    public TestRun setDatasetProperties(LlmTestCase testCase) {
+        return copyWithDatasetProperties(
+                datasetAlias == null ? testCase.datasetAlias() : datasetAlias,
+                datasetId == null ? testCase.datasetId() : datasetId);
+    }
+
+    public TestRun setDatasetProperties(ConversationalTestCase testCase) {
+        return copyWithDatasetProperties(
+                datasetAlias == null ? testCase.datasetAlias() : datasetAlias,
+                datasetId == null ? testCase.datasetId() : datasetId);
+    }
+
     private Double addEvaluationCost(Double additional) {
         if (additional == null) {
             return evaluationCost;
@@ -132,6 +146,25 @@ public record TestRun(
 
     private TestRun copyWithSortedTestCases(
             List<LlmApiTestCase> testCases, List<ConversationalApiTestCase> conversationalTestCases) {
+        return new TestRun(
+                testFile,
+                testCases,
+                conversationalTestCases,
+                metricsScores,
+                traceMetricsScores,
+                identifier,
+                hyperparameters,
+                prompts,
+                testPassed,
+                testFailed,
+                runDuration,
+                evaluationCost,
+                datasetAlias,
+                datasetId,
+                official);
+    }
+
+    private TestRun copyWithDatasetProperties(String datasetAlias, String datasetId) {
         return new TestRun(
                 testFile,
                 testCases,

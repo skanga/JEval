@@ -7,8 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.ConversationalApiTestCase;
+import dev.jeval.ConversationalTestCase;
 import dev.jeval.LlmApiTestCase;
+import dev.jeval.LlmTestCase;
 import dev.jeval.MetricData;
+import dev.jeval.Turn;
 import dev.jeval.prompt.PromptInterpolationType;
 import dev.jeval.prompt.PromptMessage;
 import java.util.ArrayList;
@@ -140,6 +143,48 @@ class TestRunPayloadTest {
                 () -> assertEquals(0, duplicateSingleTurnA.order()),
                 () -> assertEquals(0, duplicateSingleTurnB.order()),
                 () -> assertEquals(1, explicitConversation.order()));
+    }
+
+    @Test
+    void setDatasetPropertiesCopiesFirstUnsetDatasetAliasAndId() {
+        var singleTurn = LlmTestCase.builder("input")
+                .datasetAlias("single-alias")
+                .datasetId("single-id")
+                .build();
+        var conversational = ConversationalTestCase.builder(List.of(new Turn("user", "hello")))
+                .datasetAlias("conversation-alias")
+                .datasetId("conversation-id")
+                .build();
+        var preset = new TestRun(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                0.0,
+                null,
+                "existing-alias",
+                "existing-id",
+                false);
+
+        var fromSingleTurn = new TestRun().setDatasetProperties(singleTurn);
+        var fromConversation = new TestRun().setDatasetProperties(conversational);
+        var unchanged = preset.setDatasetProperties(singleTurn);
+
+        assertAll(
+                () -> assertEquals("single-alias", fromSingleTurn.datasetAlias()),
+                () -> assertEquals("single-id", fromSingleTurn.datasetId()),
+                () -> assertEquals("conversation-alias", fromConversation.datasetAlias()),
+                () -> assertEquals("conversation-id", fromConversation.datasetId()),
+                () -> assertEquals("existing-alias", unchanged.datasetAlias()),
+                () -> assertEquals("existing-id", unchanged.datasetId()),
+                () -> assertEquals(0.0, unchanged.runDuration()),
+                () -> assertEquals(List.of(), unchanged.testCases()));
     }
 
     @Test
