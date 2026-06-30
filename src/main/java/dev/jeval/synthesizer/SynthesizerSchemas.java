@@ -27,6 +27,14 @@ final class SynthesizerSchemas {
         }
     }
 
+    static String parseInput(String json) {
+        try {
+            return JSON.readValue(json, SyntheticInput.class).input();
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Unable to parse synthetic input JSON", error);
+        }
+    }
+
     static InputFeedback parseInputFeedback(String json) {
         try {
             return JSON.readValue(json, InputFeedback.class);
@@ -69,6 +77,9 @@ final class SynthesizerSchemas {
     }
 
     private record RewrittenInput(@JsonAlias("rewritten_input") String rewrittenInput) {
+    }
+
+    private record SyntheticInput(String input) {
     }
 
     record InputFeedback(String feedback, double score) {

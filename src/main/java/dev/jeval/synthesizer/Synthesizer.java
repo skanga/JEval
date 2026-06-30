@@ -412,6 +412,10 @@ public final class Synthesizer {
             input = SynthesizerSchemas.parseRewrittenInput(model.generate(SynthesizerPrompts.evolveInput(input, evolution)));
             evolutions.add(evolution.value());
         }
+        if (stylingConfig != null && stylingConfig.inputFormat() != null) {
+            input = SynthesizerSchemas.parseInput(model.generate(
+                    SynthesizerPrompts.rewriteEvolvedInput(input, stylingConfig)));
+        }
         var expectedOutput = includeExpectedOutput ? expectedOutput(data, context, input) : null;
         return Golden.builder(input)
                 .expectedOutput(expectedOutput)

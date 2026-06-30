@@ -504,6 +504,10 @@ final class GenerateCommand {
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("rewritten_input"))) {
                 return "{\"rewritten_input\":\"" + escapeJson(rewriteInput(prompt)) + "\"}";
             }
+            if (isEvolvedInputStylePrompt(prompt)
+                    && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("\"input\""))) {
+                return "{\"input\":\"" + escapeJson(styledInput(prompt)) + "\"}";
+            }
             if (isScenarioEvolutionPrompt(prompt)
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("rewritten_scenario"))) {
                 return "{\"rewritten_scenario\":\"" + escapeJson(rewriteScenario(prompt)) + "\"}";
@@ -521,6 +525,10 @@ final class GenerateCommand {
 
     private static boolean isScenarioEvolutionPrompt(String prompt) {
         return prompt.startsWith("Rewrite the conversational scenario using this evolution:");
+    }
+
+    private static boolean isEvolvedInputStylePrompt(String prompt) {
+        return prompt.startsWith("Given the evolved input");
     }
 
     private static boolean isSyntheticInputEvaluationPrompt(String prompt) {
@@ -546,6 +554,18 @@ final class GenerateCommand {
         }
         var start = index + marker.length();
         var end = prompt.indexOf(contextMarker, start);
+        return (end < 0 ? prompt.substring(start) : prompt.substring(start, end)).trim();
+    }
+
+    private static String styledInput(String prompt) {
+        var marker = "Evolved Input:";
+        var scenarioMarker = "Scenario:";
+        var index = prompt.indexOf(marker);
+        if (index < 0) {
+            return "";
+        }
+        var start = index + marker.length();
+        var end = prompt.indexOf(scenarioMarker, start);
         return (end < 0 ? prompt.substring(start) : prompt.substring(start, end)).trim();
     }
 

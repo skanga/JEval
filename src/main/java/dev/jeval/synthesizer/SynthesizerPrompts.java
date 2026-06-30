@@ -99,6 +99,24 @@ final class SynthesizerPrompts {
                 """.formatted(String.join("\n", context == null ? List.of() : context), input, feedback);
     }
 
+    static String rewriteEvolvedInput(String input, StylingConfig stylingConfig) {
+        return """
+                Given the evolved input, generate a JSON object with an `input` key.
+                Change the evolved input as little as possible while matching the scenario, task, and input format.
+
+                Evolved Input:
+                %s
+
+                Scenario: %s
+                Task: %s
+                Input Format: %s
+                """.formatted(
+                input,
+                stylingConfig == null ? "" : stylingConfig.scenario(),
+                stylingConfig == null ? "" : stylingConfig.task(),
+                stylingConfig == null ? "" : stylingConfig.inputFormat());
+    }
+
     static String generateSyntheticConversationalScenarios(
             List<String> context,
             int maxGoldensPerContext,

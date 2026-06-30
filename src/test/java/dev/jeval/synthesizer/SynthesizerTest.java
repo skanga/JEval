@@ -287,7 +287,7 @@ class SynthesizerTest {
                 "{\"rewritten_input\":\"second evolved\"}"));
         var synthesizer = new Synthesizer(
                 model,
-                new StylingConfig("students learning geography", "ask study questions", "one question", null),
+                new StylingConfig("students learning geography", "ask study questions", null, null),
                 null,
                 new EvolutionConfig(1, List.of(Evolution.REASONING, Evolution.COMPARATIVE)),
                 noFiltrationConfig(),
@@ -298,6 +298,29 @@ class SynthesizerTest {
         assertEquals(List.of("first evolved", "second evolved"), goldens.stream().map(Golden::input).toList());
         assertEquals(List.of("Reasoning"), goldens.get(0).additionalMetadata().get("evolutions"));
         assertEquals(List.of("Comparative"), goldens.get(1).additionalMetadata().get("evolutions"));
+    }
+
+    @Test
+    void rewritesEvolvedInputsToStylingFormatLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"raw question\"}]}",
+                "{\"rewritten_input\":\"evolved question\"}",
+                "{\"input\":\"FORMATTED: evolved question\"}"));
+        var synthesizer = new Synthesizer(
+                model,
+                new StylingConfig("students learning geography", "ask study questions", "prefix with FORMATTED:", null),
+                null,
+                new EvolutionConfig(1, List.of(Evolution.REASONING)),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateGoldensFromScratch(1);
+
+        assertEquals("FORMATTED: evolved question", goldens.getFirst().input());
+        assertTrue(model.prompts().get(2).contains("Input Format"));
+        assertTrue(model.prompts().get(2).contains("prefix with FORMATTED:"));
+        assertTrue(model.prompts().get(2).contains("evolved question"));
+        assertEquals(3, model.prompts().size());
     }
 
     @Test
