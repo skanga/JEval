@@ -287,7 +287,7 @@ class SynthesizerTest {
                 "{\"rewritten_input\":\"second evolved\"}"));
         var synthesizer = new Synthesizer(
                 model,
-                new StylingConfig("students learning geography", "ask study questions", null, null),
+                new StylingConfig(null, null, null, null),
                 null,
                 new EvolutionConfig(1, List.of(Evolution.REASONING, Evolution.COMPARATIVE)),
                 noFiltrationConfig(),
@@ -320,6 +320,29 @@ class SynthesizerTest {
         assertTrue(model.prompts().get(2).contains("Input Format"));
         assertTrue(model.prompts().get(2).contains("prefix with FORMATTED:"));
         assertTrue(model.prompts().get(2).contains("evolved question"));
+        assertEquals(3, model.prompts().size());
+    }
+
+    @Test
+    void rewritesEvolvedInputsWhenScenarioStylingIsSetLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"raw context question\"}]}",
+                "{\"rewritten_input\":\"evolved context question\"}",
+                "{\"input\":\"scenario-styled context question\"}"));
+        var synthesizer = new Synthesizer(
+                model,
+                new StylingConfig("students learning geography", null, null, null),
+                null,
+                new EvolutionConfig(1, List.of(Evolution.REASONING)),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateGoldensFromContexts(List.of(List.of("Paris is in France.")), false, 1, null);
+
+        assertEquals("scenario-styled context question", goldens.getFirst().input());
+        assertTrue(model.prompts().get(2).contains("Scenario: students learning geography"));
+        assertTrue(model.prompts().get(2).contains("Evolved Input:"));
+        assertTrue(model.prompts().get(2).contains("evolved context question"));
         assertEquals(3, model.prompts().size());
     }
 

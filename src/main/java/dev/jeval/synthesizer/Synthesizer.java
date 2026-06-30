@@ -412,7 +412,7 @@ public final class Synthesizer {
             input = SynthesizerSchemas.parseRewrittenInput(model.generate(SynthesizerPrompts.evolveInput(input, evolution)));
             evolutions.add(evolution.value());
         }
-        if (stylingConfig != null && stylingConfig.inputFormat() != null) {
+        if (shouldStyle(stylingConfig)) {
             input = SynthesizerSchemas.parseInput(model.generate(
                     SynthesizerPrompts.rewriteEvolvedInput(input, stylingConfig)));
         }
@@ -643,6 +643,15 @@ public final class Synthesizer {
     private Evolution evolution(int index) {
         var evolutions = evolutionConfig.evolutions();
         return evolutions.get(index % evolutions.size());
+    }
+
+    private static boolean shouldStyle(StylingConfig config) {
+        return config != null
+                && (hasText(config.inputFormat()) || hasText(config.scenario()) || hasText(config.task()));
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private static LinkedHashMap<String, Object> metadata(
