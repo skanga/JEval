@@ -545,6 +545,24 @@ class SynthesizerTest {
     }
 
     @Test
+    void asyncGenerateGoldensFromExistingGoldensReturnsFutureLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"Async expanded question?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        var original = Golden.builder("old")
+                .context(List.of("Async context"))
+                .sourceFile("async.txt")
+                .build();
+
+        var goldens = synthesizer.generateGoldensFromGoldensAsync(List.of(original), 1, false).join();
+
+        assertEquals(List.of("Async expanded question?"), goldens.stream().map(Golden::input).toList());
+        assertEquals(List.of("Async context"), goldens.getFirst().context());
+        assertEquals("async.txt", goldens.getFirst().sourceFile());
+    }
+
+    @Test
     void generatesConversationalGoldensFromContexts() {
         var model = new ScriptedModel(List.of(
                 """
@@ -948,6 +966,26 @@ class SynthesizerTest {
         assertEquals(List.of("context"), goldens.getFirst().context());
         assertEquals("Context explained", goldens.getFirst().expectedOutcome());
         assertEquals(2, model.prompts().size());
+    }
+
+    @Test
+    void asyncGenerateConversationalGoldensFromExistingGoldensReturnsFutureLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"async conversational expansion","turns":[
+                  {"role":"user","content":"Async question"}
+                ]}]}
+                """));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        var original = ConversationalGolden.builder("old async scenario").build();
+
+        var goldens = synthesizer.generateConversationalGoldensFromGoldensAsync(
+                List.of(original), 1, false).join();
+
+        assertEquals(List.of("async conversational expansion"),
+                goldens.stream().map(ConversationalGolden::scenario).toList());
+        assertEquals("Async question", goldens.getFirst().turns().getFirst().content());
     }
 
     private static final class ScriptedModel implements EvaluationModel {

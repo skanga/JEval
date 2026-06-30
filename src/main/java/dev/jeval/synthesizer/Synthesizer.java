@@ -264,6 +264,14 @@ public final class Synthesizer {
         return retainGoldens(generated);
     }
 
+    public CompletableFuture<List<Golden>> generateGoldensFromGoldensAsync(
+            List<Golden> goldens,
+            int maxGoldensPerGolden,
+            boolean includeExpectedOutput) {
+        return CompletableFuture.supplyAsync(
+                () -> generateGoldensFromGoldens(goldens, maxGoldensPerGolden, includeExpectedOutput));
+    }
+
     public List<ConversationalGolden> generateConversationalGoldensFromContexts(
             List<List<String>> contexts,
             boolean includeExpectedOutcome,
@@ -421,6 +429,15 @@ public final class Synthesizer {
             }
         }
         return retainConversationalGoldens(generated);
+    }
+
+    public CompletableFuture<List<ConversationalGolden>> generateConversationalGoldensFromGoldensAsync(
+            List<ConversationalGolden> goldens,
+            int maxGoldensPerGolden,
+            boolean includeExpectedOutcome) {
+        return CompletableFuture.supplyAsync(
+                () -> generateConversationalGoldensFromGoldens(
+                        goldens, maxGoldensPerGolden, includeExpectedOutcome));
     }
 
     private List<Golden> retainGoldens(List<Golden> goldens) {
