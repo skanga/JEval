@@ -47,6 +47,24 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void createsOpenAiCompatibleLocalModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_LOCAL_MODEL=YES
+                LOCAL_MODEL_NAME=local-eval
+                LOCAL_MODEL_BASE_URL=http://localhost:8000/v1
+                LOCAL_MODEL_API_KEY=local-key
+                TEMPERATURE=0.2
+                MAX_TOKENS=128
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void createsOpenRouterModelFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -154,11 +172,26 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void usesModelOverrideForOpenAiCompatibleLocalGenerationLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_LOCAL_MODEL=YES
+                LOCAL_MODEL_BASE_URL=http://localhost:8000/v1
+                LOCAL_MODEL_API_KEY=local-key
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "local-eval");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void rejectsMissingProviderConfig() throws Exception {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));
 
-        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-ollama, or set-openrouter, or pass --responses-file.",
+        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
 }

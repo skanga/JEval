@@ -32,12 +32,16 @@ final class LangChain4jProviderModels {
                 && !"true".equalsIgnoreCase(value(config, "GOOGLE_GENAI_USE_VERTEXAI", "false"))) {
             return new LangChain4jEvaluationModel(gemini(config, modelOverride));
         }
-        if ("YES".equals(config.get("USE_LOCAL_MODEL"))
-                && (present(config, "OLLAMA_MODEL_NAME") || present(modelOverride))) {
-            return new LangChain4jEvaluationModel(ollama(config, modelOverride));
+        if ("YES".equals(config.get("USE_LOCAL_MODEL"))) {
+            if (present(config, "OLLAMA_MODEL_NAME") || (present(modelOverride) && !localModelConfigured(config))) {
+                return new LangChain4jEvaluationModel(ollama(config, modelOverride));
+            }
+            if (localModelConfigured(config) || present(modelOverride)) {
+                return new LangChain4jEvaluationModel(localModel(config, modelOverride));
+            }
         }
         throw new IllegalArgumentException(
-                "No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-ollama, or set-openrouter, or pass --responses-file.");
+                "No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
     }
 
     private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
@@ -86,12 +90,28 @@ final class LangChain4jProviderModels {
         return builder.build();
     }
 
+    private static OpenAiChatModel localModel(Map<String, String> config, String modelOverride) {
+        var builder = OpenAiChatModel.builder()
+                .apiKey(value(config, "LOCAL_MODEL_API_KEY", "local"))
+                .modelName(modelName(config, "LOCAL_MODEL_NAME", modelOverride, null))
+                .baseUrl(value(config, "LOCAL_MODEL_BASE_URL", "http://localhost:8000/v1"));
+        optionalDouble(config, "TEMPERATURE", builder::temperature);
+        optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
+        return builder.build();
+    }
+
     private static boolean present(Map<String, String> config, String key) {
         return value(config, key, null) != null;
     }
 
     private static boolean present(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private static boolean localModelConfigured(Map<String, String> config) {
+        return present(config, "LOCAL_MODEL_NAME")
+                || present(config, "LOCAL_MODEL_API_KEY")
+                || present(config, "LOCAL_MODEL_FORMAT");
     }
 
     private static String required(Map<String, String> config, String key) {
