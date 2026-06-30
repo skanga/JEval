@@ -52,6 +52,10 @@ public record LlmApiTestCase(
         return modelDump(false);
     }
 
+    public boolean isMultimodal() {
+        return imagesMapping != null && !imagesMapping.isEmpty();
+    }
+
     public LlmApiTestCase updateMetricData(MetricData metricData) {
         var updatedMetricsData = appendMetricData(metricsData, metricData);
         var updatedSuccess = success == null ? metricData.success() : success && metricData.success();

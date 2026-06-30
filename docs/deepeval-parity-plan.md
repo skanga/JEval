@@ -33,6 +33,7 @@ Current Java parity:
 - Test-run pass/fail counting across single-turn and conversational API test cases, ignoring message-style cases with null success values
 - Test-run DeepEval-style model dump aliases with optional null exclusion for save/load payload preparation
 - Test-run save/load helpers for DeepEval-style alias JSON files with null-excluding save payloads and typed Java reloads
+- Test-run multimodal API test-case guard matching DeepEval's Confident AI upload rejection behavior
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling
 - `RetrievedContextData` value type with DeepEval-style string serialization, source-preserving dataset markers, and single-turn, multi-turn, and golden retrieval-context builder support
 - `Contestant`, `ArenaTestCase`, and `Arena` with DeepEval-style unique-name, shared-input, shared-expected-output, and multimodal propagation rules

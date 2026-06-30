@@ -7,11 +7,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.jeval.ApiTestCases;
 import dev.jeval.ConversationalApiTestCase;
 import dev.jeval.ConversationalTestCase;
 import dev.jeval.LlmApiTestCase;
 import dev.jeval.LlmTestCase;
 import dev.jeval.MetricData;
+import dev.jeval.MllmImage;
 import dev.jeval.Turn;
 import dev.jeval.prompt.PromptInterpolationType;
 import dev.jeval.prompt.PromptMessage;
@@ -181,6 +183,21 @@ class TestRunPayloadTest {
                 () -> assertEquals("dataset", loaded.datasetAlias()),
                 () -> assertEquals("dataset-id", loaded.datasetId()),
                 () -> assertTrue(loaded.official()));
+    }
+
+    @Test
+    void guardMllmTestCasesRejectsMultimodalApiTestCasesLikeDeepEval() {
+        var image = new MllmImage("YWJj", "image/png");
+        var apiTestCase = ApiTestCases.from(LlmTestCase.builder("Describe " + image)
+                .actualOutput("A chart")
+                .build(), 0);
+        var run = new TestRun().addTestCase(apiTestCase);
+
+        var error = assertThrows(IllegalArgumentException.class, run::guardMllmTestCases);
+
+        assertAll(
+                () -> assertTrue(apiTestCase.isMultimodal()),
+                () -> assertEquals("Unable to send multimodal test cases to Confident AI.", error.getMessage()));
     }
 
     @Test

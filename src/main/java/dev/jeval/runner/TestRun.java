@@ -113,6 +113,14 @@ public record TestRun(
         return JSON.readValue(file.toFile(), TestRun.class);
     }
 
+    public void guardMllmTestCases() {
+        for (var testCase : testCases) {
+            if (testCase.isMultimodal()) {
+                throw new IllegalArgumentException("Unable to send multimodal test cases to Confident AI.");
+            }
+        }
+    }
+
     public MetricsScoresAggregation constructMetricsScores() {
         var aggregators = new LinkedHashMap<String, MetricScoresAggregator>();
         var traceAggregators = TraceMetricScoresAggregator.empty();
