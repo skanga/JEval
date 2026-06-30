@@ -149,6 +149,9 @@ class SynthesizerTest {
         assertEquals(List.of(List.of("alpha beta"), List.of("gamma delta")),
                 goldens.stream().map(Golden::context).toList());
         assertEquals(List.of("policy.md", "policy.md"), goldens.stream().map(Golden::sourceFile).toList());
+        assertEquals(List.of(0.0, 0.0), goldens.stream()
+                .map(golden -> golden.additionalMetadata().get("context_quality"))
+                .toList());
     }
 
     @Test
@@ -225,6 +228,9 @@ class SynthesizerTest {
                 goldens.stream().map(ConversationalGolden::expectedOutcome).toList());
         assertEquals(List.of(List.of("alpha beta"), List.of("gamma delta")),
                 goldens.stream().map(ConversationalGolden::context).toList());
+        assertEquals(List.of(0.0, 0.0), goldens.stream()
+                .map(golden -> golden.additionalMetadata().get("context_quality"))
+                .toList());
     }
 
     @Test
