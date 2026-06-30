@@ -65,6 +65,7 @@ class SynthesizerTest {
                 List.of(List.of("Paris is the capital of France.")), false, 1, List.of("cities.txt"));
 
         assertEquals("What is the capital city of France?", goldens.getFirst().input());
+        assertEquals(0.9, goldens.getFirst().additionalMetadata().get("synthetic_input_quality"));
         assertEquals(List.of("cities.txt"), goldens.getFirst().additionalMetadata().get("used_source_files"));
         assertTrue(model.prompts().get(1).contains("Evaluate the provided synthetic query"));
         assertTrue(model.prompts().get(2).contains("The query is too vague."));
@@ -390,6 +391,7 @@ class SynthesizerTest {
 
         assertEquals("A customer contacts a support agent about refund eligibility for a recent purchase",
                 goldens.getFirst().scenario());
+        assertEquals(0.9, goldens.getFirst().additionalMetadata().get("synthetic_scenario_quality"));
         assertEquals(List.of("refund.md"), goldens.getFirst().additionalMetadata().get("used_source_files"));
         assertTrue(model.prompts().get(1).contains("Evaluate the provided conversational scenario"));
         assertTrue(model.prompts().get(2).contains("The scenario does not identify participants or setting."));

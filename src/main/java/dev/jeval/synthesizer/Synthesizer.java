@@ -144,9 +144,10 @@ public final class Synthesizer {
         var data = SynthesizerSchemas.parseSyntheticData(
                 model.generate(SynthesizerPrompts.generateSyntheticInputs(
                         context, maxGoldensPerContext, includeExpectedOutput)));
-        data = rewriteInputs(context, data);
-        for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
-            goldens.add(golden(item, context, sourceFile, includeExpectedOutput,
+        var qualifiedData = rewriteInputs(context, data);
+        for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
+            goldens.add(golden(item.data(), context, sourceFile, includeExpectedOutput,
+                    item.score(),
                     contextIndex * maxGoldensPerContext + goldens.size()));
         }
         return List.copyOf(goldens);
@@ -159,10 +160,10 @@ public final class Synthesizer {
         var data = SynthesizerSchemas.parseSyntheticData(model.generate(
                 SynthesizerPrompts.generateSyntheticInputsFromScratch(
                         stylingConfig.scenario(), stylingConfig.task(), stylingConfig.inputFormat(), numGoldens)));
-        data = rewriteInputs(List.of(), data);
+        var qualifiedData = rewriteInputs(List.of(), data);
         var goldens = new ArrayList<Golden>();
-        for (var item : data) {
-            goldens.add(golden(item, null, null, false, goldens.size()));
+        for (var item : qualifiedData) {
+            goldens.add(golden(item.data(), null, null, false, item.score(), goldens.size()));
         }
         return retainGoldens(goldens);
     }
@@ -189,9 +190,9 @@ public final class Synthesizer {
             var data = SynthesizerSchemas.parseSyntheticData(model.generate(
                     SynthesizerPrompts.generateSyntheticInputsFromGoldens(
                             inputs, inputs.size() * maxGoldensPerGolden, includeExpectedOutput)));
-            data = rewriteInputs(inputs, data);
-            for (var item : data) {
-                generated.add(golden(item, null, null, includeExpectedOutput, generated.size()));
+            var qualifiedData = rewriteInputs(inputs, data);
+            for (var item : qualifiedData) {
+                generated.add(golden(item.data(), null, null, includeExpectedOutput, item.score(), generated.size()));
             }
         }
         return retainGoldens(generated);
@@ -239,9 +240,9 @@ public final class Synthesizer {
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                 SynthesizerPrompts.generateSyntheticConversationalScenarios(
                         context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome)));
-        data = rewriteScenarios(context, data);
-        for (var item : data.stream().limit(maxGoldensPerContext).toList()) {
-            goldens.add(conversationalGolden(item, context, sourceFile, includeExpectedOutcome));
+        var qualifiedData = rewriteScenarios(context, data);
+        for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
+            goldens.add(conversationalGolden(item.data(), context, sourceFile, includeExpectedOutcome, item.score()));
         }
         return List.copyOf(goldens);
     }
@@ -257,10 +258,10 @@ public final class Synthesizer {
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                         SynthesizerPrompts.generateSyntheticConversationalScenariosFromScratch(
                                 conversationalStylingConfig, numGoldens)));
-        data = rewriteScenarios(List.of(), data);
-        return data
+        var qualifiedData = rewriteScenarios(List.of(), data);
+        return qualifiedData
                 .stream()
-                .map(item -> conversationalGolden(item, null, null, false))
+                .map(item -> conversationalGolden(item.data(), null, null, false, item.score()))
                 .collect(java.util.stream.Collectors.collectingAndThen(
                         java.util.stream.Collectors.toList(),
                         this::retainConversationalGoldens));
@@ -287,9 +288,9 @@ public final class Synthesizer {
             var data = SynthesizerSchemas.parseConversationalData(model.generate(
                     SynthesizerPrompts.generateSyntheticConversationalScenariosFromGoldens(
                             scenarios, scenarios.size() * maxGoldensPerGolden, includeExpectedOutcome)));
-            data = rewriteScenarios(scenarios, data);
-            for (var item : data) {
-                generated.add(conversationalGolden(item, null, null, includeExpectedOutcome));
+            var qualifiedData = rewriteScenarios(scenarios, data);
+            for (var item : qualifiedData) {
+                generated.add(conversationalGolden(item.data(), null, null, includeExpectedOutcome, item.score()));
             }
         }
         return retainConversationalGoldens(generated);
@@ -311,7 +312,8 @@ public final class Synthesizer {
             ConversationalData data,
             List<String> context,
             String sourceFile,
-            boolean includeExpectedOutcome) {
+            boolean includeExpectedOutcome,
+            Double syntheticScenarioQuality) {
         var expectedOutcome = data.expectedOutcome();
         if (includeExpectedOutcome && expectedOutcome == null) {
             expectedOutcome = model.generate(SynthesizerPrompts.generateConversationalExpectedOutcome(
@@ -324,7 +326,7 @@ public final class Synthesizer {
                 .expectedOutcome(expectedOutcome)
                 .userDescription(data.userDescription())
                 .context(context)
-                .additionalMetadata(metadata(List.of(), data, sourceFile))
+                .additionalMetadata(metadata(List.of(), data, sourceFile, syntheticScenarioQuality))
                 .build();
     }
 
@@ -333,6 +335,7 @@ public final class Synthesizer {
             List<String> context,
             String sourceFile,
             boolean includeExpectedOutput,
+            Double syntheticInputQuality,
             int goldenIndex) {
         var evolutions = new ArrayList<String>();
         var input = data.input();
@@ -346,7 +349,7 @@ public final class Synthesizer {
                 .expectedOutput(expectedOutput)
                 .context(context)
                 .sourceFile(sourceFile)
-                .additionalMetadata(metadata(evolutions, data, sourceFile))
+                .additionalMetadata(metadata(evolutions, data, sourceFile, syntheticInputQuality))
                 .build();
     }
 
@@ -358,18 +361,22 @@ public final class Synthesizer {
                 context, input, stylingConfig == null ? null : stylingConfig.expectedOutputFormat()));
     }
 
-    private List<SyntheticData> rewriteInputs(List<String> context, List<SyntheticData> data) {
+    private List<QualifiedSyntheticData> rewriteInputs(List<String> context, List<SyntheticData> data) {
         if (filtrationConfig.maxQualityRetries() == 0) {
-            return data;
+            return data.stream()
+                    .map(item -> new QualifiedSyntheticData(item, null))
+                    .toList();
         }
-        var filtered = new ArrayList<SyntheticData>();
+        var filtered = new ArrayList<QualifiedSyntheticData>();
         var critic = filtrationConfig.criticModel() == null ? model : filtrationConfig.criticModel();
         for (var item : data) {
             var input = item.input();
             var rewritten = false;
+            Double quality = null;
             for (var i = 0; i < filtrationConfig.maxQualityRetries(); i++) {
                 var feedback = SynthesizerSchemas.parseInputFeedback(
                         critic.generate(SynthesizerPrompts.evaluateSyntheticInput(input)));
+                quality = feedback.score();
                 if (feedback.score() >= filtrationConfig.syntheticInputQualityThreshold()) {
                     break;
                 }
@@ -377,23 +384,29 @@ public final class Synthesizer {
                         SynthesizerPrompts.rewriteSyntheticInput(context, input, feedback.feedback())));
                 rewritten = true;
             }
-            filtered.add(new SyntheticData(input, rewritten ? null : item.expectedOutput(), item.usedSourceFiles()));
+            filtered.add(new QualifiedSyntheticData(
+                    new SyntheticData(input, rewritten ? null : item.expectedOutput(), item.usedSourceFiles()),
+                    quality));
         }
         return List.copyOf(filtered);
     }
 
-    private List<ConversationalData> rewriteScenarios(List<String> context, List<ConversationalData> data) {
+    private List<QualifiedConversationalData> rewriteScenarios(List<String> context, List<ConversationalData> data) {
         if (filtrationConfig.maxQualityRetries() == 0) {
-            return data;
+            return data.stream()
+                    .map(item -> new QualifiedConversationalData(item, null))
+                    .toList();
         }
-        var filtered = new ArrayList<ConversationalData>();
+        var filtered = new ArrayList<QualifiedConversationalData>();
         var critic = filtrationConfig.criticModel() == null ? model : filtrationConfig.criticModel();
         for (var item : data) {
             var scenario = item.scenario();
             var rewritten = false;
+            Double quality = null;
             for (var i = 0; i < filtrationConfig.maxQualityRetries(); i++) {
                 var feedback = SynthesizerSchemas.parseScenarioFeedback(
                         critic.generate(SynthesizerPrompts.evaluateSyntheticScenario(scenario)));
+                quality = feedback.score();
                 if (feedback.score() >= filtrationConfig.syntheticInputQualityThreshold()) {
                     break;
                 }
@@ -401,14 +414,22 @@ public final class Synthesizer {
                         SynthesizerPrompts.rewriteSyntheticScenario(context, scenario, feedback.feedback())));
                 rewritten = true;
             }
-            filtered.add(new ConversationalData(
-                    scenario,
-                    rewritten ? null : item.expectedOutcome(),
-                    item.userDescription(),
-                    item.turns(),
-                    item.usedSourceFiles()));
+            filtered.add(new QualifiedConversationalData(
+                    new ConversationalData(
+                            scenario,
+                            rewritten ? null : item.expectedOutcome(),
+                            item.userDescription(),
+                            item.turns(),
+                            item.usedSourceFiles()),
+                    quality));
         }
         return List.copyOf(filtered);
+    }
+
+    private record QualifiedSyntheticData(SyntheticData data, Double score) {
+    }
+
+    private record QualifiedConversationalData(ConversationalData data, Double score) {
     }
 
     private static ContextConstructionConfig config(ContextConstructionConfig config) {
@@ -533,9 +554,13 @@ public final class Synthesizer {
     private static LinkedHashMap<String, Object> metadata(
             List<String> evolutions,
             SyntheticData data,
-            String sourceFile) {
+            String sourceFile,
+            Double syntheticInputQuality) {
         var metadata = new LinkedHashMap<String, Object>();
         metadata.put("evolutions", List.copyOf(evolutions));
+        if (syntheticInputQuality != null) {
+            metadata.put("synthetic_input_quality", syntheticInputQuality);
+        }
         if (sourceFile != null) {
             metadata.put("context_source_files", List.of(sourceFile));
         }
@@ -548,9 +573,13 @@ public final class Synthesizer {
     private static LinkedHashMap<String, Object> metadata(
             List<String> evolutions,
             ConversationalData data,
-            String sourceFile) {
+            String sourceFile,
+            Double syntheticScenarioQuality) {
         var metadata = new LinkedHashMap<String, Object>();
         metadata.put("evolutions", List.copyOf(evolutions));
+        if (syntheticScenarioQuality != null) {
+            metadata.put("synthetic_scenario_quality", syntheticScenarioQuality);
+        }
         if (sourceFile != null) {
             metadata.put("source_files", sourceFile);
             metadata.put("context_source_files", List.of(sourceFile));
