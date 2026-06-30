@@ -143,6 +143,7 @@ Current Java parity:
 - Plan quality schema records, trace plan extraction, empty-plan handling, strict mode, and model-backed prompt/parse execution path
 - Plan adherence schema record, trace plan extraction, empty-plan handling, strict mode, and model-backed prompt/parse execution path
 - Local tracing API with nested `Tracer.observe(...)` spans, `@Observe` annotation metadata, error capture, and DeepEval-style trace maps attachable to `LlmTestCase.trace`
+- DeepEval-style local run artifacts under `.deepeval`, including `.latest_run_full.json`, timestamped `test_run_YYYYMMDD_HHMMSS.json` files, and `_2`/`_3` collision suffix numbering
 - Role adherence conversational metric with verdict/reason schemas, assistant-turn scoring, strict mode, chatbot-role validation, and model-backed prompt/parse execution path
 - Conversation completeness conversational metric with intention/verdict/reason schemas, valid-verdict scoring, strict mode, and model-backed prompt/parse execution path
 - Topic adherence conversational metric with QA-pair/relevancy/reason schemas, unit-interaction QA extraction, truth-table scoring, strict mode, and model-backed prompt/parse execution path

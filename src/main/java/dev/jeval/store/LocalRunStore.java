@@ -32,9 +32,13 @@ public final class LocalRunStore {
     }
 
     private static Path timestampedRunPath(Path directory) {
-        var base = "test_run_" + LocalDateTime.now().format(TIMESTAMP);
+        return timestampedRunPath(directory, LocalDateTime.now());
+    }
+
+    static Path timestampedRunPath(Path directory, LocalDateTime timestamp) {
+        var base = "test_run_" + timestamp.format(TIMESTAMP);
         var candidate = directory.resolve(base + ".json");
-        for (var index = 1; Files.exists(candidate); index++) {
+        for (var index = 2; Files.exists(candidate); index++) {
             candidate = directory.resolve(base + "_" + index + ".json");
         }
         return candidate;

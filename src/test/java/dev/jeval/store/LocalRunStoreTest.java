@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import dev.jeval.runner.TestRunner;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -47,5 +48,20 @@ class LocalRunStoreTest {
             assertTrue(timestamped.size() == 1);
             assertTrue(Files.readString(timestamped.getFirst()).contains("\"name\" : \"stored\""));
         }
+    }
+
+    @Test
+    void timestampedRunPathUsesDeepEvalCollisionSuffixes() throws Exception {
+        var directory = tempDir.resolve(".deepeval");
+        Files.createDirectories(directory);
+        var timestamp = LocalDateTime.of(2026, 6, 30, 12, 34, 56);
+        Files.createFile(directory.resolve("test_run_20260630_123456.json"));
+
+        var second = LocalRunStore.timestampedRunPath(directory, timestamp);
+        Files.createFile(second);
+        var third = LocalRunStore.timestampedRunPath(directory, timestamp);
+
+        assertTrue(second.getFileName().toString().endsWith("_2.json"));
+        assertTrue(third.getFileName().toString().endsWith("_3.json"));
     }
 }
