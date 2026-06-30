@@ -107,13 +107,31 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar set-debug --log-level DEBUG --verbose 
 java -jar target/jeval-0.1.0-SNAPSHOT.jar unset-debug --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --temperature 0.0 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openrouter --model openai/gpt-4.1 --temperature 0.0 --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-azure-openai --model gpt-4o --deployment-name eval-deployment --base-url https://example.openai.azure.com --api-version 2024-10-21 --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-bedrock --model anthropic.claude-3-5-haiku-20241022-v1:0 --region us-east-1 --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-anthropic --model claude-3-5-haiku-latest --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-gemini --model gemini-2.5-flash --project my-gcp-project --location us-central1 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-gemini --model gemini-2.5-flash --service-account-file path\to\service-account.json --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-grok --model grok-4 --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-moonshot --model kimi-k2 --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-deepseek --model deepseek-chat --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-litellm --model openai/gpt-4.1 --base-url http://localhost:4000 --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-portkey --model gpt-4.1 --provider openai --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-ollama --model llama3 --base-url http://localhost:11434 --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-local-model --model local-eval --base-url http://localhost:8080/v1 --format openai --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar unset-openai --save dotenv:.env
 ```
 
-OpenAI, OpenRouter, and Ollama provider settings can be used by `generate`; other provider
-commands currently persist configuration only.
+`generate` can use saved provider settings for OpenAI, Azure OpenAI, AWS Bedrock,
+Anthropic, Gemini API-key/Vertex, Grok, Moonshot/Kimi, DeepSeek, LiteLLM,
+Portkey, OpenRouter, Ollama, and OpenAI-compatible local endpoints. Store the
+matching API key or secret material in the same dotenv file, for example with
+`settings -u openai-api-key=... --save dotenv:.env`; secret values are masked by
+`settings --list`.
+
+Embedding provider settings are persisted for DeepEval-compatible configuration
+parity: `set-azure-openai-embedding`, `set-local-embeddings`, and
+`set-ollama-embeddings`.
 
 Provider retry helpers honor DeepEval-style environment settings:
 `DEEPEVAL_RETRY_MAX_ATTEMPTS`, `DEEPEVAL_RETRY_INITIAL_SECONDS`,
@@ -140,8 +158,9 @@ SDK-delegated or policy-less providers as single calls.
 ## CLI generate
 
 The `generate` command supports single-turn and multi-turn `contexts`, `docs`,
-`scratch`, and `goldens` generation through JEval's synthesizer. It can use OpenAI/OpenRouter/Ollama settings saved with provider
-commands, or deterministic scripted responses with `--responses-file`:
+`scratch`, and `goldens` generation through JEval's synthesizer. It can use any
+saved LangChain4j-backed provider settings listed above, or deterministic
+scripted responses with `--responses-file`:
 Existing goldens supplied with `--goldens-file` can be JSON, JSONL, or CSV.
 Docs generation accepts either JEval's `--document-path` or DeepEval's repeatable
 `--documents` option; expected outputs use DeepEval's
@@ -337,6 +356,10 @@ EvaluationModel model = LangChain4jEvaluationModel.from(chatModel);
 var metric = new AnswerRelevancyMetric(model);
 ```
 
-JEval includes OpenAI and Ollama provider modules for CLI generation. Other
-providers stay application dependencies. This adapter is text-only because
-JEval's current `EvaluationModel` accepts a single prompt string.
+JEval includes LangChain4j provider modules for OpenAI-compatible endpoints,
+Azure OpenAI, AWS Bedrock, Anthropic, Gemini, and Ollama. Grok,
+Moonshot/Kimi, DeepSeek, LiteLLM, Portkey, OpenRouter, and custom local
+OpenAI-compatible endpoints are routed through the OpenAI-compatible
+LangChain4j model with provider-specific base URLs and environment keys. This
+adapter is text-only because JEval's current `EvaluationModel` accepts a single
+prompt string.
