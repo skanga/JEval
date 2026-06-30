@@ -423,6 +423,7 @@ public final class JEvalCli {
                 result.metadata(),
                 result.comments(),
                 result.tags(),
+                result.customColumnKeyValues(),
                 null,
                 null,
                 null,

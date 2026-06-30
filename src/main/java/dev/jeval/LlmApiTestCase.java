@@ -26,11 +26,65 @@ public record LlmApiTestCase(
         Map<String, Object> metadata,
         String comments,
         List<String> tags,
+        Map<String, String> customColumnKeyValues,
         Map<String, Object> trace,
         List<Map<String, Object>> mcpServers,
         List<Map<String, Object>> mcpToolsCalled,
         List<Map<String, Object>> mcpResourcesCalled,
         List<Map<String, Object>> mcpPromptsCalled) {
+
+    public LlmApiTestCase(
+            String name,
+            String input,
+            String actualOutput,
+            String expectedOutput,
+            List<String> context,
+            List<String> retrievalContext,
+            List<ToolCall> toolsCalled,
+            List<ToolCall> expectedTools,
+            Double tokenCost,
+            Double completionTime,
+            Map<String, MllmImage> imagesMapping,
+            Boolean success,
+            List<Object> metricsData,
+            Double runDuration,
+            Double evaluationCost,
+            Integer order,
+            Map<String, Object> metadata,
+            String comments,
+            List<String> tags,
+            Map<String, Object> trace,
+            List<Map<String, Object>> mcpServers,
+            List<Map<String, Object>> mcpToolsCalled,
+            List<Map<String, Object>> mcpResourcesCalled,
+            List<Map<String, Object>> mcpPromptsCalled) {
+        this(
+                name,
+                input,
+                actualOutput,
+                expectedOutput,
+                context,
+                retrievalContext,
+                toolsCalled,
+                expectedTools,
+                tokenCost,
+                completionTime,
+                imagesMapping,
+                success,
+                metricsData,
+                runDuration,
+                evaluationCost,
+                order,
+                metadata,
+                comments,
+                tags,
+                null,
+                trace,
+                mcpServers,
+                mcpToolsCalled,
+                mcpResourcesCalled,
+                mcpPromptsCalled);
+    }
 
     public LlmApiTestCase {
         context = context == null ? null : List.copyOf(context);
@@ -41,6 +95,9 @@ public record LlmApiTestCase(
         metricsData = metricsData == null ? null : List.copyOf(metricsData);
         metadata = copyObjectMap(metadata);
         tags = tags == null ? null : List.copyOf(tags);
+        customColumnKeyValues = customColumnKeyValues == null
+                ? null
+                : Collections.unmodifiableMap(new LinkedHashMap<>(customColumnKeyValues));
         trace = copyObjectMap(trace);
         mcpServers = copyMaps(mcpServers);
         mcpToolsCalled = copyMaps(mcpToolsCalled);
@@ -93,6 +150,7 @@ public record LlmApiTestCase(
                 metadata,
                 comments,
                 tags,
+                customColumnKeyValues,
                 trace,
                 mcpServers,
                 mcpToolsCalled,
@@ -121,6 +179,7 @@ public record LlmApiTestCase(
         dump.put("metadata", metadata);
         dump.put("comments", comments);
         dump.put("tags", tags);
+        dump.put(key("custom_column_key_values", "customColumnKeyValues", byAlias), customColumnKeyValues);
         dump.put("trace", trace);
         dump.put(key("mcp_servers", "mcpServers", byAlias), mcpServers);
         dump.put(key("mcp_tools_called", "mcpToolsCalled", byAlias), mcpToolsCalled);
@@ -173,6 +232,7 @@ public record LlmApiTestCase(
                 metadata,
                 comments,
                 tags,
+                customColumnKeyValues,
                 trace,
                 mcpServers,
                 mcpToolsCalled,

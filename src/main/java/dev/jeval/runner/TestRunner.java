@@ -271,7 +271,8 @@ public final class TestRunner {
                     testCase.additionalMetadata(),
                     testCase.comments(),
                     testCase.tokenCost(),
-                    testCase.completionTime());
+                    testCase.completionTime(),
+                    testCase.customColumnKeyValues());
         } catch (RuntimeException error) {
             if (!ignoreErrors) {
                 throw error;
@@ -289,7 +290,8 @@ public final class TestRunner {
                     testCase.additionalMetadata(),
                     testCase.comments(),
                     testCase.tokenCost(),
-                    testCase.completionTime());
+                    testCase.completionTime(),
+                    testCase.customColumnKeyValues());
         }
     }
 
@@ -323,6 +325,7 @@ public final class TestRunner {
                 .comments(spec.comments())
                 .tokenCost(spec.tokenCost())
                 .completionTime(spec.completionTime())
+                .customColumnKeyValues(spec.customColumnKeyValues())
                 .name(spec.name())
                 .tags(spec.tags())
                 .build();
@@ -343,7 +346,8 @@ public final class TestRunner {
                 testCase.additionalMetadata(),
                 testCase.comments(),
                 testCase.tokenCost(),
-                testCase.completionTime());
+                testCase.completionTime(),
+                testCase.customColumnKeyValues());
     }
 
     private static List<LlmTestCase> dataset(Path parent, String dataset) {
@@ -465,6 +469,7 @@ public final class TestRunner {
             Map<String, Object> metadata,
             String comments,
             @JsonAlias("token_cost") Double tokenCost,
-            @JsonAlias("completion_time") Double completionTime) {
+            @JsonAlias("completion_time") Double completionTime,
+            @JsonAlias("custom_column_key_values") Map<String, String> customColumnKeyValues) {
     }
 }

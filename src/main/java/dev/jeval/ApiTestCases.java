@@ -29,6 +29,7 @@ public final class ApiTestCases {
                 testCase.additionalMetadata(),
                 testCase.comments(),
                 testCase.tags(),
+                testCase.customColumnKeyValues(),
                 testCase.trace(),
                 testCase.mcpServers(),
                 testCase.mcpToolsCalled(),

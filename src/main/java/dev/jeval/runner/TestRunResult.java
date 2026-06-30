@@ -32,9 +32,10 @@ public record TestRunResult(
             Map<String, Object> metadata,
             String comments,
             Double tokenCost,
-            Double completionTime) {
+            Double completionTime,
+            Map<String, String> customColumnKeyValues) {
         public TestCaseResult(String name, boolean success, List<MetricResult> metricResults) {
-            this(name, success, metricResults, null, null, null, null, null, null, null, null, null, null);
+            this(name, success, metricResults, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         public TestCaseResult {
@@ -43,6 +44,9 @@ public record TestRunResult(
             retrievalContext = retrievalContext == null ? null : List.copyOf(retrievalContext);
             tags = tags == null ? null : List.copyOf(tags);
             metadata = metadata == null ? null : Map.copyOf(new LinkedHashMap<>(metadata));
+            customColumnKeyValues = customColumnKeyValues == null
+                    ? null
+                    : Map.copyOf(new LinkedHashMap<>(customColumnKeyValues));
         }
     }
 
