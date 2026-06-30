@@ -276,6 +276,29 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunJsonlDatasetRejectsMissingRequiredFieldsLikeDeepEval() throws Exception {
+        var dataset = tempDir.resolve("missing-required.jsonl");
+        Files.writeString(dataset, """
+                {"input":"q","expected_output":"b"}
+                """);
+        var file = tempDir.resolve("missing-required-eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "missing-required-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "dataset": "missing-required.jsonl"
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--quiet"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Required fields are missing in one or more JSON objects"));
+    }
+
+    @Test
     void testRunCsvDatasetPreservesDeepEvalToolAndMetadataFieldsInLatestData() throws Exception {
         var dataset = tempDir.resolve("cases.csv");
         Files.writeString(dataset, """

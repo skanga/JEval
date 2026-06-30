@@ -413,8 +413,8 @@ public final class TestRunner {
     }
 
     private static LlmTestCase jsonTestCase(JsonNode node) {
-        return LlmTestCase.builder(text(node, "input"))
-                .actualOutput(text(node, "actual_output"))
+        return LlmTestCase.builder(requiredText(node, "input"))
+                .actualOutput(requiredText(node, "actual_output"))
                 .expectedOutput(text(node, "expected_output"))
                 .context(textList(node, "context"))
                 .retrievalContext(textList(node, "retrieval_context"))
@@ -437,6 +437,13 @@ public final class TestRunner {
 
     private static String text(JsonNode node, String key) {
         return node.has(key) && !node.get(key).isNull() ? node.get(key).asText() : null;
+    }
+
+    private static String requiredText(JsonNode node, String key) {
+        if (!node.has(key) || node.get(key).isNull() || !node.get(key).isTextual()) {
+            throw new IllegalArgumentException("Required fields are missing in one or more JSON objects");
+        }
+        return node.get(key).asText();
     }
 
     private static Double doubleOrNull(JsonNode node, String key) {
