@@ -99,6 +99,32 @@ public record TestRun(
                 datasetId == null ? testCase.datasetId() : datasetId);
     }
 
+    public TestRun calculateTestPassesAndFails() {
+        var passed = 0;
+        var failed = 0;
+        for (var testCase : testCases) {
+            if (testCase.success() == null) {
+                continue;
+            }
+            if (testCase.success()) {
+                passed++;
+            } else {
+                failed++;
+            }
+        }
+        for (var testCase : conversationalTestCases) {
+            if (testCase.success() == null) {
+                continue;
+            }
+            if (testCase.success()) {
+                passed++;
+            } else {
+                failed++;
+            }
+        }
+        return copyWithPassFailCounts(passed, failed);
+    }
+
     private Double addEvaluationCost(Double additional) {
         if (additional == null) {
             return evaluationCost;
@@ -168,6 +194,25 @@ public record TestRun(
     }
 
     private TestRun copyWithDatasetProperties(String datasetAlias, String datasetId) {
+        return new TestRun(
+                testFile,
+                testCases,
+                conversationalTestCases,
+                metricsScores,
+                traceMetricsScores,
+                identifier,
+                hyperparameters,
+                prompts,
+                testPassed,
+                testFailed,
+                runDuration,
+                evaluationCost,
+                datasetAlias,
+                datasetId,
+                official);
+    }
+
+    private TestRun copyWithPassFailCounts(Integer testPassed, Integer testFailed) {
         return new TestRun(
                 testFile,
                 testCases,

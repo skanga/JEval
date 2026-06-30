@@ -217,6 +217,28 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void calculateTestPassesAndFailsCountsOnlyNonNullSuccessValues() {
+        var counted = new TestRun()
+                .addTestCase(llmApiWithSuccess("single-pass", true))
+                .addTestCase(llmApiWithSuccess("single-fail", false))
+                .addTestCase(llmApiWithSuccess("single-message", null))
+                .addTestCase(conversationalApiWithSuccess("conversation-pass", true))
+                .addTestCase(conversationalApiWithSuccess("conversation-fail", false))
+                .addTestCase(conversationalApiWithSuccess("conversation-message", null))
+                .calculateTestPassesAndFails();
+
+        assertAll(
+                () -> assertEquals(2, counted.testPassed()),
+                () -> assertEquals(2, counted.testFailed()),
+                () -> assertEquals(List.of("single-pass", "single-fail", "single-message"),
+                        counted.testCases().stream().map(LlmApiTestCase::name).toList()),
+                () -> assertEquals(List.of("conversation-pass", "conversation-fail", "conversation-message"),
+                        counted.conversationalTestCases().stream().map(ConversationalApiTestCase::name).toList()),
+                () -> assertEquals(0.0, counted.runDuration()),
+                () -> assertEquals(List.of(), new TestRun().testCases()));
+    }
+
+    @Test
     void traceMetricScoresDefensivelyCopiesNestedScoreMaps() {
         var scores = new MetricScores("faithfulness", List.of(1.0), 1, 0, 0);
         var nested = new java.util.LinkedHashMap<String, MetricScores>();
@@ -249,6 +271,34 @@ class TestRunPayloadTest {
 
     private static LlmApiTestCase llmApi(String name, Integer order) {
         return llmApi(name, order, null, List.of());
+    }
+
+    private static LlmApiTestCase llmApiWithSuccess(String name, Boolean success) {
+        return new LlmApiTestCase(
+                name,
+                "input",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                success,
+                List.of(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 
     private static LlmApiTestCase llmApi(
@@ -322,6 +372,26 @@ class TestRunPayloadTest {
 
     private static ConversationalApiTestCase conversationalApi(String name, Integer order) {
         return conversationalApi(name, order, null, List.of());
+    }
+
+    private static ConversationalApiTestCase conversationalApiWithSuccess(String name, Boolean success) {
+        return new ConversationalApiTestCase(
+                name,
+                success,
+                List.of(),
+                0.0,
+                null,
+                List.of(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 
     private static ConversationalApiTestCase conversationalApi(
