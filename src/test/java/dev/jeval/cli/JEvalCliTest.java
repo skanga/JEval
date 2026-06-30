@@ -1661,7 +1661,7 @@ class JEvalCliTest {
         var generated = Files.readString(output.resolve("conversations.json"));
         assertTrue(generated.contains("\"scenario\" : \"refund support\""));
         assertTrue(generated.contains("\"turns\""));
-        assertTrue(generated.contains("\"expected_outcome\" : \"Refund path explained\""));
+        assertTrue(generated.contains("\"expected_outcome\" : \"Generated conversational expected outcome\""));
     }
 
     @Test

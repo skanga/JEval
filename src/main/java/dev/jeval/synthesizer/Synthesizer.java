@@ -375,8 +375,8 @@ public final class Synthesizer {
             scenario = SynthesizerSchemas.parseScenario(model.generate(
                     SynthesizerPrompts.rewriteEvolvedScenario(scenario, conversationalStylingConfig)));
         }
-        var expectedOutcome = data.expectedOutcome();
-        if (includeExpectedOutcome && expectedOutcome == null) {
+        String expectedOutcome = null;
+        if (includeExpectedOutcome) {
             expectedOutcome = model.generate(SynthesizerPrompts.generateConversationalExpectedOutcome(
                     scenario,
                     context,

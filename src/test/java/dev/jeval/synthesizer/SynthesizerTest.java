@@ -229,9 +229,11 @@ class SynthesizerTest {
                 """
                 {"data":[{"scenario":"Scenario one","turns":[{"role":"user","content":"Question one?"}],"expected_outcome":"Outcome one"}]}
                 """,
+                "Outcome one",
                 """
                 {"data":[{"scenario":"Scenario two","turns":[{"role":"user","content":"Question two?"}],"expected_outcome":"Outcome two"}]}
-                """));
+                """,
+                "Outcome two"));
         var synthesizer = new Synthesizer(
                 model,
                 null,
@@ -466,6 +468,27 @@ class SynthesizerTest {
     }
 
     @Test
+    void generatesConversationalExpectedOutcomeSeparatelyLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"user asks about refund","turns":[
+                  {"role":"user","content":"Can I get a refund?"}
+                ],"expected_outcome":"Embedded outcome should be ignored"}]}
+                """,
+                "Generated outcome from context"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateConversationalGoldensFromContexts(
+                List.of(List.of("Refunds are available within 30 days.")), true, 1, null);
+
+        assertEquals("Generated outcome from context", goldens.getFirst().expectedOutcome());
+        assertTrue(model.prompts().get(1).contains("Generate the expected outcome"));
+        assertTrue(model.prompts().get(1).contains("user asks about refund"));
+        assertEquals(2, model.prompts().size());
+    }
+
+    @Test
     void generatesConversationalGoldensFromContextsWithMultipleSourceFilesLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 """
@@ -635,7 +658,7 @@ class SynthesizerTest {
         var goldens = synthesizer.generateConversationalGoldensFromScratch(1);
 
         assertEquals(List.of("traveler books a flight"), goldens.stream().map(ConversationalGolden::scenario).toList());
-        assertEquals("Flight search started", goldens.getFirst().expectedOutcome());
+        assertEquals(null, goldens.getFirst().expectedOutcome());
         assertEquals("assistant", goldens.getFirst().turns().get(1).role());
     }
 
@@ -690,7 +713,8 @@ class SynthesizerTest {
                   {"role":"user","content":"Can I still get a refund?"},
                   {"role":"assistant","content":"Yes, within 30 days."}
                 ],"expected_outcome":"Refund eligibility explained"}]}
-                """));
+                """,
+                "Refund eligibility explained"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var original = ConversationalGolden.builder("old refund scenario")
@@ -733,7 +757,8 @@ class SynthesizerTest {
                 {"data":[{"scenario":"context scenario","turns":[
                   {"role":"user","content":"Ask about context"}
                 ],"expected_outcome":"Context explained"}]}
-                """));
+                """,
+                "Context explained"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var contextual = ConversationalGolden.builder("old context")
@@ -746,7 +771,8 @@ class SynthesizerTest {
         assertEquals(1, goldens.size());
         assertEquals("context scenario", goldens.getFirst().scenario());
         assertEquals(List.of("context"), goldens.getFirst().context());
-        assertEquals(1, model.prompts().size());
+        assertEquals("Context explained", goldens.getFirst().expectedOutcome());
+        assertEquals(2, model.prompts().size());
     }
 
     private static final class ScriptedModel implements EvaluationModel {

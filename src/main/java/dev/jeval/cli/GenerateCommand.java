@@ -516,6 +516,9 @@ final class GenerateCommand {
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("\"scenario\""))) {
                 return "{\"scenario\":\"" + escapeJson(styledScenario(prompt)) + "\"}";
             }
+            if (isConversationalExpectedOutcomePrompt(prompt) && nextResponse >= responses.size()) {
+                return "Generated conversational expected outcome";
+            }
             if (nextResponse >= responses.size()) {
                 throw new IllegalArgumentException("No scripted response for prompt " + prompts.size());
             }
@@ -545,6 +548,10 @@ final class GenerateCommand {
 
     private static boolean isSyntheticScenarioEvaluationPrompt(String prompt) {
         return prompt.startsWith("Evaluate the provided conversational scenario");
+    }
+
+    private static boolean isConversationalExpectedOutcomePrompt(String prompt) {
+        return prompt.startsWith("Generate the expected outcome for this conversation scenario");
     }
 
     private static String rewriteInput(String prompt) {
