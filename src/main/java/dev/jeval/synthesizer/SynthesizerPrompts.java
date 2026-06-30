@@ -1,5 +1,7 @@
 package dev.jeval.synthesizer;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 final class SynthesizerPrompts {
@@ -21,7 +23,7 @@ final class SynthesizerPrompts {
         var shape = includeExpectedOutput
                 ? "{\"data\":[{\"input\":\"...\",\"expected_output\":\"...\"}]}"
                 : "{\"data\":[{\"input\":\"...\"}]}";
-        var sourceFilesSection = sourceFilesSection(availableSourceFiles, "input");
+        var sourceFilesSection = sourceFilesSection(context, availableSourceFiles, "input");
         return """
                 Generate up to %d synthetic user inputs from the context below.
                 Return only JSON in this shape: %s.
@@ -29,7 +31,11 @@ final class SynthesizerPrompts {
 
                 Context:
                 %s
-                """.formatted(maxGoldensPerContext, shape, sourceFilesSection, String.join("\n", context));
+                """.formatted(
+                maxGoldensPerContext,
+                shape,
+                sourceFilesSection,
+                String.join("\n", formatContextWithSources(context, availableSourceFiles)));
     }
 
     static String generateSyntheticInputsFromScratch(String scenario, String task, String inputFormat, int numGoldens) {
@@ -145,7 +151,7 @@ final class SynthesizerPrompts {
         var shape = includeExpectedOutcome
                 ? "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}],\"expected_outcome\":\"...\"}]}"
                 : "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}]}]}";
-        var sourceFilesSection = sourceFilesSection(availableSourceFiles, "scenario");
+        var sourceFilesSection = sourceFilesSection(context, availableSourceFiles, "scenario");
         return """
                 Generate up to %d synthetic multi-turn conversation scenarios from the context below.
                 Return only JSON in this shape: %s.
@@ -162,11 +168,12 @@ final class SynthesizerPrompts {
                 stylingConfig == null ? "" : stylingConfig.scenarioContext(),
                 stylingConfig == null ? "" : stylingConfig.conversationalTask(),
                 stylingConfig == null ? "" : stylingConfig.participantRoles(),
-                String.join("\n", context));
+                String.join("\n", formatContextWithSources(context, availableSourceFiles)));
     }
 
-    private static String sourceFilesSection(List<String> availableSourceFiles, String itemKey) {
-        if (availableSourceFiles == null || availableSourceFiles.size() < 2) {
+    private static String sourceFilesSection(List<String> context, List<String> availableSourceFiles, String itemKey) {
+        var sourceFiles = distinctAlignedSourceFiles(context, availableSourceFiles);
+        if (sourceFiles.size() < 2) {
             return "";
         }
         return """
@@ -174,7 +181,29 @@ final class SynthesizerPrompts {
                 This context is constructed from multiple files with these source labels: %s.
                 For each generated item, include a `used_source_files` key listing only the source labels actually used to form that `%s`.
                 `used_source_files` MUST be a JSON array of strings and each value MUST come from: %s.
-                """.formatted(availableSourceFiles, itemKey, availableSourceFiles);
+                """.formatted(sourceFiles, itemKey, sourceFiles);
+    }
+
+    private static List<String> formatContextWithSources(List<String> context, List<String> sourceFiles) {
+        var distinctSourceFiles = distinctAlignedSourceFiles(context, sourceFiles);
+        if (distinctSourceFiles.size() < 2) {
+            return context == null ? List.of() : context;
+        }
+        var formatted = new ArrayList<String>();
+        for (var i = 0; i < context.size(); i++) {
+            formatted.add("[SOURCE: " + sourceFiles.get(i) + "] " + context.get(i));
+        }
+        return List.copyOf(formatted);
+    }
+
+    private static List<String> distinctAlignedSourceFiles(List<String> context, List<String> sourceFiles) {
+        if (sourceFiles == null || sourceFiles.isEmpty()) {
+            return List.of();
+        }
+        if (context != null && context.size() != sourceFiles.size()) {
+            return List.of();
+        }
+        return List.copyOf(new LinkedHashSet<>(sourceFiles));
     }
 
     static String evaluateSyntheticScenario(String scenario) {

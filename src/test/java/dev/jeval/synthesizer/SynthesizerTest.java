@@ -79,7 +79,26 @@ class SynthesizerTest {
                 goldens.getFirst().additionalMetadata().get("context_source_files"));
         assertTrue(model.prompts().getFirst().contains("policy.md"));
         assertTrue(model.prompts().getFirst().contains("faq.md"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: policy.md] Policy text"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: faq.md] FAQ text"));
         assertTrue(model.prompts().getFirst().contains("used_source_files"));
+    }
+
+    @Test
+    void keepsSingleFileContextChunksUnlabeledLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"What does the document say?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        List<Object> sourceFiles = List.of(List.of("policy.md", "policy.md"));
+
+        synthesizer.generateGoldensFromContexts(
+                List.of(List.of("Policy text", "More policy text")), false, 1, sourceFiles);
+
+        assertTrue(model.prompts().getFirst().contains("Policy text"));
+        assertTrue(model.prompts().getFirst().contains("More policy text"));
+        assertEquals(false, model.prompts().getFirst().contains("[SOURCE: policy.md]"));
+        assertEquals(false, model.prompts().getFirst().contains("used_source_files"));
     }
 
     @Test
