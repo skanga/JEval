@@ -855,7 +855,8 @@ class JEvalCliTest {
                 "--chunk-overlap", "32",
                 "--context-quality-threshold", "0.72",
                 "--context-similarity-threshold", "0.18",
-                "--max-retries", "4"
+                "--max-retries", "4",
+                "--encoding", "UTF-16"
         });
 
         assertEquals(5, accessor(config, "maxContextsPerDocument"));
@@ -867,6 +868,7 @@ class JEvalCliTest {
         assertEquals(0.72, (Double) accessor(config, "contextQualityThreshold"), 0.0001);
         assertEquals(0.18, (Double) accessor(config, "contextSimilarityThreshold"), 0.0001);
         assertEquals(4, accessor(config, "maxRetries"));
+        assertEquals("UTF-16", accessor(config, "encoding"));
     }
 
     @Test

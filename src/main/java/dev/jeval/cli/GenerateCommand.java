@@ -321,7 +321,8 @@ final class GenerateCommand {
                 integer(args, "--max-retries", ContextConstructionConfig.DEFAULT.maxRetries()),
                 has(args, "--allow-cross-file-contexts"),
                 optionalInteger(args, "--target-files-per-context"),
-                integer(args, "--max-files-per-context", ContextConstructionConfig.DEFAULT.maxFilesPerContext()));
+                integer(args, "--max-files-per-context", ContextConstructionConfig.DEFAULT.maxFilesPerContext()),
+                option(args, "--encoding", ContextConstructionConfig.DEFAULT.encoding()));
     }
 
     private static void loadGoldens(EvaluationDataset dataset, Path file) {

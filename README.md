@@ -150,7 +150,7 @@ as Markdown table line structure.
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar settings -u openai-api-key=$env:OPENAI_API_KEY --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation single-turn --contexts-file contexts.json --save=dotenv:.env --output-dir generated
-java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method docs --variation single-turn --documents docs\knowledge.md --chunk-size 200 --max-context-length 3 --min-context-length 1 --save dotenv:.env --output-dir generated
+java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method docs --variation single-turn --documents docs\knowledge.md --chunk-size 200 --max-context-length 3 --min-context-length 1 --encoding UTF-8 --save dotenv:.env --output-dir generated
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method docs --variation single-turn --documents docs\policy.md --documents docs\faq.md --allow-cross-file-contexts --target-files-per-context 2 --max-files-per-context 2 --save dotenv:.env --output-dir generated
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation multi-turn --contexts-file contexts.json --save dotenv:.env --output-dir generated
 java -jar target/jeval-0.1.0-SNAPSHOT.jar generate --method contexts --variation single-turn --contexts-file contexts.json --responses-file responses.txt --no-include-expected --output-dir generated
@@ -181,14 +181,14 @@ var sqlGoldens = synthesizer.generateTextToSqlGoldensFromContext(
 ```
 
 Plain-text document chunking is available through the CLI, including DeepEval's
-`max_context_length` and `min_context_length` controls. If one document in a
-multi-document generation run cannot meet the minimum context count, JEval skips
-that document and continues with the remaining valid documents; a run where no
-document can produce contexts still fails with the DeepEval-style validation
-message. Document-generated source labels preserve the original path string
-provided to the generator, matching DeepEval metadata. Multi-turn generation
-expects model JSON with `scenario`, optional `turns`, and optional
-`expected_outcome`.
+`max_context_length`, `min_context_length`, and explicit `encoding` controls. If
+one document in a multi-document generation run cannot meet the minimum context
+count, JEval skips that document and continues with the remaining valid
+documents; a run where no document can produce contexts still fails with the
+DeepEval-style validation message. Document-generated source labels preserve the
+original path string provided to the generator, matching DeepEval metadata.
+Multi-turn generation expects model JSON with `scenario`, optional `turns`, and
+optional `expected_outcome`.
 
 ## Tracing
 

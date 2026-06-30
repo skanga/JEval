@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import dev.jeval.EvaluationModel;
 import dev.jeval.ConversationalGolden;
 import dev.jeval.Golden;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -399,6 +400,30 @@ class SynthesizerTest {
         assertEquals("Hello policy", goldens.getFirst().context().getFirst());
         assertTrue(model.prompts().getFirst().contains("Hello policy"));
         assertEquals(false, model.prompts().getFirst().contains("\uFEFF"));
+    }
+
+    @Test
+    void generateGoldensFromTextDocsHonorsExplicitEncodingLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("utf16.md");
+        Files.writeString(document, "alpha café", StandardCharsets.UTF_16);
+        var model = new ScriptedModel(List.of("{\"data\":[{\"input\":\"What encoding is loaded?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocs(
+                List.of(document),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 1, 1, 20, 0, 0.5, 0.0, 3,
+                        false, null, 3, "UTF-16"));
+
+        assertEquals("alpha café", goldens.getFirst().context().getFirst());
+        assertTrue(model.prompts().getFirst().contains("alpha café"));
     }
 
     @Test

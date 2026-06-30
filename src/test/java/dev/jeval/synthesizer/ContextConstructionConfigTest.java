@@ -15,6 +15,7 @@ class ContextConstructionConfigTest {
         assertEquals(3, config.maxFilesPerContext());
         assertEquals(3, config.maxContextLength());
         assertEquals(1, config.minContextLength());
+        assertEquals(null, config.encoding());
     }
 
     @Test
@@ -26,6 +27,22 @@ class ContextConstructionConfigTest {
         assertEquals(3, config.maxFilesPerContext());
         assertEquals(1, config.maxContextLength());
         assertEquals(1, config.minContextLength());
+        assertEquals(null, config.encoding());
+    }
+
+    @Test
+    void acceptsDocumentEncodingLikeDeepEval() {
+        var config = new ContextConstructionConfig(3, 1, 3, 1, 1024, 0, 0.5, 0.0, 3,
+                false, null, 3, "UTF-16");
+
+        assertEquals("UTF-16", config.encoding());
+    }
+
+    @Test
+    void rejectsUnsupportedDocumentEncodingLikeDeepEval() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 3, 1, 1024, 0, 0.5, 0.0, 3,
+                        false, null, 3, "not-a-charset"));
     }
 
     @Test

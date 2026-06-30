@@ -8,6 +8,7 @@ import dev.jeval.Utils;
 import dev.jeval.synthesizer.SynthesizerSchemas.SyntheticData;
 import dev.jeval.synthesizer.SynthesizerSchemas.ConversationalData;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -813,7 +814,7 @@ public final class Synthesizer {
             List<Double> contextScores,
             Path file) throws IOException {
         validateChunkOverlap(config.chunkSize(), config.chunkOverlap());
-        var chunks = chunkDocumentText(readDocumentText(file), config.chunkSize(), config.chunkOverlap());
+        var chunks = chunkDocumentText(readDocumentText(file, config.encoding()), config.chunkSize(), config.chunkOverlap());
         validateMinContexts(chunks.size(), config.minContextsPerDocument());
         validateContextLength(chunks.size(), config.minContextLength(), file);
         var count = 0;
@@ -848,10 +849,11 @@ public final class Synthesizer {
         }
     }
 
-    private static String readDocumentText(Path path) throws IOException {
+    private static String readDocumentText(Path path, String encoding) throws IOException {
         var extension = documentExtension(path);
         if (TEXT_DOCUMENT_EXTENSIONS.contains(extension)) {
-            return stripLeadingBom(Files.readString(path));
+            var text = encoding == null ? Files.readString(path) : Files.readString(path, Charset.forName(encoding));
+            return stripLeadingBom(text);
         }
         if (".pdf".equals(extension)) {
             try (var document = Loader.loadPDF(path.toFile())) {

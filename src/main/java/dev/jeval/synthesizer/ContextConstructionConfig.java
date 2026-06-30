@@ -1,5 +1,7 @@
 package dev.jeval.synthesizer;
 
+import java.nio.charset.Charset;
+
 public record ContextConstructionConfig(
         int maxContextsPerDocument,
         int minContextsPerDocument,
@@ -12,9 +14,10 @@ public record ContextConstructionConfig(
         int maxRetries,
         boolean allowCrossFileContexts,
         Integer targetFilesPerContext,
-        int maxFilesPerContext) {
+        int maxFilesPerContext,
+        String encoding) {
     public static final ContextConstructionConfig DEFAULT =
-            new ContextConstructionConfig(3, 1, 3, 1, 1024, 0, 0.5, 0.0, 3, false, null, 3);
+            new ContextConstructionConfig(3, 1, 3, 1, 1024, 0, 0.5, 0.0, 3, false, null, 3, null);
 
     public ContextConstructionConfig(
             int maxContextsPerDocument,
@@ -25,7 +28,7 @@ public record ContextConstructionConfig(
             double contextSimilarityThreshold,
             int maxRetries) {
         this(maxContextsPerDocument, minContextsPerDocument, 1, 1, chunkSize, chunkOverlap,
-                contextQualityThreshold, contextSimilarityThreshold, maxRetries, false, null, 3);
+                contextQualityThreshold, contextSimilarityThreshold, maxRetries, false, null, 3, null);
     }
 
     public ContextConstructionConfig(
@@ -39,7 +42,7 @@ public record ContextConstructionConfig(
             double contextSimilarityThreshold,
             int maxRetries) {
         this(maxContextsPerDocument, minContextsPerDocument, maxContextLength, minContextLength, chunkSize, chunkOverlap,
-                contextQualityThreshold, contextSimilarityThreshold, maxRetries, false, null, 3);
+                contextQualityThreshold, contextSimilarityThreshold, maxRetries, false, null, 3, null);
     }
 
     public ContextConstructionConfig(
@@ -55,7 +58,25 @@ public record ContextConstructionConfig(
             int maxFilesPerContext) {
         this(maxContextsPerDocument, minContextsPerDocument, 1, 1, chunkSize, chunkOverlap,
                 contextQualityThreshold, contextSimilarityThreshold, maxRetries,
-                allowCrossFileContexts, targetFilesPerContext, maxFilesPerContext);
+                allowCrossFileContexts, targetFilesPerContext, maxFilesPerContext, null);
+    }
+
+    public ContextConstructionConfig(
+            int maxContextsPerDocument,
+            int minContextsPerDocument,
+            int maxContextLength,
+            int minContextLength,
+            int chunkSize,
+            int chunkOverlap,
+            double contextQualityThreshold,
+            double contextSimilarityThreshold,
+            int maxRetries,
+            boolean allowCrossFileContexts,
+            Integer targetFilesPerContext,
+            int maxFilesPerContext) {
+        this(maxContextsPerDocument, minContextsPerDocument, maxContextLength, minContextLength, chunkSize, chunkOverlap,
+                contextQualityThreshold, contextSimilarityThreshold, maxRetries,
+                allowCrossFileContexts, targetFilesPerContext, maxFilesPerContext, null);
     }
 
     public ContextConstructionConfig {
@@ -95,5 +116,13 @@ public record ContextConstructionConfig(
         if (maxFilesPerContext < 2) {
             throw new IllegalArgumentException("max_files_per_context must be at least 2.");
         }
+        if (encoding != null && !encoding.isBlank()) {
+            try {
+                Charset.forName(encoding);
+            } catch (IllegalArgumentException error) {
+                throw new IllegalArgumentException("Unsupported encoding: " + encoding, error);
+            }
+        }
+        encoding = encoding == null || encoding.isBlank() ? null : encoding;
     }
 }
