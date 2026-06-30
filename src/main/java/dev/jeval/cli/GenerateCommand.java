@@ -483,6 +483,7 @@ final class GenerateCommand {
     private static final class ScriptedModel implements EvaluationModel {
         private final List<String> responses;
         private final List<String> prompts = new ArrayList<>();
+        private int nextResponse;
 
         private ScriptedModel(List<String> responses) {
             this.responses = responses;
@@ -491,10 +492,32 @@ final class GenerateCommand {
         @Override
         public synchronized String generate(String prompt) {
             prompts.add(prompt);
-            if (prompts.size() > responses.size()) {
+            if (isRewritePrompt(prompt)
+                    && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("rewritten_input"))) {
+                return "{\"rewritten_input\":\"" + escapeJson(rewriteInput(prompt)) + "\"}";
+            }
+            if (nextResponse >= responses.size()) {
                 throw new IllegalArgumentException("No scripted response for prompt " + prompts.size());
             }
-            return responses.get(prompts.size() - 1);
+            return responses.get(nextResponse++);
         }
+    }
+
+    private static boolean isRewritePrompt(String prompt) {
+        return prompt.startsWith("Rewrite the input using this evolution:");
+    }
+
+    private static String rewriteInput(String prompt) {
+        var marker = "Input:";
+        var index = prompt.lastIndexOf(marker);
+        return index < 0 ? "" : prompt.substring(index + marker.length()).trim();
+    }
+
+    private static String escapeJson(String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n");
     }
 }

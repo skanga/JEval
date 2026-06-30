@@ -45,7 +45,7 @@ class SynthesizerTest {
     void omitsExpectedOutputWhenDisabledEvenIfModelReturnsOne() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
 
         var goldens = synthesizer.generateGoldensFromContexts(
                 List.of(List.of("Paris is in France.")), false, 1, null);
@@ -66,7 +66,7 @@ class SynthesizerTest {
                   {"input":"Second question?"}
                 ]}
                 """));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
 
         var goldens = synthesizer.generateGoldensFromContexts(
                 List.of(List.of("Paris is in France.")), false, 1, null);
@@ -75,17 +75,18 @@ class SynthesizerTest {
     }
 
     @Test
-    void defaultConfigDoesNotEvolveInputs() {
+    void defaultConfigEvolvesInputsLikeDeepEval() {
         var model = new ScriptedModel(List.of(
-                "{\"data\":[{\"input\":\"plain\"}]}"));
+                "{\"data\":[{\"input\":\"plain\"}]}",
+                "{\"rewritten_input\":\"evolved\"}"));
         var synthesizer = new Synthesizer(model);
 
         var goldens = synthesizer.generateGoldensFromContexts(
                 List.of(List.of("context")), false, 1, null);
 
-        assertEquals("plain", goldens.getFirst().input());
-        assertEquals(List.of(), goldens.getFirst().additionalMetadata().get("evolutions"));
-        assertEquals(1, model.prompts().size());
+        assertEquals("evolved", goldens.getFirst().input());
+        assertEquals(List.of("Reasoning"), goldens.getFirst().additionalMetadata().get("evolutions"));
+        assertEquals(2, model.prompts().size());
     }
 
     @Test
@@ -99,7 +100,7 @@ class SynthesizerTest {
                 model,
                 null,
                 null,
-                new EvolutionConfig(),
+                noEvolutionConfig(),
                 new SynthesizerOptions(false, 100, false));
 
         var goldens = synthesizer.generateGoldensFromDocs(
@@ -119,7 +120,7 @@ class SynthesizerTest {
     void saveAsWritesLastSyntheticGoldensLikeDeepEval() throws Exception {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
         synthesizer.generateGoldensFromContexts(List.of(List.of("Paris is in France.")), true, 1, null);
 
         var path = synthesizer.saveAs("json", tempDir.resolve("generated"), "goldens", true);
@@ -145,7 +146,7 @@ class SynthesizerTest {
     void saveAsRejectsFileNameWithPeriodsLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}"));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
         synthesizer.generateGoldensFromContexts(List.of(List.of("Paris is in France.")), true, 1, null);
 
         var error = assertThrows(IllegalArgumentException.class,
@@ -195,7 +196,7 @@ class SynthesizerTest {
                 model,
                 null,
                 null,
-                new EvolutionConfig(),
+                noEvolutionConfig(),
                 new SynthesizerOptions(true, 2, false));
 
         var goldens = synthesizer.generateGoldensFromContexts(
@@ -257,7 +258,7 @@ class SynthesizerTest {
     void generatesGoldensFromExistingGoldensWithoutStylingConfig() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is a similar question?\"}]}"));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
         var original = Golden.builder("What is the capital of France?")
                 .expectedOutput("Paris")
                 .build();
@@ -274,7 +275,7 @@ class SynthesizerTest {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"Context question\"}]}",
                 "Context answer"));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
         var contextual = Golden.builder("old context")
                 .context(List.of("context"))
                 .sourceFile("context.txt")
@@ -300,7 +301,7 @@ class SynthesizerTest {
                 ],"used_source_files":["refund.md"]}]}
                 """,
                 "Help the user get a refund"));
-        var synthesizer = new Synthesizer(model);
+        var synthesizer = new Synthesizer(model, null, noEvolutionConfig());
 
         var goldens = synthesizer.generateConversationalGoldensFromContexts(
                 List.of(List.of("Refunds are available within 30 days.")), true, 1, List.of("refund.md"));
@@ -448,6 +449,10 @@ class SynthesizerTest {
         List<String> prompts() {
             return prompts;
         }
+    }
+
+    private static EvolutionConfig noEvolutionConfig() {
+        return new EvolutionConfig(0, List.of(Evolution.REASONING));
     }
 
     private static final class ConcurrentContextModel implements EvaluationModel {

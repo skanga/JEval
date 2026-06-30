@@ -11,6 +11,13 @@ public record EvolutionConfig(int numEvolutions, List<Evolution> evolutions) {
     }
 
     public EvolutionConfig() {
-        this(0, List.of(Evolution.REASONING));
+        this(1, List.of(
+                Evolution.REASONING,
+                Evolution.MULTICONTEXT,
+                Evolution.CONCRETIZING,
+                Evolution.CONSTRAINED,
+                Evolution.COMPARATIVE,
+                Evolution.HYPOTHETICAL,
+                Evolution.IN_BREADTH));
     }
 }
