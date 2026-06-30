@@ -114,11 +114,16 @@ Provider retry helpers honor DeepEval-style environment settings:
 `DEEPEVAL_RETRY_EXP_BASE`, `DEEPEVAL_RETRY_JITTER`,
 `DEEPEVAL_RETRY_CAP_SECONDS`, `DEEPEVAL_SDK_RETRY_PROVIDERS`,
 `DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE`,
-`DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS`, and `DEEPEVAL_DISABLE_TIMEOUTS`
+`DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS`,
+`DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE`,
+`DEEPEVAL_PER_TASK_TIMEOUT_SECONDS`,
+`DEEPEVAL_TASK_GATHER_BUFFER_SECONDS_OVERRIDE`,
+`DEEPEVAL_TASK_GATHER_BUFFER_SECONDS`, and `DEEPEVAL_DISABLE_TIMEOUTS`
 (`openai`, `azure-openai`, or `*` to delegate retries to provider SDKs).
 The retry executor retries transient provider failures up to the configured
-attempt cap, treats per-attempt timeouts as retryable, and leaves SDK-delegated
-or policy-less providers as single calls.
+attempt cap, treats per-attempt timeouts as retryable, derives DeepEval-style
+task timeout/gather budgets, and leaves SDK-delegated or policy-less providers
+as single calls.
 
 ## CLI generate
 

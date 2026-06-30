@@ -16,6 +16,9 @@ import java.util.regex.Pattern;
 
 public final class RetryPolicy {
     private static final String SDK_RETRY_PROVIDERS = "DEEPEVAL_SDK_RETRY_PROVIDERS";
+    private static final double DEFAULT_TASK_TIMEOUT_SECONDS = 180.0;
+    private static final double TIMEOUT_SAFETY_SECONDS = 1.0;
+    private static final ThreadLocal<Long> OUTER_DEADLINE_NANOS = new ThreadLocal<>();
     private static final Pattern PROVIDER_SEPARATOR = Pattern.compile("[,;\\s]+");
     private static final Pattern SLUG_SEPARATOR = Pattern.compile("[^a-z0-9]+");
 
@@ -106,11 +109,71 @@ public final class RetryPolicy {
     }
 
     static TimeoutSettings timeoutSettings(Map<String, String> env) {
-        var perAttempt = readEnvFloat(env, "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", 0.0, 0.0);
-        if (perAttempt == 0.0) {
-            perAttempt = readEnvFloat(env, "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS", 0.0, 0.0);
+        return timeoutSettings(env, retrySettings(env));
+    }
+
+    static TimeoutSettings timeoutSettings(Map<String, String> env, RetrySettings retrySettings) {
+        var perAttemptOverride = readEnvFloat(env, "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", 0.0, 0.0);
+        if (perAttemptOverride == 0.0) {
+            perAttemptOverride = readEnvFloat(env, "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS", 0.0, 0.0);
         }
-        return new TimeoutSettings(readEnvBoolean(env, "DEEPEVAL_DISABLE_TIMEOUTS", false), perAttempt);
+        var perTaskOverride = readEnvFloat(env, "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", 0.0, 0.0);
+        if (perTaskOverride == 0.0) {
+            perTaskOverride = readEnvFloat(env, "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS", 0.0, 0.0);
+        }
+        var perTask = perTaskOverride > 0.0
+                ? perTaskOverride
+                : autoTaskTimeoutSeconds(retrySettings, perAttemptOverride);
+        var perAttempt = perAttemptOverride > 0.0
+                ? perAttemptOverride
+                : computedAttemptTimeoutSeconds(retrySettings, perTaskOverride);
+        var gatherBuffer = readEnvFloat(env, "DEEPEVAL_TASK_GATHER_BUFFER_SECONDS_OVERRIDE", -1.0, 0.0);
+        if (gatherBuffer < 0.0) {
+            gatherBuffer = readEnvFloat(env, "DEEPEVAL_TASK_GATHER_BUFFER_SECONDS", -1.0, 0.0);
+        }
+        if (gatherBuffer < 0.0) {
+            gatherBuffer = constrain(0.15 * perTask, 10.0, 60.0);
+        }
+        return new TimeoutSettings(
+                readEnvBoolean(env, "DEEPEVAL_DISABLE_TIMEOUTS", false),
+                perAttempt,
+                perTask,
+                gatherBuffer);
+    }
+
+    public static OuterDeadlineToken setOuterDeadlineSeconds(double seconds, TimeoutSettings settings) {
+        var previous = OUTER_DEADLINE_NANOS.get();
+        if (!settings.disabled() && seconds > 0.0) {
+            var deadline = System.nanoTime() + Math.round(seconds * 1_000_000_000.0);
+            OUTER_DEADLINE_NANOS.set(deadline);
+        } else {
+            OUTER_DEADLINE_NANOS.remove();
+        }
+        return new OuterDeadlineToken(previous);
+    }
+
+    public static Double remainingBudgetSeconds() {
+        var deadline = OUTER_DEADLINE_NANOS.get();
+        if (deadline == null) {
+            return null;
+        }
+        return Math.max(0.0, (deadline - System.nanoTime()) / 1_000_000_000.0);
+    }
+
+    public static boolean isBudgetSpent() {
+        var remaining = remainingBudgetSeconds();
+        return remaining != null && remaining <= 0.0;
+    }
+
+    public static double resolveEffectiveAttemptTimeoutSeconds(TimeoutSettings settings) {
+        if (settings.disabled() || settings.perAttemptSeconds() <= 0.0) {
+            return 0.0;
+        }
+        var remaining = remainingBudgetSeconds();
+        if (remaining != null) {
+            return Math.max(0.0, Math.min(settings.perAttemptSeconds(), remaining));
+        }
+        return settings.perAttemptSeconds();
     }
 
     public static double retryDelaySeconds(RetrySettings settings, int attemptNumber) {
@@ -318,7 +381,11 @@ public final class RetryPolicy {
     }
 
     private static <T> T callWithTimeout(Callable<T> operation, TimeoutSettings settings) throws Exception {
-        if (settings.disabled() || settings.perAttemptSeconds() <= 0.0) {
+        if (isBudgetSpent()) {
+            throw new RetryTimeoutException(0.0, null);
+        }
+        var timeoutSeconds = resolveEffectiveAttemptTimeoutSeconds(settings);
+        if (timeoutSeconds <= 0.0) {
             return operation.call();
         }
         var executor = Executors.newSingleThreadExecutor(task -> {
@@ -329,11 +396,11 @@ public final class RetryPolicy {
         var future = executor.submit(operation);
         try {
             return future.get(
-                    Math.round(settings.perAttemptSeconds() * 1_000_000_000.0),
+                    Math.round(timeoutSeconds * 1_000_000_000.0),
                     TimeUnit.NANOSECONDS);
         } catch (TimeoutException error) {
             future.cancel(true);
-            throw new RetryTimeoutException(settings.perAttemptSeconds(), error);
+            throw new RetryTimeoutException(timeoutSeconds, error);
         } catch (ExecutionException error) {
             var cause = error.getCause();
             if (cause instanceof Exception exception) {
@@ -386,6 +453,41 @@ public final class RetryPolicy {
             return defaultValue;
         }
         return Set.of("1", "true", "yes", "y", "on").contains(raw.strip().toLowerCase(Locale.ROOT));
+    }
+
+    private static double computedAttemptTimeoutSeconds(RetrySettings retrySettings, double perTaskOverride) {
+        var attempts = retrySettings.maxAttempts();
+        var outer = perTaskOverride > 0.0 ? perTaskOverride : DEFAULT_TASK_TIMEOUT_SECONDS;
+        var usable = Math.max(0.0, outer - expectedBackoffSeconds(retrySettings) - TIMEOUT_SAFETY_SECONDS);
+        if (usable <= 0.0) {
+            return 0.0;
+        }
+        var timeout = usable / attempts;
+        return perTaskOverride > 0.0 ? timeout : Math.max(1.0, timeout);
+    }
+
+    private static double autoTaskTimeoutSeconds(RetrySettings retrySettings, double perAttemptOverride) {
+        if (perAttemptOverride <= 0.0) {
+            return DEFAULT_TASK_TIMEOUT_SECONDS;
+        }
+        return Math.ceil(retrySettings.maxAttempts() * perAttemptOverride
+                + expectedBackoffSeconds(retrySettings)
+                + TIMEOUT_SAFETY_SECONDS);
+    }
+
+    private static double expectedBackoffSeconds(RetrySettings retrySettings) {
+        var sleeps = Math.max(0, retrySettings.maxAttempts() - 1);
+        var current = retrySettings.initialSeconds();
+        var backoff = 0.0;
+        for (var i = 0; i < sleeps; i++) {
+            backoff += Math.min(retrySettings.capSeconds(), current);
+            current *= retrySettings.expBase();
+        }
+        return backoff + sleeps * (retrySettings.jitterSeconds() / 2.0);
+    }
+
+    private static double constrain(double value, double minimum, double maximum) {
+        return Math.min(Math.max(value, minimum), maximum);
     }
 
     private static double readEnvFloat(Map<String, String> env, String name, double defaultValue, double minValue) {
@@ -448,7 +550,14 @@ public final class RetryPolicy {
             double capSeconds) {
     }
 
-    public record TimeoutSettings(boolean disabled, double perAttemptSeconds) {
+    public record TimeoutSettings(
+            boolean disabled,
+            double perAttemptSeconds,
+            double perTaskSeconds,
+            double gatherBufferSeconds) {
+        public TimeoutSettings(boolean disabled, double perAttemptSeconds) {
+            this(disabled, perAttemptSeconds, 0.0, 0.0);
+        }
     }
 
     public record ErrorPolicy(
@@ -482,6 +591,28 @@ public final class RetryPolicy {
     public static final class RetryTimeoutException extends RuntimeException {
         private RetryTimeoutException(double seconds, Throwable cause) {
             super("call timed out after " + seconds + "s (per attempt).", cause);
+        }
+    }
+
+    public static final class OuterDeadlineToken implements AutoCloseable {
+        private final Long previousDeadlineNanos;
+        private boolean closed;
+
+        private OuterDeadlineToken(Long previousDeadlineNanos) {
+            this.previousDeadlineNanos = previousDeadlineNanos;
+        }
+
+        @Override
+        public void close() {
+            if (closed) {
+                return;
+            }
+            if (previousDeadlineNanos == null) {
+                OUTER_DEADLINE_NANOS.remove();
+            } else {
+                OUTER_DEADLINE_NANOS.set(previousDeadlineNanos);
+            }
+            closed = true;
         }
     }
 }

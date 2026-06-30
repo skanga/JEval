@@ -215,18 +215,66 @@ class RetryPolicyTest {
 
     @Test
     void readsTimeoutSettingsFromEnvironmentLikeDeepEval() {
-        assertEquals(new RetryPolicy.TimeoutSettings(false, 0.0),
+        assertTimeoutSettings(new RetryPolicy.TimeoutSettings(false, 88.5, 180.0, 27.0),
                 RetryPolicy.timeoutSettings(Map.of()));
-        assertEquals(new RetryPolicy.TimeoutSettings(false, 0.01),
+        assertTimeoutSettings(new RetryPolicy.TimeoutSettings(false, 0.01, 4.0, 10.0),
                 RetryPolicy.timeoutSettings(Map.of("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "0.01")));
-        assertEquals(new RetryPolicy.TimeoutSettings(false, 0.02),
+        assertTimeoutSettings(new RetryPolicy.TimeoutSettings(false, 0.02, 4.0, 10.0),
                 RetryPolicy.timeoutSettings(Map.of("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS", "0.02")));
-        assertEquals(new RetryPolicy.TimeoutSettings(true, 0.01),
+        assertTimeoutSettings(new RetryPolicy.TimeoutSettings(true, 0.01, 4.0, 10.0),
                 RetryPolicy.timeoutSettings(Map.of(
                         "DEEPEVAL_DISABLE_TIMEOUTS", "true",
                         "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "0.01")));
-        assertEquals(new RetryPolicy.TimeoutSettings(false, 0.0),
+        assertTimeoutSettings(new RetryPolicy.TimeoutSettings(false, 88.5, 180.0, 27.0),
                 RetryPolicy.timeoutSettings(Map.of("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "bogus")));
+    }
+
+    @Test
+    void computesTimeoutSettingsFromOuterBudgetBackoffAndGatherBufferLikeDeepEval() {
+        var settings = RetryPolicy.timeoutSettings(Map.of(
+                "DEEPEVAL_RETRY_MAX_ATTEMPTS", "3",
+                "DEEPEVAL_RETRY_INITIAL_SECONDS", "0.5",
+                "DEEPEVAL_RETRY_EXP_BASE", "3",
+                "DEEPEVAL_RETRY_JITTER", "0",
+                "DEEPEVAL_RETRY_CAP_SECONDS", "9",
+                "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "20"));
+
+        assertEquals(17.0 / 3.0, settings.perAttemptSeconds(), 1e-9);
+        assertEquals(20.0, settings.perTaskSeconds(), 1e-9);
+        assertEquals(10.0, settings.gatherBufferSeconds(), 1e-9);
+
+        assertTimeoutSettings(new RetryPolicy.TimeoutSettings(false, 17.0 / 3.0, 20.0, 12.0),
+                RetryPolicy.timeoutSettings(Map.of(
+                        "DEEPEVAL_RETRY_MAX_ATTEMPTS", "3",
+                        "DEEPEVAL_RETRY_INITIAL_SECONDS", "0.5",
+                        "DEEPEVAL_RETRY_EXP_BASE", "3",
+                        "DEEPEVAL_RETRY_JITTER", "0",
+                        "DEEPEVAL_RETRY_CAP_SECONDS", "9",
+                        "DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "20",
+                        "DEEPEVAL_TASK_GATHER_BUFFER_SECONDS_OVERRIDE", "12")));
+    }
+
+    @Test
+    void resolvesEffectiveAttemptTimeoutAgainstOuterDeadlineLikeDeepEval() throws Exception {
+        var timeoutSettings = new RetryPolicy.TimeoutSettings(false, 10.0, 20.0, 10.0);
+
+        assertEquals(10.0, RetryPolicy.resolveEffectiveAttemptTimeoutSeconds(timeoutSettings), 1e-9);
+        assertNull(RetryPolicy.remainingBudgetSeconds());
+        assertFalse(RetryPolicy.isBudgetSpent());
+
+        try (var ignored = RetryPolicy.setOuterDeadlineSeconds(0.05, timeoutSettings)) {
+            var effective = RetryPolicy.resolveEffectiveAttemptTimeoutSeconds(timeoutSettings);
+            assertTrue(effective > 0.0);
+            assertTrue(effective <= 0.05);
+
+            Thread.sleep(80);
+            assertTrue(RetryPolicy.isBudgetSpent());
+            assertEquals(0.0, RetryPolicy.resolveEffectiveAttemptTimeoutSeconds(timeoutSettings), 1e-9);
+        }
+
+        assertNull(RetryPolicy.remainingBudgetSeconds());
+        assertEquals(0.0, RetryPolicy.resolveEffectiveAttemptTimeoutSeconds(
+                new RetryPolicy.TimeoutSettings(true, 10.0, 20.0, 10.0)), 1e-9);
     }
 
     @Test
@@ -282,6 +330,13 @@ class RetryPolicyTest {
                 Set.of("insufficient_quota"),
                 retry5xx,
                 Map.of("insufficient_quota", Set.of("insufficient_quota", "exceeded your current quota")));
+    }
+
+    private static void assertTimeoutSettings(RetryPolicy.TimeoutSettings expected, RetryPolicy.TimeoutSettings actual) {
+        assertEquals(expected.disabled(), actual.disabled());
+        assertEquals(expected.perAttemptSeconds(), actual.perAttemptSeconds(), 1e-9);
+        assertEquals(expected.perTaskSeconds(), actual.perTaskSeconds(), 1e-9);
+        assertEquals(expected.gatherBufferSeconds(), actual.gatherBufferSeconds(), 1e-9);
     }
 
     private static final class JsonResponse {
