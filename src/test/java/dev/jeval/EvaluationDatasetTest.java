@@ -386,6 +386,46 @@ class EvaluationDatasetTest {
     }
 
     @Test
+    void datasetGeneratesGoldensFromStoredGoldens() {
+        var dataset = new EvaluationDataset();
+        dataset.addGolden(Golden.builder("existing")
+                .context(List.of("Refunds are available within 30 days."))
+                .sourceFile("refund.md")
+                .build());
+        var synthesizer = synthesizer(
+                new ScriptedModel(List.of(
+                        "{\"data\":[{\"input\":\"What is the refund window?\"}]}")),
+                new StylingConfig(null, null, null, null));
+
+        dataset.generateGoldensFromGoldens(1, false, synthesizer);
+
+        assertEquals(2, dataset.goldens().size());
+        assertEquals("existing", dataset.goldens().getFirst().input());
+        assertEquals("What is the refund window?", dataset.goldens().get(1).input());
+        assertEquals(List.of("Refunds are available within 30 days."), dataset.goldens().get(1).context());
+        assertEquals("refund.md", dataset.goldens().get(1).sourceFile());
+    }
+
+    @Test
+    void datasetGeneratesGoldensFromStoredGoldensAsync() {
+        var dataset = new EvaluationDataset();
+        dataset.addGolden(Golden.builder("existing")
+                .context(List.of("Refunds are available within 30 days."))
+                .sourceFile("refund.md")
+                .build());
+        var synthesizer = synthesizer(
+                new ScriptedModel(List.of(
+                        "{\"data\":[{\"input\":\"What is the refund window?\"}]}")),
+                new StylingConfig(null, null, null, null));
+
+        dataset.generateGoldensFromGoldensAsync(1, false, synthesizer).join();
+
+        assertEquals(2, dataset.goldens().size());
+        assertEquals("What is the refund window?", dataset.goldens().get(1).input());
+        assertEquals(List.of("Refunds are available within 30 days."), dataset.goldens().get(1).context());
+    }
+
+    @Test
     void datasetGeneratesConversationalGoldensFromContexts() {
         var dataset = new EvaluationDataset();
         dataset.addGolden(ConversationalGolden.builder("existing")
@@ -507,6 +547,57 @@ class EvaluationDatasetTest {
                 dataset.conversationalGoldens().stream().map(ConversationalGolden::scenario).toList());
         assertEquals(List.of(List.of("refund policy")),
                 dataset.conversationalGoldens().stream().map(ConversationalGolden::context).toList());
+    }
+
+    @Test
+    void datasetGeneratesConversationalGoldensFromStoredGoldens() {
+        var dataset = new EvaluationDataset();
+        dataset.addGolden(ConversationalGolden.builder("existing support scenario")
+                .turns(List.of(new Turn("user", "existing")))
+                .context(List.of("Refunds are available within 30 days."))
+                .build());
+        var synthesizer = conversationalSynthesizer(
+                new ScriptedModel(List.of(
+                        """
+                        {"data":[{"scenario":"expanded support scenario","turns":[
+                          {"role":"user","content":"Can I get a refund?"}
+                        ]}]}
+                        """)),
+                new ConversationalStylingConfig(null, null, null, null));
+
+        dataset.generateConversationalGoldensFromGoldens(1, false, synthesizer);
+
+        assertEquals(2, dataset.conversationalGoldens().size());
+        assertEquals("existing support scenario", dataset.conversationalGoldens().getFirst().scenario());
+        assertEquals("expanded support scenario", dataset.conversationalGoldens().get(1).scenario());
+        assertEquals(List.of("Refunds are available within 30 days."),
+                dataset.conversationalGoldens().get(1).context());
+        assertEquals("Can I get a refund?",
+                dataset.conversationalGoldens().get(1).turns().getFirst().content());
+    }
+
+    @Test
+    void datasetGeneratesConversationalGoldensFromStoredGoldensAsync() {
+        var dataset = new EvaluationDataset();
+        dataset.addGolden(ConversationalGolden.builder("existing support scenario")
+                .turns(List.of(new Turn("user", "existing")))
+                .context(List.of("Refunds are available within 30 days."))
+                .build());
+        var synthesizer = conversationalSynthesizer(
+                new ScriptedModel(List.of(
+                        """
+                        {"data":[{"scenario":"async expanded support scenario","turns":[
+                          {"role":"user","content":"Can I get a refund?"}
+                        ]}]}
+                        """)),
+                new ConversationalStylingConfig(null, null, null, null));
+
+        dataset.generateConversationalGoldensFromGoldensAsync(1, false, synthesizer).join();
+
+        assertEquals(2, dataset.conversationalGoldens().size());
+        assertEquals("async expanded support scenario", dataset.conversationalGoldens().get(1).scenario());
+        assertEquals("Can I get a refund?",
+                dataset.conversationalGoldens().get(1).turns().getFirst().content());
     }
 
     private static final class ActualEqualsExpectedMetric implements Metric {

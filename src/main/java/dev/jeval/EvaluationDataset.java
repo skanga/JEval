@@ -221,6 +221,28 @@ public final class EvaluationDataset {
                 .thenAccept(generated -> generated.forEach(this::addGolden));
     }
 
+    public void generateGoldensFromGoldens(
+            int maxGoldensPerGolden,
+            boolean includeExpectedOutput,
+            Synthesizer synthesizer) {
+        var generated = requireSynthesizer(synthesizer).generateGoldensFromGoldens(
+                goldens(),
+                maxGoldensPerGolden,
+                includeExpectedOutput);
+        generated.forEach(this::addGolden);
+    }
+
+    public CompletableFuture<Void> generateGoldensFromGoldensAsync(
+            int maxGoldensPerGolden,
+            boolean includeExpectedOutput,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateGoldensFromGoldensAsync(
+                goldens(),
+                maxGoldensPerGolden,
+                includeExpectedOutput)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
     public void generateConversationalGoldensFromDocs(List<Path> documentPaths, Synthesizer synthesizer)
             throws IOException {
         generateConversationalGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT, synthesizer);
@@ -307,6 +329,28 @@ public final class EvaluationDataset {
             int numGoldens,
             Synthesizer synthesizer) {
         return requireSynthesizer(synthesizer).generateConversationalGoldensFromScratchAsync(numGoldens)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
+    public void generateConversationalGoldensFromGoldens(
+            int maxGoldensPerGolden,
+            boolean includeExpectedOutcome,
+            Synthesizer synthesizer) {
+        var generated = requireSynthesizer(synthesizer).generateConversationalGoldensFromGoldens(
+                conversationalGoldens(),
+                maxGoldensPerGolden,
+                includeExpectedOutcome);
+        generated.forEach(this::addGolden);
+    }
+
+    public CompletableFuture<Void> generateConversationalGoldensFromGoldensAsync(
+            int maxGoldensPerGolden,
+            boolean includeExpectedOutcome,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateConversationalGoldensFromGoldensAsync(
+                conversationalGoldens(),
+                maxGoldensPerGolden,
+                includeExpectedOutcome)
                 .thenAccept(generated -> generated.forEach(this::addGolden));
     }
 
