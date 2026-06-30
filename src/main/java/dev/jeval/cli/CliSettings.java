@@ -43,7 +43,12 @@ final class CliSettings {
             "LITELLM_MODEL_NAME", "LITELLM_API_BASE",
             "LITELLM_PROXY_API_BASE", "PORTKEY_MODEL_NAME", "PORTKEY_BASE_URL", "PORTKEY_PROVIDER_NAME",
             "OPENROUTER_MODEL_NAME", "OPENROUTER_BASE_URL", "OPENROUTER_COST_PER_INPUT_TOKEN",
-            "OPENROUTER_COST_PER_OUTPUT_TOKEN");
+            "OPENROUTER_COST_PER_OUTPUT_TOKEN",
+            "ANTHROPIC_COST_PER_INPUT_TOKEN", "ANTHROPIC_COST_PER_OUTPUT_TOKEN",
+            "AWS_BEDROCK_COST_PER_INPUT_TOKEN", "AWS_BEDROCK_COST_PER_OUTPUT_TOKEN",
+            "GROK_COST_PER_INPUT_TOKEN", "GROK_COST_PER_OUTPUT_TOKEN",
+            "MOONSHOT_COST_PER_INPUT_TOKEN", "MOONSHOT_COST_PER_OUTPUT_TOKEN",
+            "DEEPSEEK_COST_PER_INPUT_TOKEN", "DEEPSEEK_COST_PER_OUTPUT_TOKEN");
     private static final List<String> EMBED_VALUES = List.of(
             "AZURE_EMBEDDING_MODEL_NAME", "AZURE_EMBEDDING_DEPLOYMENT_NAME",
             "LOCAL_EMBEDDING_MODEL_NAME", "LOCAL_EMBEDDING_BASE_URL");
@@ -334,7 +339,9 @@ final class CliSettings {
                 case "set-openai", "unset-openai" -> openAi();
                 case "set-anthropic", "unset-anthropic" -> llmWithSecrets(
                         "USE_ANTHROPIC_MODEL",
-                        Map.of("--model", "ANTHROPIC_MODEL_NAME", "-m", "ANTHROPIC_MODEL_NAME"),
+                        Map.of("--model", "ANTHROPIC_MODEL_NAME", "-m", "ANTHROPIC_MODEL_NAME",
+                                "--cost-per-input-token", "ANTHROPIC_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "ANTHROPIC_COST_PER_OUTPUT_TOKEN"),
                         "ANTHROPIC_API_KEY");
                 case "set-ollama", "unset-ollama" -> llmWithSecrets(
                         "USE_LOCAL_MODEL",
@@ -358,21 +365,29 @@ final class CliSettings {
                 case "set-bedrock", "unset-bedrock" -> llmWithSecrets(
                         "USE_AWS_BEDROCK_MODEL",
                         Map.of("--model", "AWS_BEDROCK_MODEL_NAME", "-m", "AWS_BEDROCK_MODEL_NAME",
-                                "--region", "AWS_BEDROCK_REGION", "-r", "AWS_BEDROCK_REGION"),
+                                "--region", "AWS_BEDROCK_REGION", "-r", "AWS_BEDROCK_REGION",
+                                "--cost-per-input-token", "AWS_BEDROCK_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "AWS_BEDROCK_COST_PER_OUTPUT_TOKEN"),
                         "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY");
                 case "set-grok", "unset-grok" -> llmWithSecrets(
                         "USE_GROK_MODEL",
                         Map.of("--model", "GROK_MODEL_NAME", "-m", "GROK_MODEL_NAME",
-                                "--base-url", "GROK_BASE_URL", "-u", "GROK_BASE_URL"),
+                                "--base-url", "GROK_BASE_URL", "-u", "GROK_BASE_URL",
+                                "--cost-per-input-token", "GROK_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "GROK_COST_PER_OUTPUT_TOKEN"),
                         "GROK_API_KEY");
                 case "set-moonshot", "unset-moonshot" -> llmWithSecrets(
                         "USE_MOONSHOT_MODEL",
                         Map.of("--model", "MOONSHOT_MODEL_NAME", "-m", "MOONSHOT_MODEL_NAME",
-                                "--base-url", "MOONSHOT_BASE_URL", "-u", "MOONSHOT_BASE_URL"),
+                                "--base-url", "MOONSHOT_BASE_URL", "-u", "MOONSHOT_BASE_URL",
+                                "--cost-per-input-token", "MOONSHOT_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "MOONSHOT_COST_PER_OUTPUT_TOKEN"),
                         "MOONSHOT_API_KEY");
                 case "set-deepseek", "unset-deepseek" -> llmWithSecrets(
                         "USE_DEEPSEEK_MODEL",
-                        Map.of("--model", "DEEPSEEK_MODEL_NAME", "-m", "DEEPSEEK_MODEL_NAME"),
+                        Map.of("--model", "DEEPSEEK_MODEL_NAME", "-m", "DEEPSEEK_MODEL_NAME",
+                                "--cost-per-input-token", "DEEPSEEK_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "DEEPSEEK_COST_PER_OUTPUT_TOKEN"),
                         "DEEPSEEK_API_KEY");
                 case "set-gemini", "unset-gemini" -> gemini();
                 case "set-litellm", "unset-litellm" -> llmWithSecrets(

@@ -2762,6 +2762,40 @@ class JEvalCliTest {
     }
 
     @Test
+    void providerCostOverridesUseProviderSpecificKeysLikeDeepEval() throws Exception {
+        assertProviderCostOverrides(
+                "set-anthropic",
+                new String[] {"--model", "claude-3-5-sonnet"},
+                "unset-anthropic",
+                "ANTHROPIC_COST_PER_INPUT_TOKEN",
+                "ANTHROPIC_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostOverrides(
+                "set-bedrock",
+                new String[] {"--model", "anthropic.claude", "--region", "us-east-1"},
+                "unset-bedrock",
+                "AWS_BEDROCK_COST_PER_INPUT_TOKEN",
+                "AWS_BEDROCK_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostOverrides(
+                "set-grok",
+                new String[] {"--model", "grok-4.3"},
+                "unset-grok",
+                "GROK_COST_PER_INPUT_TOKEN",
+                "GROK_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostOverrides(
+                "set-moonshot",
+                new String[] {"--model", "kimi-k2.6"},
+                "unset-moonshot",
+                "MOONSHOT_COST_PER_INPUT_TOKEN",
+                "MOONSHOT_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostOverrides(
+                "set-deepseek",
+                new String[] {"--model", "deepseek-chat"},
+                "unset-deepseek",
+                "DEEPSEEK_COST_PER_INPUT_TOKEN",
+                "DEEPSEEK_COST_PER_OUTPUT_TOKEN");
+    }
+
+    @Test
     void localModelProviderAcceptsDeepEvalShortAliases() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
@@ -3062,6 +3096,34 @@ class JEvalCliTest {
         args.add("--save");
         args.add("dotenv:" + env);
         return args.toArray(String[]::new);
+    }
+
+    private void assertProviderCostOverrides(
+            String setCommand,
+            String[] baseArgs,
+            String unsetCommand,
+            String inputKey,
+            String outputKey) throws Exception {
+        var env = tempDir.resolve(setCommand + "-costs.env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var setArgs = new java.util.ArrayList<String>();
+        setArgs.addAll(java.util.List.of(baseArgs));
+        setArgs.add("--cost-per-input-token");
+        setArgs.add("0.00011");
+        setArgs.add("--cost-per-output-token");
+        setArgs.add("0.00022");
+
+        assertEquals(0, run(providerArgs(setCommand, setArgs.toArray(String[]::new), env), out, err), text(err));
+        assertDotenv(env, inputKey, "0.00011");
+        assertDotenv(env, outputKey, "0.00022");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {unsetCommand, "--save", "dotenv:" + env}, out, err), text(err));
+        assertEquals(false, readDotenv(env).containsKey(inputKey));
+        assertEquals(false, readDotenv(env).containsKey(outputKey));
     }
 
     private static void withDefaultDotenv(String content, CheckedRunnable action) throws Exception {
