@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import dev.jeval.ConversationalGolden;
 import dev.jeval.EvaluationModel;
 import dev.jeval.Turn;
+import dev.jeval.metrics.MetricUtils;
 import java.util.List;
 
 public final class SimulationController {
@@ -85,7 +86,7 @@ public final class SimulationController {
 
     private static ConversationCompletion parseCompletion(String json) {
         try {
-            return JSON.readValue(json, ConversationCompletion.class);
+            return JSON.treeToValue(MetricUtils.trimAndLoadJson(json), ConversationCompletion.class);
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse conversation completion JSON", error);
         }

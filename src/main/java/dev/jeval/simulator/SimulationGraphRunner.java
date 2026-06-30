@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ConversationalGolden;
 import dev.jeval.EvaluationModel;
 import dev.jeval.Turn;
+import dev.jeval.metrics.MetricUtils;
 import java.util.List;
 
 public final class SimulationGraphRunner {
@@ -68,7 +69,7 @@ public final class SimulationGraphRunner {
 
     private static EdgeChoice parseChoice(String json) {
         try {
-            return JSON.readValue(json, EdgeChoice.class);
+            return JSON.treeToValue(MetricUtils.trimAndLoadJson(json), EdgeChoice.class);
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse simulation graph edge choice JSON", error);
         }

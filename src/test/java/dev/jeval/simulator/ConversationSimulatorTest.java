@@ -68,6 +68,21 @@ class ConversationSimulatorTest {
     }
 
     @Test
+    void generateSchemaExtractsEmbeddedJsonLikeDeepEval() {
+        var model = new ScriptedModel(List.of("""
+                Here is the simulated input:
+                ```json
+                {"simulated_input":"I need help with my order",}
+                ```
+                """));
+        var simulator = new ConversationSimulator(input -> new Turn("assistant", "ok"), model);
+
+        var input = simulator.generateFirstUserInput(ConversationalGolden.builder("order support").build());
+
+        assertEquals("I need help with my order", input);
+    }
+
+    @Test
     void generateTurnFromCallbackPassesInputTurnsAndThreadId() {
         var seen = new AtomicReference<ConversationSimulator.CallbackContext>();
         var simulator = new ConversationSimulator(context -> {

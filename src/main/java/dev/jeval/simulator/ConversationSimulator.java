@@ -5,6 +5,7 @@ import dev.jeval.ConversationalGolden;
 import dev.jeval.ConversationalTestCase;
 import dev.jeval.EvaluationModel;
 import dev.jeval.Turn;
+import dev.jeval.metrics.MetricUtils;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,7 +67,8 @@ public final class ConversationSimulator {
 
     public SimulatedInput generateSchema(String prompt) {
         try {
-            var input = JSON.readValue(simulatorModel.generate(prompt), SimulatedInput.class);
+            var input = JSON.treeToValue(MetricUtils.trimAndLoadJson(simulatorModel.generate(prompt)),
+                    SimulatedInput.class);
             if (input.simulatedInput() == null) {
                 throw new IllegalArgumentException("Simulator response must contain `simulated_input`.");
             }

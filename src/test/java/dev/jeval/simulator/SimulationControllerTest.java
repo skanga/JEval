@@ -91,6 +91,27 @@ class SimulationControllerTest {
         assertTrue(model.prompts().getFirst().contains("\"content\" : \"You are all set.\""));
     }
 
+    @Test
+    void expectedOutcomeControllerExtractsEmbeddedJsonLikeDeepEval() {
+        var model = new ScriptedModel(List.of("""
+                Completion decision:
+                ```json
+                {"is_complete":true,"reason":"done",}
+                ```
+                """));
+        var controller = SimulationController.expectedOutcome(model);
+
+        var shouldEnd = controller.run(
+                List.of(new Turn("user", "I reset my password."), new Turn("assistant", "Done.")),
+                golden("The user has successfully reset their password."),
+                0,
+                "thread",
+                1,
+                3);
+
+        assertTrue(shouldEnd);
+    }
+
     private static ConversationalGolden golden(String expectedOutcome) {
         return ConversationalGolden.builder("account help")
                 .expectedOutcome(expectedOutcome)

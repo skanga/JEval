@@ -51,7 +51,12 @@ class SimulationGraphRunnerTest {
     @Test
     void advanceRoutesToSelectedEdgeAndStaysOnNoneOrOutOfRangeLikeDeepEval() {
         var model = new ScriptedModel(List.of(
-                "{\"index\":2,\"reason\":\"assistant denied it\"}",
+                """
+                Routing result:
+                ```json
+                {"index":2,"reason":"assistant denied it",}
+                ```
+                """,
                 "{\"index\":null,\"reason\":\"none match\"}",
                 "{\"index\":9,\"reason\":\"bad route\"}"));
         var root = SimulationNode.ofText(context -> "start", false, null, "root");
