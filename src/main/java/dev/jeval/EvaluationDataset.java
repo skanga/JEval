@@ -221,6 +221,95 @@ public final class EvaluationDataset {
                 .thenAccept(generated -> generated.forEach(this::addGolden));
     }
 
+    public void generateConversationalGoldensFromDocs(List<Path> documentPaths, Synthesizer synthesizer)
+            throws IOException {
+        generateConversationalGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT, synthesizer);
+    }
+
+    public CompletableFuture<Void> generateConversationalGoldensFromDocsAsync(
+            List<Path> documentPaths,
+            Synthesizer synthesizer) {
+        return generateConversationalGoldensFromDocsAsync(
+                documentPaths, true, 2, ContextConstructionConfig.DEFAULT, synthesizer);
+    }
+
+    public void generateConversationalGoldensFromDocs(
+            List<Path> documentPaths,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            ContextConstructionConfig contextConstructionConfig,
+            Synthesizer synthesizer) throws IOException {
+        var generated = requireSynthesizer(synthesizer).generateConversationalGoldensFromDocs(
+                documentPaths,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                contextConstructionConfig);
+        generated.forEach(this::addGolden);
+    }
+
+    public CompletableFuture<Void> generateConversationalGoldensFromDocsAsync(
+            List<Path> documentPaths,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            ContextConstructionConfig contextConstructionConfig,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateConversationalGoldensFromDocsAsync(
+                documentPaths,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                contextConstructionConfig)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
+    public void generateConversationalGoldensFromContexts(
+            List<List<String>> contexts,
+            Synthesizer synthesizer) {
+        generateConversationalGoldensFromContexts(contexts, true, 2, synthesizer);
+    }
+
+    public CompletableFuture<Void> generateConversationalGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            Synthesizer synthesizer) {
+        return generateConversationalGoldensFromContextsAsync(contexts, true, 2, synthesizer);
+    }
+
+    public void generateConversationalGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            Synthesizer synthesizer) {
+        var generated = requireSynthesizer(synthesizer).generateConversationalGoldensFromContexts(
+                contexts,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                null);
+        generated.forEach(this::addGolden);
+    }
+
+    public CompletableFuture<Void> generateConversationalGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateConversationalGoldensFromContextsAsync(
+                contexts,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                null)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
+    public void generateConversationalGoldensFromScratch(int numGoldens, Synthesizer synthesizer) {
+        requireSynthesizer(synthesizer).generateConversationalGoldensFromScratch(numGoldens).forEach(this::addGolden);
+    }
+
+    public CompletableFuture<Void> generateConversationalGoldensFromScratchAsync(
+            int numGoldens,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateConversationalGoldensFromScratchAsync(numGoldens)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
     public void addTestCasesFromJsonFile(
             Path file,
             String inputKeyName,

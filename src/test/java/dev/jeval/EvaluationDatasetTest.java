@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.synthesizer.ContextConstructionConfig;
+import dev.jeval.synthesizer.ConversationalStylingConfig;
 import dev.jeval.synthesizer.Evolution;
 import dev.jeval.synthesizer.EvolutionConfig;
 import dev.jeval.synthesizer.FiltrationConfig;
@@ -384,6 +385,130 @@ class EvaluationDatasetTest {
                 dataset.goldens().stream().map(Golden::sourceFile).toList());
     }
 
+    @Test
+    void datasetGeneratesConversationalGoldensFromContexts() {
+        var dataset = new EvaluationDataset();
+        dataset.addGolden(ConversationalGolden.builder("existing")
+                .turns(List.of(new Turn("user", "existing")))
+                .build());
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"refund help","turns":[
+                  {"role":"user","content":"Can I get a refund?"}
+                ]}]}
+                """)));
+
+        dataset.generateConversationalGoldensFromContexts(
+                List.of(List.of("Refunds are available within 30 days.")), false, 1, synthesizer);
+
+        assertEquals(2, dataset.conversationalGoldens().size());
+        assertEquals("existing", dataset.conversationalGoldens().getFirst().scenario());
+        assertEquals("refund help", dataset.conversationalGoldens().get(1).scenario());
+        assertEquals(List.of("Refunds are available within 30 days."),
+                dataset.conversationalGoldens().get(1).context());
+        assertEquals("user", dataset.conversationalGoldens().get(1).turns().getFirst().role());
+    }
+
+    @Test
+    void datasetGeneratesConversationalGoldensFromContextsAsync() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"async refund help","turns":[
+                  {"role":"user","content":"Can I get a refund?"}
+                ]}]}
+                """)));
+
+        dataset.generateConversationalGoldensFromContextsAsync(
+                List.of(List.of("Refunds are available within 30 days.")), false, 1, synthesizer)
+                .join();
+
+        assertEquals(List.of("async refund help"),
+                dataset.conversationalGoldens().stream().map(ConversationalGolden::scenario).toList());
+        assertEquals("Can I get a refund?", dataset.conversationalGoldens().getFirst().turns().getFirst().content());
+    }
+
+    @Test
+    void datasetGeneratesConversationalGoldensFromScratch() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = conversationalSynthesizer(
+                new ScriptedModel(List.of(
+                        """
+                        {"data":[{"scenario":"traveler books a flight","turns":[
+                          {"role":"user","content":"Book a flight"}
+                        ]}]}
+                        """,
+                        "{\"scenario\":\"traveler books a flight\"}")),
+                new ConversationalStylingConfig("travel support", "book flights", "traveler and agent", null));
+
+        dataset.generateConversationalGoldensFromScratch(1, synthesizer);
+
+        assertEquals(List.of("traveler books a flight"),
+                dataset.conversationalGoldens().stream().map(ConversationalGolden::scenario).toList());
+        assertEquals("Book a flight", dataset.conversationalGoldens().getFirst().turns().getFirst().content());
+    }
+
+    @Test
+    void datasetGeneratesConversationalGoldensFromScratchAsync() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = conversationalSynthesizer(
+                new ScriptedModel(List.of(
+                        """
+                        {"data":[{"scenario":"async traveler books a flight","turns":[
+                          {"role":"user","content":"Book a flight"}
+                        ]}]}
+                        """,
+                        "{\"scenario\":\"async traveler books a flight\"}")),
+                new ConversationalStylingConfig("travel support", "book flights", "traveler and agent", null));
+
+        dataset.generateConversationalGoldensFromScratchAsync(1, synthesizer).join();
+
+        assertEquals(List.of("async traveler books a flight"),
+                dataset.conversationalGoldens().stream().map(ConversationalGolden::scenario).toList());
+    }
+
+    @Test
+    void datasetGeneratesConversationalGoldensFromDocs() throws Exception {
+        var dataset = new EvaluationDataset();
+        var document = tempDir.resolve("conversation-policy.md");
+        Files.writeString(document, "refund policy");
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"doc refund help","turns":[
+                  {"role":"user","content":"Refund question"}
+                ]}]}
+                """)));
+        var config = new ContextConstructionConfig(1, 1, 2, 0, 0.5, 0.0, 3);
+
+        dataset.generateConversationalGoldensFromDocs(List.of(document), false, 1, config, synthesizer);
+
+        assertEquals(List.of("doc refund help"),
+                dataset.conversationalGoldens().stream().map(ConversationalGolden::scenario).toList());
+        assertEquals(List.of(List.of("refund policy")),
+                dataset.conversationalGoldens().stream().map(ConversationalGolden::context).toList());
+    }
+
+    @Test
+    void datasetGeneratesConversationalGoldensFromDocsAsync() throws Exception {
+        var dataset = new EvaluationDataset();
+        var document = tempDir.resolve("async-conversation-policy.md");
+        Files.writeString(document, "refund policy");
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"async doc refund help","turns":[
+                  {"role":"user","content":"Refund question"}
+                ]}]}
+                """)));
+        var config = new ContextConstructionConfig(1, 1, 2, 0, 0.5, 0.0, 3);
+
+        dataset.generateConversationalGoldensFromDocsAsync(List.of(document), false, 1, config, synthesizer).join();
+
+        assertEquals(List.of("async doc refund help"),
+                dataset.conversationalGoldens().stream().map(ConversationalGolden::scenario).toList());
+        assertEquals(List.of(List.of("refund policy")),
+                dataset.conversationalGoldens().stream().map(ConversationalGolden::context).toList());
+    }
+
     private static final class ActualEqualsExpectedMetric implements Metric {
         @Override
         public MetricResult measure(LlmTestCase testCase) {
@@ -409,6 +534,18 @@ class EvaluationDatasetTest {
                 model,
                 stylingConfig,
                 null,
+                new EvolutionConfig(0, List.of(Evolution.REASONING)),
+                new FiltrationConfig(0.5, 0, null),
+                new SynthesizerOptions(false, 100, false));
+    }
+
+    private static Synthesizer conversationalSynthesizer(
+            EvaluationModel model,
+            ConversationalStylingConfig stylingConfig) {
+        return new Synthesizer(
+                model,
+                null,
+                stylingConfig,
                 new EvolutionConfig(0, List.of(Evolution.REASONING)),
                 new FiltrationConfig(0.5, 0, null),
                 new SynthesizerOptions(false, 100, false));
