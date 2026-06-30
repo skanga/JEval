@@ -2796,6 +2796,59 @@ class JEvalCliTest {
     }
 
     @Test
+    void providerCostOverridesAcceptDeepEvalShortAliases() throws Exception {
+        assertProviderCostShortAliases(
+                "set-openai",
+                new String[] {"--model", "gpt-4o-mini"},
+                "OPENAI_COST_PER_INPUT_TOKEN",
+                "OPENAI_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostShortAliases(
+                "set-openrouter",
+                new String[] {"--model", "openai/gpt-4.1"},
+                "OPENROUTER_COST_PER_INPUT_TOKEN",
+                "OPENROUTER_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostShortAliases(
+                "set-anthropic",
+                new String[] {"--model", "claude-3-5-sonnet"},
+                "ANTHROPIC_COST_PER_INPUT_TOKEN",
+                "ANTHROPIC_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostShortAliases(
+                "set-bedrock",
+                new String[] {"--model", "anthropic.claude", "--region", "us-east-1"},
+                "AWS_BEDROCK_COST_PER_INPUT_TOKEN",
+                "AWS_BEDROCK_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostShortAliases(
+                "set-grok",
+                new String[] {"--model", "grok-4.3"},
+                "GROK_COST_PER_INPUT_TOKEN",
+                "GROK_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostShortAliases(
+                "set-moonshot",
+                new String[] {"--model", "kimi-k2.6"},
+                "MOONSHOT_COST_PER_INPUT_TOKEN",
+                "MOONSHOT_COST_PER_OUTPUT_TOKEN");
+        assertProviderCostShortAliases(
+                "set-deepseek",
+                new String[] {"--model", "deepseek-chat"},
+                "DEEPSEEK_COST_PER_INPUT_TOKEN",
+                "DEEPSEEK_COST_PER_OUTPUT_TOKEN");
+    }
+
+    @Test
+    void openRouterProviderAcceptsDeepEvalTemperatureShortAlias() throws Exception {
+        var env = tempDir.resolve("openrouter-temperature.env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openrouter", "--model", "openai/gpt-4.1", "-t", "0.25",
+                "--save", "dotenv:" + env
+        }, out, err), text(err));
+
+        assertDotenv(env, "TEMPERATURE", "0.25");
+    }
+
+    @Test
     void localModelProviderAcceptsDeepEvalShortAliases() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
@@ -3124,6 +3177,30 @@ class JEvalCliTest {
         assertEquals(0, run(new String[] {unsetCommand, "--save", "dotenv:" + env}, out, err), text(err));
         assertEquals(false, readDotenv(env).containsKey(inputKey));
         assertEquals(false, readDotenv(env).containsKey(outputKey));
+    }
+
+    private void assertProviderCostShortAliases(
+            String setCommand,
+            String[] baseArgs,
+            String inputKey,
+            String outputKey) throws Exception {
+        var env = tempDir.resolve(setCommand + "-short-costs.env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var setArgs = new java.util.ArrayList<String>();
+        setArgs.add(setCommand);
+        setArgs.addAll(java.util.List.of(baseArgs));
+        setArgs.add("-i");
+        setArgs.add("0.00031");
+        setArgs.add("-o");
+        setArgs.add("0.00062");
+        setArgs.add("--save");
+        setArgs.add("dotenv:" + env);
+
+        assertEquals(0, run(setArgs.toArray(String[]::new), out, err), text(err));
+        assertDotenv(env, inputKey, "0.00031");
+        assertDotenv(env, outputKey, "0.00062");
     }
 
     private static void withDefaultDotenv(String content, CheckedRunnable action) throws Exception {

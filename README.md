@@ -108,7 +108,7 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar unset-debug --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --temperature 0.0 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openrouter --model openai/gpt-4.1 --temperature 0.0 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-azure-openai --model gpt-4o --deployment-name eval-deployment --base-url https://example.openai.azure.com --api-version 2024-10-21 --save dotenv:.env
-java -jar target/jeval-0.1.0-SNAPSHOT.jar set-bedrock --model anthropic.claude-3-5-haiku-20241022-v1:0 --region us-east-1 --cost-per-input-token 0.000001 --cost-per-output-token 0.000005 --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-bedrock --model anthropic.claude-3-5-haiku-20241022-v1:0 --region us-east-1 -i 0.000001 -o 0.000005 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-anthropic --model claude-3-5-haiku-latest --cost-per-input-token 0.000001 --cost-per-output-token 0.000005 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-gemini --model gemini-2.5-flash --project my-gcp-project --location us-central1 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-gemini --model gemini-2.5-flash --service-account-file path\to\service-account.json --save dotenv:.env

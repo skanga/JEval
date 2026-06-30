@@ -341,7 +341,9 @@ final class CliSettings {
                         "USE_ANTHROPIC_MODEL",
                         Map.of("--model", "ANTHROPIC_MODEL_NAME", "-m", "ANTHROPIC_MODEL_NAME",
                                 "--cost-per-input-token", "ANTHROPIC_COST_PER_INPUT_TOKEN",
-                                "--cost-per-output-token", "ANTHROPIC_COST_PER_OUTPUT_TOKEN"),
+                                "-i", "ANTHROPIC_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "ANTHROPIC_COST_PER_OUTPUT_TOKEN",
+                                "-o", "ANTHROPIC_COST_PER_OUTPUT_TOKEN"),
                         "ANTHROPIC_API_KEY");
                 case "set-ollama", "unset-ollama" -> llmWithSecrets(
                         "USE_LOCAL_MODEL",
@@ -367,27 +369,35 @@ final class CliSettings {
                         Map.of("--model", "AWS_BEDROCK_MODEL_NAME", "-m", "AWS_BEDROCK_MODEL_NAME",
                                 "--region", "AWS_BEDROCK_REGION", "-r", "AWS_BEDROCK_REGION",
                                 "--cost-per-input-token", "AWS_BEDROCK_COST_PER_INPUT_TOKEN",
-                                "--cost-per-output-token", "AWS_BEDROCK_COST_PER_OUTPUT_TOKEN"),
+                                "-i", "AWS_BEDROCK_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "AWS_BEDROCK_COST_PER_OUTPUT_TOKEN",
+                                "-o", "AWS_BEDROCK_COST_PER_OUTPUT_TOKEN"),
                         "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY");
                 case "set-grok", "unset-grok" -> llmWithSecrets(
                         "USE_GROK_MODEL",
                         Map.of("--model", "GROK_MODEL_NAME", "-m", "GROK_MODEL_NAME",
                                 "--base-url", "GROK_BASE_URL", "-u", "GROK_BASE_URL",
                                 "--cost-per-input-token", "GROK_COST_PER_INPUT_TOKEN",
-                                "--cost-per-output-token", "GROK_COST_PER_OUTPUT_TOKEN"),
+                                "-i", "GROK_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "GROK_COST_PER_OUTPUT_TOKEN",
+                                "-o", "GROK_COST_PER_OUTPUT_TOKEN"),
                         "GROK_API_KEY");
                 case "set-moonshot", "unset-moonshot" -> llmWithSecrets(
                         "USE_MOONSHOT_MODEL",
                         Map.of("--model", "MOONSHOT_MODEL_NAME", "-m", "MOONSHOT_MODEL_NAME",
                                 "--base-url", "MOONSHOT_BASE_URL", "-u", "MOONSHOT_BASE_URL",
                                 "--cost-per-input-token", "MOONSHOT_COST_PER_INPUT_TOKEN",
-                                "--cost-per-output-token", "MOONSHOT_COST_PER_OUTPUT_TOKEN"),
+                                "-i", "MOONSHOT_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "MOONSHOT_COST_PER_OUTPUT_TOKEN",
+                                "-o", "MOONSHOT_COST_PER_OUTPUT_TOKEN"),
                         "MOONSHOT_API_KEY");
                 case "set-deepseek", "unset-deepseek" -> llmWithSecrets(
                         "USE_DEEPSEEK_MODEL",
                         Map.of("--model", "DEEPSEEK_MODEL_NAME", "-m", "DEEPSEEK_MODEL_NAME",
                                 "--cost-per-input-token", "DEEPSEEK_COST_PER_INPUT_TOKEN",
-                                "--cost-per-output-token", "DEEPSEEK_COST_PER_OUTPUT_TOKEN"),
+                                "-i", "DEEPSEEK_COST_PER_INPUT_TOKEN",
+                                "--cost-per-output-token", "DEEPSEEK_COST_PER_OUTPUT_TOKEN",
+                                "-o", "DEEPSEEK_COST_PER_OUTPUT_TOKEN"),
                         "DEEPSEEK_API_KEY");
                 case "set-gemini", "unset-gemini" -> gemini();
                 case "set-litellm", "unset-litellm" -> llmWithSecrets(
@@ -421,7 +431,9 @@ final class CliSettings {
                     "-m", "OPENAI_MODEL_NAME",
                     "--temperature", "TEMPERATURE",
                     "--cost-per-input-token", "OPENAI_COST_PER_INPUT_TOKEN",
-                    "--cost-per-output-token", "OPENAI_COST_PER_OUTPUT_TOKEN");
+                    "-i", "OPENAI_COST_PER_INPUT_TOKEN",
+                    "--cost-per-output-token", "OPENAI_COST_PER_OUTPUT_TOKEN",
+                    "-o", "OPENAI_COST_PER_OUTPUT_TOKEN");
             return llm("USE_OPENAI_MODEL", setKeys, List.of(
                     "OPENAI_MODEL_NAME",
                     "OPENAI_COST_PER_INPUT_TOKEN",
@@ -435,8 +447,11 @@ final class CliSettings {
                     "--base-url", "OPENROUTER_BASE_URL",
                     "-u", "OPENROUTER_BASE_URL",
                     "--temperature", "TEMPERATURE",
+                    "-t", "TEMPERATURE",
                     "--cost-per-input-token", "OPENROUTER_COST_PER_INPUT_TOKEN",
-                    "--cost-per-output-token", "OPENROUTER_COST_PER_OUTPUT_TOKEN");
+                    "-i", "OPENROUTER_COST_PER_INPUT_TOKEN",
+                    "--cost-per-output-token", "OPENROUTER_COST_PER_OUTPUT_TOKEN",
+                    "-o", "OPENROUTER_COST_PER_OUTPUT_TOKEN");
             return llm("USE_OPENROUTER_MODEL", setKeys, List.of(
                     "OPENROUTER_MODEL_NAME",
                     "OPENROUTER_BASE_URL",
