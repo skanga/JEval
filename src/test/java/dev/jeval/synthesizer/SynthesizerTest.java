@@ -12,6 +12,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -265,6 +271,56 @@ class SynthesizerTest {
         assertEquals(List.of(0.0, 0.0), goldens.stream()
                 .map(golden -> golden.additionalMetadata().get("context_quality"))
                 .toList());
+    }
+
+    @Test
+    void generateGoldensFromPdfDocsExtractsTextLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.pdf");
+        writePdf(document, "PDF policy allows refunds");
+        var model = new ScriptedModel(List.of("{\"data\":[{\"input\":\"What does the PDF say?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocs(
+                List.of(document),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 50, 0, 0.5, 0.0, 3));
+
+        assertEquals("What does the PDF say?", goldens.getFirst().input());
+        assertTrue(goldens.getFirst().context().getFirst().contains("PDF policy allows refunds"));
+        assertEquals("policy.pdf", goldens.getFirst().sourceFile());
+        assertTrue(model.prompts().getFirst().contains("PDF policy allows refunds"));
+    }
+
+    @Test
+    void generateGoldensFromDocxDocsExtractsTextLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("handbook.docx");
+        writeDocx(document, "DOCX handbook requires citations");
+        var model = new ScriptedModel(List.of("{\"data\":[{\"input\":\"What does the DOCX require?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocs(
+                List.of(document),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 50, 0, 0.5, 0.0, 3));
+
+        assertEquals("What does the DOCX require?", goldens.getFirst().input());
+        assertTrue(goldens.getFirst().context().getFirst().contains("DOCX handbook requires citations"));
+        assertEquals("handbook.docx", goldens.getFirst().sourceFile());
+        assertTrue(model.prompts().getFirst().contains("DOCX handbook requires citations"));
     }
 
     @Test
@@ -1173,6 +1229,29 @@ class SynthesizerTest {
 
     private static FiltrationConfig noFiltrationConfig() {
         return new FiltrationConfig(0.5, 0, null);
+    }
+
+    private static void writePdf(Path path, String text) throws Exception {
+        try (var document = new PDDocument()) {
+            var page = new PDPage();
+            document.addPage(page);
+            try (var content = new PDPageContentStream(document, page)) {
+                content.beginText();
+                content.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+                content.newLineAtOffset(72, 720);
+                content.showText(text);
+                content.endText();
+            }
+            document.save(path.toFile());
+        }
+    }
+
+    private static void writeDocx(Path path, String text) throws Exception {
+        try (var document = new XWPFDocument();
+                var out = Files.newOutputStream(path)) {
+            document.createParagraph().createRun().setText(text);
+            document.write(out);
+        }
     }
 
     private static final class ConcurrentContextModel implements EvaluationModel {

@@ -22,8 +22,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.IntFunction;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
 public final class Synthesizer {
+    private static final Set<String> SUPPORTED_DOCUMENT_EXTENSIONS = Set.of(
+            ".pdf", ".txt", ".docx", ".md", ".markdown", ".mdx");
     private static final Set<String> TEXT_DOCUMENT_EXTENSIONS = Set.of(".txt", ".md", ".markdown", ".mdx");
     private final EvaluationModel model;
     private final StylingConfig stylingConfig;
@@ -799,7 +804,7 @@ public final class Synthesizer {
             List<Double> contextScores,
             Path file) throws IOException {
         validateChunkOverlap(config.chunkSize(), config.chunkOverlap());
-        var chunks = Utils.chunkText(Files.readString(file), config.chunkSize(), config.chunkOverlap());
+        var chunks = Utils.chunkText(readDocumentText(file), config.chunkSize(), config.chunkOverlap());
         validateMinContexts(chunks.size(), config.minContextsPerDocument());
         var count = 0;
         for (var chunk : chunks) {
@@ -827,9 +832,31 @@ public final class Synthesizer {
 
     private static void validateDocumentExtension(Path path) {
         var extension = documentExtension(path);
-        if (!TEXT_DOCUMENT_EXTENSIONS.contains(extension)) {
+        if (!SUPPORTED_DOCUMENT_EXTENSIONS.contains(extension)) {
             throw new IllegalArgumentException("Unsupported file format: " + extension);
         }
+    }
+
+    private static String readDocumentText(Path path) throws IOException {
+        var extension = documentExtension(path);
+        if (TEXT_DOCUMENT_EXTENSIONS.contains(extension)) {
+            return Files.readString(path);
+        }
+        if (".pdf".equals(extension)) {
+            try (var document = Loader.loadPDF(path.toFile())) {
+                return new PDFTextStripper().getText(document);
+            }
+        }
+        if (".docx".equals(extension)) {
+            try (var input = Files.newInputStream(path);
+                    var document = new XWPFDocument(input)) {
+                return String.join("\n", document.getParagraphs().stream()
+                        .map(paragraph -> paragraph.getText())
+                        .filter(text -> !text.isBlank())
+                        .toList());
+            }
+        }
+        throw new IllegalArgumentException("Unsupported file format: " + extension);
     }
 
     private static String documentExtension(Path path) {
