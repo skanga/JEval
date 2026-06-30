@@ -279,8 +279,8 @@ class JEvalCliTest {
     void testRunCsvDatasetPreservesDeepEvalToolAndMetadataFieldsInLatestData() throws Exception {
         var dataset = tempDir.resolve("cases.csv");
         Files.writeString(dataset, """
-                name,tags,input,actual_output,expected_output,tools_called,expected_tools,metadata,comments,token_cost,completion_time,custom_column_key_values,trace
-                csv-bad,smoke;csv,q,a,b,"[{""name"":""PolicySearch"",""input_parameters"":{""query"":""refund""},""output"":""30 days""}]","[{""name"":""PolicySearch""}]","{""suite"":""csv""}",csv comment,0.52,4.5,"{""risk"":""medium""}","{""name"":""root"",""spans"":[{""name"":""retriever"",""score"":0.8}]}"
+                name,tags,input,actual_output,expected_output,tools_called,expected_tools,metadata,comments,token_cost,completion_time,custom_column_key_values,mcp_servers,mcp_tools_called,mcp_resources_called,mcp_prompts_called,trace
+                csv-bad,smoke;csv,q,a,b,"[{""name"":""PolicySearch"",""input_parameters"":{""query"":""refund""},""output"":""30 days""}]","[{""name"":""PolicySearch""}]","{""suite"":""csv""}",csv comment,0.52,4.5,"{""risk"":""medium""}","[{""server_name"":""policy""}]","[{""name"":""mcp-search""}]","[{""uri"":""file://policy""}]","[{""name"":""policy-prompt""}]","{""name"":""root"",""spans"":[{""name"":""retriever"",""score"":0.8}]}"
                 """);
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
@@ -312,6 +312,10 @@ class JEvalCliTest {
         assertTrue(latestText.contains("\"tokenCost\":0.52"));
         assertTrue(latestText.contains("\"completionTime\":4.5"));
         assertTrue(latestText.contains("\"customColumnKeyValues\":{\"risk\":\"medium\"}"));
+        assertTrue(latestText.contains("\"mcpServers\":[{\"server_name\":\"policy\"}]"));
+        assertTrue(latestText.contains("\"mcpToolsCalled\":[{\"name\":\"mcp-search\"}]"));
+        assertTrue(latestText.contains("\"mcpResourcesCalled\":[{\"uri\":\"file://policy\"}]"));
+        assertTrue(latestText.contains("\"mcpPromptsCalled\":[{\"name\":\"policy-prompt\"}]"));
         assertTrue(latestText.contains("\"trace\":{\"name\":\"root\""));
     }
 

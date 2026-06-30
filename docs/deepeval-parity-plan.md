@@ -47,7 +47,7 @@ Current Java parity:
 - CLI/test-runner latest test-run data preserves single-turn token cost and completion time from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn custom column values from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn tool calls and expected tools from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
-- CLI/test-runner latest test-run data preserves single-turn MCP server, tool, resource, and prompt payloads from inline specs, JSON dataset-loaded cases, and JSONL dataset-loaded cases
+- CLI/test-runner latest test-run data preserves single-turn MCP server, tool, resource, and prompt payloads from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn trace payloads from inline specs, JSON dataset-loaded cases, JSONL dataset-loaded cases, and CSV dataset-loaded cases
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling
 - `RetrievedContextData` value type with DeepEval-style string serialization, source-preserving dataset markers, and single-turn, multi-turn, and golden retrieval-context builder support

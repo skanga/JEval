@@ -309,6 +309,10 @@ public final class EvaluationDataset {
                         .completionTime(doubleFromCsv(row.get("completion_time"), "completion_time"))
                         .customColumnKeyValues(stringMapFromCsv(row.get("custom_column_key_values")))
                         .trace(objectMapFromCsv(row.get("trace"), "trace"))
+                        .mcpServers(objectListFromCsv(row.get("mcp_servers"), "mcp_servers"))
+                        .mcpToolsCalled(objectListFromCsv(row.get("mcp_tools_called"), "mcp_tools_called"))
+                        .mcpResourcesCalled(objectListFromCsv(row.get("mcp_resources_called"), "mcp_resources_called"))
+                        .mcpPromptsCalled(objectListFromCsv(row.get("mcp_prompts_called"), "mcp_prompts_called"))
                         .name(nullIfBlank(row.get("name")))
                         .tags(csvListOrNull(row.get("tags"), ";"))
                         .build());
@@ -1371,6 +1375,26 @@ public final class EvaluationDataset {
             return MAPPER.convertValue(node, new TypeReference<>() {});
         } catch (JsonProcessingException error) {
             throw new IllegalArgumentException("'" + key + "' must contain a JSON object", error);
+        }
+    }
+
+    private static List<Map<String, Object>> objectListFromCsv(String value, String key) {
+        if (blank(value)) {
+            return null;
+        }
+        try {
+            var node = MAPPER.readTree(value);
+            if (!node.isArray()) {
+                throw new IllegalArgumentException("'" + key + "' must be a list of objects");
+            }
+            node.forEach(entry -> {
+                if (!entry.isObject()) {
+                    throw new IllegalArgumentException("'" + key + "' must be a list of objects");
+                }
+            });
+            return MAPPER.convertValue(node, new TypeReference<>() {});
+        } catch (JsonProcessingException error) {
+            throw new IllegalArgumentException("'" + key + "' must contain JSON objects", error);
         }
     }
 
