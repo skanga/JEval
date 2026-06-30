@@ -29,6 +29,7 @@ Current Java parity:
 - Test-run metric summary aggregation across single-turn and conversational API test cases, including DeepEval-style score lists, pass/fail/error counts, first-seen metric ordering, and valid-score counts
 - Test-run sorting and order assignment for single-turn and conversational API test cases, including null-order gap filling and duplicate-order sequential renumbering
 - Test-run dataset alias/id propagation from single-turn and conversational test cases, preserving the first non-null run-level dataset properties
+- Test-run trace span metric aggregation from DeepEval-style agent/tool/retriever/LLM/base trace span payloads, including overall metric summaries, per-span trace metric summaries, and valid-score counts
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling
 - `RetrievedContextData` value type with DeepEval-style string serialization, source-preserving dataset markers, and single-turn, multi-turn, and golden retrieval-context builder support
 - `Contestant`, `ArenaTestCase`, and `Arena` with DeepEval-style unique-name, shared-input, shared-expected-output, and multimodal propagation rules

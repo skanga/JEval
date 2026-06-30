@@ -60,10 +60,12 @@ public record TestRun(
 
     public MetricsScoresAggregation constructMetricsScores() {
         var aggregators = new LinkedHashMap<String, MetricScoresAggregator>();
+        var traceAggregators = TraceMetricScoresAggregator.empty();
         var validScores = 0;
 
         for (var testCase : testCases) {
             validScores += aggregateMetricData(testCase.metricsData(), aggregators);
+            validScores += aggregateTraceMetricData(testCase.trace(), aggregators, traceAggregators);
         }
         for (var testCase : conversationalTestCases) {
             validScores += aggregateMetricData(testCase.metricsData(), aggregators);
@@ -72,7 +74,8 @@ public record TestRun(
         var updatedMetricsScores = aggregators.values().stream()
                 .map(MetricScoresAggregator::toMetricScores)
                 .toList();
-        return new MetricsScoresAggregation(copyWithMetricsScores(updatedMetricsScores), validScores);
+        return new MetricsScoresAggregation(
+                copyWithMetricsScores(updatedMetricsScores, traceAggregators.toTraceMetricScores()), validScores);
     }
 
     public TestRun sortTestCases() {
@@ -125,13 +128,13 @@ public record TestRun(
                 official);
     }
 
-    private TestRun copyWithMetricsScores(List<MetricScores> metricsScores) {
+    private TestRun copyWithMetricsScores(List<MetricScores> metricsScores, TraceMetricScores traceMetricScores) {
         return new TestRun(
                 testFile,
                 testCases,
                 conversationalTestCases,
                 metricsScores,
-                traceMetricsScores,
+                traceMetricScores,
                 identifier,
                 hyperparameters,
                 prompts,
@@ -207,6 +210,81 @@ public record TestRun(
         return validScores;
     }
 
+    private static int aggregateTraceMetricData(
+            Map<String, Object> trace,
+            Map<String, MetricScoresAggregator> aggregators,
+            TraceMetricScoresAggregator traceAggregators) {
+        if (trace == null) {
+            return 0;
+        }
+        var validScores = 0;
+        validScores += aggregateTraceSpans(trace, "agentSpans", "agent_spans", traceAggregators.agent, aggregators);
+        validScores += aggregateTraceSpans(trace, "toolSpans", "tool_spans", traceAggregators.tool, aggregators);
+        validScores += aggregateTraceSpans(
+                trace, "retrieverSpans", "retriever_spans", traceAggregators.retriever, aggregators);
+        validScores += aggregateTraceSpans(trace, "llmSpans", "llm_spans", traceAggregators.llm, aggregators);
+        validScores += aggregateTraceSpans(trace, "baseSpans", "base_spans", traceAggregators.base, aggregators);
+        return validScores;
+    }
+
+    private static int aggregateTraceSpans(
+            Map<String, Object> trace,
+            String camelCaseKey,
+            String snakeCaseKey,
+            Map<String, Map<String, MetricScoresAggregator>> spanAggregators,
+            Map<String, MetricScoresAggregator> overallAggregators) {
+        var spans = trace.get(camelCaseKey);
+        if (spans == null) {
+            spans = trace.get(snakeCaseKey);
+        }
+        if (!(spans instanceof Iterable<?> iterable)) {
+            return 0;
+        }
+
+        var validScores = 0;
+        for (var span : iterable) {
+            if (!(span instanceof Map<?, ?> spanMap)) {
+                continue;
+            }
+            var spanName = String.valueOf(spanMap.get("name"));
+            var metricsData = value(spanMap, "metricsData", "metrics_data");
+            if (!(metricsData instanceof Iterable<?> metricIterable)) {
+                continue;
+            }
+            var spanMetricAggregators = spanAggregators.computeIfAbsent(spanName, ignored -> new LinkedHashMap<>());
+            for (var metric : metricIterable) {
+                if (metric instanceof MetricData metricData) {
+                    aggregateMetricData(metricData, overallAggregators.computeIfAbsent(
+                            metricData.name(), MetricScoresAggregator::new));
+                    aggregateMetricData(metricData, spanMetricAggregators.computeIfAbsent(
+                            metricData.name(), MetricScoresAggregator::new));
+                    if (metricData.score() != null) {
+                        validScores++;
+                    }
+                }
+            }
+        }
+        return validScores;
+    }
+
+    private static Object value(Map<?, ?> values, String camelCaseKey, String snakeCaseKey) {
+        var value = values.get(camelCaseKey);
+        return value == null ? values.get(snakeCaseKey) : value;
+    }
+
+    private static void aggregateMetricData(MetricData metricData, MetricScoresAggregator aggregator) {
+        if (metricData.score() == null) {
+            aggregator.errors++;
+            return;
+        }
+        aggregator.scores.add(metricData.score());
+        if (metricData.success()) {
+            aggregator.passes++;
+        } else {
+            aggregator.fails++;
+        }
+    }
+
     private static <T> List<T> append(List<T> values, T value) {
         var updated = new java.util.ArrayList<T>(values == null ? List.of() : values);
         updated.add(value);
@@ -271,6 +349,46 @@ public record TestRun(
 
         private MetricScores toMetricScores() {
             return new MetricScores(name, scores, passes, fails, errors);
+        }
+    }
+
+    private record TraceMetricScoresAggregator(
+            Map<String, Map<String, MetricScoresAggregator>> agent,
+            Map<String, Map<String, MetricScoresAggregator>> tool,
+            Map<String, Map<String, MetricScoresAggregator>> retriever,
+            Map<String, Map<String, MetricScoresAggregator>> llm,
+            Map<String, Map<String, MetricScoresAggregator>> base) {
+
+        private static TraceMetricScoresAggregator empty() {
+            return new TraceMetricScoresAggregator(
+                    new LinkedHashMap<>(),
+                    new LinkedHashMap<>(),
+                    new LinkedHashMap<>(),
+                    new LinkedHashMap<>(),
+                    new LinkedHashMap<>());
+        }
+
+        private TraceMetricScores toTraceMetricScores() {
+            if (agent.isEmpty() && tool.isEmpty() && retriever.isEmpty() && llm.isEmpty() && base.isEmpty()) {
+                return null;
+            }
+            return new TraceMetricScores(
+                    metricScores(agent),
+                    metricScores(tool),
+                    metricScores(retriever),
+                    metricScores(llm),
+                    metricScores(base));
+        }
+
+        private static Map<String, Map<String, MetricScores>> metricScores(
+                Map<String, Map<String, MetricScoresAggregator>> aggregators) {
+            var scores = new LinkedHashMap<String, Map<String, MetricScores>>();
+            aggregators.forEach((spanName, spanAggregators) -> {
+                var spanScores = new LinkedHashMap<String, MetricScores>();
+                spanAggregators.forEach((metricName, aggregator) -> spanScores.put(metricName, aggregator.toMetricScores()));
+                scores.put(spanName, spanScores);
+            });
+            return scores;
         }
     }
 }

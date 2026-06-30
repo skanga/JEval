@@ -109,6 +109,35 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void constructMetricsScoresAggregatesTraceSpanMetricsLikeDeepEval() {
+        var agentMetric = metricData("trace faithfulness", 0.7, true);
+        var toolMetric = metricData("trace faithfulness", 0.1, false);
+        var errorMetric = metricData("trace answer relevancy", null, true);
+        var testCase = llmApiWithTrace(Map.of(
+                "agentSpans", List.of(Map.of("name", "planner", "metricsData", List.of(agentMetric, errorMetric))),
+                "toolSpans", List.of(Map.of("name", "search", "metricsData", List.of(toolMetric)))));
+
+        var aggregation = new TestRun()
+                .addTestCase(testCase)
+                .constructMetricsScores();
+
+        assertAll(
+                () -> assertEquals(2, aggregation.validScores()),
+                () -> assertEquals(List.of(
+                                new MetricScores("trace faithfulness", List.of(0.7, 0.1), 1, 1, 0),
+                                new MetricScores("trace answer relevancy", List.of(), 0, 0, 1)),
+                        aggregation.testRun().metricsScores()),
+                () -> assertEquals(
+                        Map.of("trace faithfulness", new MetricScores("trace faithfulness", List.of(0.7), 1, 0, 0),
+                                "trace answer relevancy", new MetricScores("trace answer relevancy", List.of(), 0, 0, 1)),
+                        aggregation.testRun().traceMetricsScores().agent().get("planner")),
+                () -> assertEquals(
+                        Map.of("trace faithfulness", new MetricScores("trace faithfulness", List.of(0.1), 0, 1, 0)),
+                        aggregation.testRun().traceMetricsScores().tool().get("search")),
+                () -> assertTrue(aggregation.testRun().traceMetricsScores().llm().isEmpty()));
+    }
+
+    @Test
     void sortTestCasesMatchesDeepEvalOrderGapAndDuplicateRules() {
         var explicitSingleTurn = llmApi("ordered", 2);
         var duplicateSingleTurnA = llmApi("duplicate-a", 0);
@@ -245,6 +274,34 @@ class TestRunPayloadTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    private static LlmApiTestCase llmApiWithTrace(Map<String, Object> trace) {
+        return new LlmApiTestCase(
+                "case",
+                "input",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                List.of(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                trace,
                 null,
                 null,
                 null,
