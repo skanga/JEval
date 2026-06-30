@@ -59,6 +59,14 @@ final class SynthesizerSchemas {
         }
     }
 
+    static String parseScenario(String json) {
+        try {
+            return JSON.readValue(json, SyntheticScenario.class).scenario();
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Unable to parse synthetic scenario JSON", error);
+        }
+    }
+
     static List<ConversationalData> parseConversationalData(String json) {
         try {
             return JSON.readValue(json, ConversationalDataList.class).data();
@@ -89,6 +97,9 @@ final class SynthesizerSchemas {
     }
 
     private record RewrittenScenario(@JsonAlias("rewritten_scenario") String rewrittenScenario) {
+    }
+
+    private record SyntheticScenario(String scenario) {
     }
 
     record ConversationalData(

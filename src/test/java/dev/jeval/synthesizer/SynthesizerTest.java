@@ -496,6 +496,35 @@ class SynthesizerTest {
     }
 
     @Test
+    void rewritesEvolvedConversationalScenariosToStyleLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"raw refund scenario","turns":[
+                  {"role":"user","content":"Can I get a refund?"},
+                  {"role":"assistant","content":"I can help."}
+                ]}]}
+                """,
+                "{\"rewritten_scenario\":\"evolved refund scenario\"}",
+                "{\"scenario\":\"styled refund scenario\"}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                new ConversationalStylingConfig("support desk", null, null, null),
+                new EvolutionConfig(1, List.of(Evolution.REASONING)),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateConversationalGoldensFromContexts(
+                List.of(List.of("Refunds are available within 30 days.")), false, 1, null);
+
+        assertEquals("styled refund scenario", goldens.getFirst().scenario());
+        assertTrue(model.prompts().get(2).contains("Scenario Context: support desk"));
+        assertTrue(model.prompts().get(2).contains("Evolved Scenario:"));
+        assertTrue(model.prompts().get(2).contains("evolved refund scenario"));
+        assertEquals(3, model.prompts().size());
+    }
+
+    @Test
     void rewritesLowQualityConversationalScenariosLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 """
@@ -570,7 +599,8 @@ class SynthesizerTest {
                   {"role":"user","content":"Book me a flight"},
                   {"role":"assistant","content":"Where to?"}
                 ],"expected_outcome":"Flight search started"}]}
-                """));
+                """,
+                "{\"scenario\":\"traveler books a flight\"}"));
         var synthesizer = new Synthesizer(
                 model,
                 null,
@@ -596,7 +626,9 @@ class SynthesizerTest {
                 ]}
                 """,
                 "{\"rewritten_scenario\":\"first evolved\"}",
-                "{\"rewritten_scenario\":\"second evolved\"}"));
+                "{\"scenario\":\"first evolved\"}",
+                "{\"rewritten_scenario\":\"second evolved\"}",
+                "{\"scenario\":\"second evolved\"}"));
         var synthesizer = new Synthesizer(
                 model,
                 null,
@@ -612,7 +644,7 @@ class SynthesizerTest {
         assertEquals(List.of("Reasoning"), goldens.get(0).additionalMetadata().get("evolutions"));
         assertEquals(List.of("Comparative"), goldens.get(1).additionalMetadata().get("evolutions"));
         assertTrue(model.prompts().get(1).contains("Reasoning"));
-        assertTrue(model.prompts().get(2).contains("Comparative"));
+        assertTrue(model.prompts().get(3).contains("Comparative"));
     }
 
     @Test

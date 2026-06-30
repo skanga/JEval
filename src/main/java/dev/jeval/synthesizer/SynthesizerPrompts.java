@@ -194,6 +194,24 @@ final class SynthesizerPrompts {
                 """.formatted(String.join("\n", context == null ? List.of() : context), scenario, feedback);
     }
 
+    static String rewriteEvolvedScenario(String scenario, ConversationalStylingConfig stylingConfig) {
+        return """
+                Given the evolved conversational scenario, generate a JSON object with a `scenario` key.
+                Change the evolved scenario as little as possible while matching the participant roles, scenario context, and conversational task.
+
+                Evolved Scenario:
+                %s
+
+                Participant Roles: %s
+                Scenario Context: %s
+                Conversational Task: %s
+                """.formatted(
+                scenario,
+                stylingConfig == null ? "" : stylingConfig.participantRoles(),
+                stylingConfig == null ? "" : stylingConfig.scenarioContext(),
+                stylingConfig == null ? "" : stylingConfig.conversationalTask());
+    }
+
     static String generateSyntheticConversationalScenariosFromScratch(
             ConversationalStylingConfig stylingConfig,
             int numGoldens) {

@@ -379,6 +379,10 @@ public final class Synthesizer {
                     SynthesizerPrompts.evolveScenario(scenario, context, evolution)));
             evolutions.add(evolution.value());
         }
+        if (shouldStyle(conversationalStylingConfig)) {
+            scenario = SynthesizerSchemas.parseScenario(model.generate(
+                    SynthesizerPrompts.rewriteEvolvedScenario(scenario, conversationalStylingConfig)));
+        }
         var expectedOutcome = data.expectedOutcome();
         if (includeExpectedOutcome && expectedOutcome == null) {
             expectedOutcome = model.generate(SynthesizerPrompts.generateConversationalExpectedOutcome(
@@ -648,6 +652,13 @@ public final class Synthesizer {
     private static boolean shouldStyle(StylingConfig config) {
         return config != null
                 && (hasText(config.inputFormat()) || hasText(config.scenario()) || hasText(config.task()));
+    }
+
+    private static boolean shouldStyle(ConversationalStylingConfig config) {
+        return config != null
+                && (hasText(config.participantRoles())
+                || hasText(config.scenarioContext())
+                || hasText(config.conversationalTask()));
     }
 
     private static boolean hasText(String value) {
