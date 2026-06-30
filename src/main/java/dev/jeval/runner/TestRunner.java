@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public final class TestRunner {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -266,7 +267,9 @@ public final class TestRunner {
                     testCase.expectedOutput(),
                     testCase.context(),
                     testCase.retrievalContext(),
-                    testCase.tags());
+                    testCase.tags(),
+                    testCase.additionalMetadata(),
+                    testCase.comments());
         } catch (RuntimeException error) {
             if (!ignoreErrors) {
                 throw error;
@@ -280,7 +283,9 @@ public final class TestRunner {
                     testCase.expectedOutput(),
                     testCase.context(),
                     testCase.retrievalContext(),
-                    testCase.tags());
+                    testCase.tags(),
+                    testCase.additionalMetadata(),
+                    testCase.comments());
         }
     }
 
@@ -310,6 +315,8 @@ public final class TestRunner {
                 .expectedOutput(spec.expectedOutput())
                 .context(spec.context())
                 .retrievalContext(spec.retrievalContext())
+                .metadata(spec.metadata())
+                .comments(spec.comments())
                 .name(spec.name())
                 .tags(spec.tags())
                 .build();
@@ -326,7 +333,9 @@ public final class TestRunner {
                 testCase.expectedOutput(),
                 testCase.context(),
                 testCase.retrievalContext(),
-                testCase.tags());
+                testCase.tags(),
+                testCase.additionalMetadata(),
+                testCase.comments());
     }
 
     private static List<LlmTestCase> dataset(Path parent, String dataset) {
@@ -444,6 +453,8 @@ public final class TestRunner {
             @JsonAlias("expected_output") String expectedOutput,
             List<String> context,
             @JsonAlias("retrieval_context") List<String> retrievalContext,
-            List<String> tags) {
+            List<String> tags,
+            Map<String, Object> metadata,
+            String comments) {
     }
 }

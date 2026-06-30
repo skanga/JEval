@@ -2,6 +2,8 @@ package dev.jeval.runner;
 
 import dev.jeval.MetricResult;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public record TestRunResult(
         String name,
@@ -26,9 +28,11 @@ public record TestRunResult(
             String expectedOutput,
             List<String> context,
             List<Object> retrievalContext,
-            List<String> tags) {
+            List<String> tags,
+            Map<String, Object> metadata,
+            String comments) {
         public TestCaseResult(String name, boolean success, List<MetricResult> metricResults) {
-            this(name, success, metricResults, null, null, null, null, null, null);
+            this(name, success, metricResults, null, null, null, null, null, null, null, null);
         }
 
         public TestCaseResult {
@@ -36,6 +40,7 @@ public record TestRunResult(
             context = context == null ? null : List.copyOf(context);
             retrievalContext = retrievalContext == null ? null : List.copyOf(retrievalContext);
             tags = tags == null ? null : List.copyOf(tags);
+            metadata = metadata == null ? null : Map.copyOf(new LinkedHashMap<>(metadata));
         }
     }
 
