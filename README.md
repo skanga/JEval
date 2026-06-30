@@ -8,7 +8,7 @@ Port source: DeepEval `8ebfa33d78db4cf81c0ae340b1a925e5406469c8`.
 
 Implemented:
 
-- Core single-turn, conversational, golden, arena, tool-call, MCP, multimodal-placeholder, prompt, and dataset value types
+- Core single-turn, conversational, golden, arena, tool-call, MCP, multimodal-placeholder, prompt, and dataset value types, including DeepEval-compatible deprecated param aliases
 - `EvaluationDataset` JSON/JSONL/CSV import and export for single-turn and conversational goldens/test cases
 - `Evaluator.evaluate(...)`, `Evaluator.evaluateConversations(...)`, arena evaluation, and assertion helpers
 - Deterministic metrics: exact match, pattern match, JSON correctness, tool correctness, and DAG verdict paths
