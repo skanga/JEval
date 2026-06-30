@@ -14,6 +14,7 @@ import dev.jeval.MissingTestCaseParamsException;
 import dev.jeval.SingleTurnParam;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 class ArenaGEvalMetricTest {
@@ -96,6 +97,25 @@ class ArenaGEvalMetricTest {
                 () -> assertTrue(prompt.contains("\"actual_output\"")),
                 () -> assertFalse(prompt.contains("arena_test_cases={")),
                 () -> assertFalse(prompt.contains("actual_output=")));
+    }
+
+    @Test
+    void asyncMeasureMatchesSynchronousArenaMetricBehaviorLikeDeepEval() throws Exception {
+        var metric = new ArenaGEvalMetric(
+                new ScriptedModel(List.of(
+                        "{\"winner\":\"Alice\",\"reason\":\"Alice is better.\"}",
+                        "{\"rewritten_reason\":\"model-a is better.\"}")),
+                "Preference",
+                List.of(SingleTurnParam.ACTUAL_OUTPUT),
+                null,
+                List.of("Pick the clearer answer."));
+
+        var winner = metric.aMeasure(arena()).get(5, TimeUnit.SECONDS);
+
+        assertAll(
+                () -> assertEquals("model-a", winner),
+                () -> assertEquals("model-a", metric.winner()),
+                () -> assertTrue(metric.success()));
     }
 
     @Test

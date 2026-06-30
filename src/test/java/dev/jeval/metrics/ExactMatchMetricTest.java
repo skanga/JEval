@@ -10,6 +10,7 @@ import dev.jeval.Evaluator;
 import dev.jeval.LlmTestCase;
 import dev.jeval.MissingTestCaseParamsException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 class ExactMatchMetricTest {
@@ -59,6 +60,19 @@ class ExactMatchMetricTest {
         var result = Evaluator.evaluate(testCase, List.of(new ExactMatchMetric()));
 
         assertTrue(result.success());
+    }
+
+    @Test
+    void asyncMeasureMatchesSynchronousMetricBehaviorLikeDeepEval() throws Exception {
+        var metric = new ExactMatchMetric();
+
+        var result = metric.aMeasure(new LlmTestCase("What is 2+2?", "4", "4"))
+                .get(5, TimeUnit.SECONDS);
+
+        assertAll(
+                () -> assertEquals("Exact Match", result.name()),
+                () -> assertEquals(1.0, result.score()),
+                () -> assertTrue(result.success()));
     }
 
     @Test

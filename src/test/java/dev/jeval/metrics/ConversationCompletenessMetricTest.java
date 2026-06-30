@@ -14,6 +14,7 @@ import dev.jeval.metrics.ConversationCompletenessSchemas.ConversationCompletenes
 import dev.jeval.metrics.ConversationCompletenessSchemas.UserIntentions;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 class ConversationCompletenessMetricTest {
@@ -108,6 +109,22 @@ class ConversationCompletenessMetricTest {
         var result = metric.measure(testCase());
 
         assertAll(
+                () -> assertEquals(1.0, result.score()),
+                () -> assertTrue(result.success()));
+    }
+
+    @Test
+    void asyncMeasureMatchesSynchronousConversationalMetricBehaviorLikeDeepEval() throws Exception {
+        var metric = new StubConversationCompletenessMetric(
+                new UserIntentions(List.of()),
+                List.of(),
+                new ConversationCompletenessScoreReason("No missing intentions."),
+                false);
+
+        var result = metric.aMeasure(testCase()).get(5, TimeUnit.SECONDS);
+
+        assertAll(
+                () -> assertEquals("Conversation Completeness", result.name()),
                 () -> assertEquals(1.0, result.score()),
                 () -> assertTrue(result.success()));
     }

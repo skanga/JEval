@@ -74,6 +74,7 @@ Current Java parity:
 - `Evaluator.evaluate(...)` for one test case and a list of test cases
 - `Evaluator.evaluate(...)` for one conversational test case and `evaluateConversations(...)` for lists
 - `Evaluator.assertTest(...)` for single-turn and conversational test cases
+- DeepEval-style async measurement wrappers on single-turn, conversational, and arena metric interfaces using Java `CompletableFuture`
 - `EvaluationDataset` with single-turn/multi-turn separation, golden storage/conversion, and evaluation delegation for test cases and goldens
 - `EvaluationDataset` construction from existing single-turn or conversational goldens
 - `EvaluationDataset.addTestCasesFromJsonFile(...)` for single-turn JSON imports, including tool calls and metadata
