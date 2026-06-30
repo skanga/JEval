@@ -362,19 +362,27 @@ public final class Synthesizer {
             boolean includeExpectedOutcome,
             Double syntheticScenarioQuality,
             Double contextQuality) {
+        var evolutions = new ArrayList<String>();
+        var scenario = data.scenario();
+        for (var i = 0; i < evolutionConfig.numEvolutions(); i++) {
+            var evolution = evolution(i);
+            scenario = SynthesizerSchemas.parseRewrittenScenario(model.generate(
+                    SynthesizerPrompts.evolveScenario(scenario, context, evolution)));
+            evolutions.add(evolution.value());
+        }
         var expectedOutcome = data.expectedOutcome();
         if (includeExpectedOutcome && expectedOutcome == null) {
             expectedOutcome = model.generate(SynthesizerPrompts.generateConversationalExpectedOutcome(
-                    data.scenario(),
+                    scenario,
                     context,
                     conversationalStylingConfig == null ? null : conversationalStylingConfig.expectedOutcomeFormat()));
         }
-        return ConversationalGolden.builder(data.scenario())
+        return ConversationalGolden.builder(scenario)
                 .turns(data.turns())
                 .expectedOutcome(expectedOutcome)
                 .userDescription(data.userDescription())
                 .context(context)
-                .additionalMetadata(metadata(List.of(), data, sourceFile, syntheticScenarioQuality, contextQuality))
+                .additionalMetadata(metadata(evolutions, data, sourceFile, syntheticScenarioQuality, contextQuality))
                 .build();
     }
 

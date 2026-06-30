@@ -504,6 +504,10 @@ final class GenerateCommand {
                     && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("rewritten_input"))) {
                 return "{\"rewritten_input\":\"" + escapeJson(rewriteInput(prompt)) + "\"}";
             }
+            if (isScenarioEvolutionPrompt(prompt)
+                    && (nextResponse >= responses.size() || !responses.get(nextResponse).contains("rewritten_scenario"))) {
+                return "{\"rewritten_scenario\":\"" + escapeJson(rewriteScenario(prompt)) + "\"}";
+            }
             if (nextResponse >= responses.size()) {
                 throw new IllegalArgumentException("No scripted response for prompt " + prompts.size());
             }
@@ -513,6 +517,10 @@ final class GenerateCommand {
 
     private static boolean isRewritePrompt(String prompt) {
         return prompt.startsWith("Rewrite the input using this evolution:");
+    }
+
+    private static boolean isScenarioEvolutionPrompt(String prompt) {
+        return prompt.startsWith("Rewrite the conversational scenario using this evolution:");
     }
 
     private static boolean isSyntheticInputEvaluationPrompt(String prompt) {
@@ -527,6 +535,18 @@ final class GenerateCommand {
         var marker = "Input:";
         var index = prompt.lastIndexOf(marker);
         return index < 0 ? "" : prompt.substring(index + marker.length()).trim();
+    }
+
+    private static String rewriteScenario(String prompt) {
+        var marker = "Scenario:";
+        var contextMarker = "Context:";
+        var index = prompt.lastIndexOf(marker);
+        if (index < 0) {
+            return "";
+        }
+        var start = index + marker.length();
+        var end = prompt.indexOf(contextMarker, start);
+        return (end < 0 ? prompt.substring(start) : prompt.substring(start, end)).trim();
     }
 
     private static String escapeJson(String value) {

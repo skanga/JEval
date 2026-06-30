@@ -217,7 +217,7 @@ class SynthesizerTest {
                 model,
                 null,
                 null,
-                new EvolutionConfig(),
+                noEvolutionConfig(),
                 noFiltrationConfig(),
                 new SynthesizerOptions(false, 100, false));
 
@@ -374,6 +374,35 @@ class SynthesizerTest {
         assertEquals(List.of("Refunds are available within 30 days."), goldens.getFirst().context());
         assertEquals(List.of("refund.md"), goldens.getFirst().additionalMetadata().get("used_source_files"));
         assertEquals("user", goldens.getFirst().turns().getFirst().role());
+        assertEquals(2, model.prompts().size());
+    }
+
+    @Test
+    void evolvesConversationalScenariosLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"user asks about refund","turns":[
+                  {"role":"user","content":"Can I get a refund?"},
+                  {"role":"assistant","content":"I can help."}
+                ]}]}
+                """,
+                "{\"rewritten_scenario\":\"A customer and support agent reason through refund eligibility\"}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                new EvolutionConfig(1, List.of(Evolution.REASONING)),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateConversationalGoldensFromContexts(
+                List.of(List.of("Refunds are available within 30 days.")), false, 1, null);
+
+        assertEquals("A customer and support agent reason through refund eligibility",
+                goldens.getFirst().scenario());
+        assertEquals(List.of("Reasoning"), goldens.getFirst().additionalMetadata().get("evolutions"));
+        assertTrue(model.prompts().get(1).contains("Reasoning"));
+        assertTrue(model.prompts().get(1).contains("user asks about refund"));
         assertEquals(2, model.prompts().size());
     }
 

@@ -195,4 +195,17 @@ final class SynthesizerPrompts {
                 Input: %s
                 """.formatted(evolution.value(), input);
     }
+
+    static String evolveScenario(String scenario, List<String> context, Evolution evolution) {
+        return """
+                Rewrite the conversational scenario using this evolution: %s.
+                Preserve factual correctness using only the context.
+                Return only JSON in this shape: {"rewritten_scenario":"..."}.
+
+                Scenario: %s
+
+                Context:
+                %s
+                """.formatted(evolution.value(), scenario, String.join("\n", context == null ? List.of() : context));
+    }
 }
