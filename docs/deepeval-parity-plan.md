@@ -127,6 +127,7 @@ Current Java parity:
 - `ToolCorrectnessMetric` deterministic scoring path with DeepEval-required input/tools validation, available-tool selection score capping, and strict-mode score zeroing
 - RAGAS metric surface from DeepEval's `ragas.py`, including component metric names, required test-case field validation, supplied Java scorer delegation, aggregate `RagasMetric` score averaging, score breakdown storage, Java `CompletableFuture` async measurement wrappers, and explicit unavailable behavior when no scorer is supplied
 - Multimodal image metrics: `TextToImageMetric`, `ImageEditingMetric`, `ImageReferenceMetric`, `ImageCoherenceMetric`, and `ImageHelpfulnessMetric`, including DeepEval-style image cardinality validation, lowest-score/geometric-mean aggregation, nearest image context windows, strict-mode zeroing, model-backed prompt construction, and score/reason parsing
+- Retrieval-context display helper from DeepEval's `retrieval_context_display.py`, including multimodal placeholder expansion and DeepEval-style `Node N:` labels for text and image nodes
 - Metric utility validation for selected single-turn and conversational required params
 - Metric arena utility validation for selected contestant single-turn params
 - Metric turn-to-dictionary utility for selected turn fields
