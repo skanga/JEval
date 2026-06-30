@@ -1,10 +1,18 @@
 package dev.jeval.runner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ConversationalApiTestCase;
 import dev.jeval.ConversationalTestCase;
 import dev.jeval.LlmApiTestCase;
 import dev.jeval.LlmTestCase;
 import dev.jeval.MetricData;
+import dev.jeval.Utils;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -32,6 +40,7 @@ public record TestRun(
         String datasetAlias,
         String datasetId,
         boolean official) {
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     public TestRun() {
         this(null, null, null, null, null, null, null, null, null, null, 0.0, null, null, null, false);
@@ -85,6 +94,23 @@ public record TestRun(
         put(dump, key("dataset_id", "datasetId", byAlias), datasetId, excludeNulls);
         put(dump, "official", official, excludeNulls);
         return dump;
+    }
+
+    public TestRun save(Path file) throws IOException {
+        var bytes = Utils.serializeToJson(modelDump(true, true)).getBytes(StandardCharsets.UTF_8);
+        try (var channel = FileChannel.open(
+                file, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+            var buffer = ByteBuffer.wrap(bytes);
+            while (buffer.hasRemaining()) {
+                channel.write(buffer);
+            }
+            channel.force(true);
+        }
+        return this;
+    }
+
+    public static TestRun load(Path file) throws IOException {
+        return JSON.readValue(file.toFile(), TestRun.class);
     }
 
     public MetricsScoresAggregation constructMetricsScores() {

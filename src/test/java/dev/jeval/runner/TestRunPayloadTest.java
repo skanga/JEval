@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ConversationalApiTestCase;
 import dev.jeval.ConversationalTestCase;
 import dev.jeval.LlmApiTestCase;
@@ -14,12 +15,18 @@ import dev.jeval.MetricData;
 import dev.jeval.Turn;
 import dev.jeval.prompt.PromptInterpolationType;
 import dev.jeval.prompt.PromptMessage;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class TestRunPayloadTest {
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    @TempDir
+    Path tempDir;
 
     @Test
     void testRunPayloadRecordsExposeDeepEvalDefaultsAndDefensiveCopies() {
@@ -131,6 +138,49 @@ class TestRunPayloadTest {
                 () -> assertEquals("actual", nestedCase.get("actualOutput")),
                 () -> assertFalse(nestedCase.containsKey("actual_output")),
                 () -> assertTrue(nestedTraceScores.containsKey("agent")));
+    }
+
+    @Test
+    void testRunSaveAndLoadUseDeepEvalAliasJson() throws Exception {
+        var run = new TestRun(
+                "EvalTest.java",
+                List.of(llmApiWithActualOutput("case", "actual")),
+                List.of(),
+                List.of(new MetricScores("faithfulness", List.of(0.8), 1, 0, 0)),
+                null,
+                "run-id",
+                Map.of("model", "gpt"),
+                null,
+                1,
+                0,
+                2.5,
+                null,
+                "dataset",
+                "dataset-id",
+                true);
+        var file = tempDir.resolve("test_run.json");
+
+        var returned = run.save(file);
+        var saved = JSON.readValue(file.toFile(), Map.class);
+        var nestedCase = ((List<Map<String, Object>>) saved.get("testCases")).getFirst();
+        var loaded = TestRun.load(file);
+
+        assertAll(
+                () -> assertEquals(run, returned),
+                () -> assertEquals("EvalTest.java", saved.get("testFile")),
+                () -> assertTrue(saved.containsKey("testCases")),
+                () -> assertFalse(saved.containsKey("test_file")),
+                () -> assertFalse(saved.containsKey("evaluationCost")),
+                () -> assertFalse(saved.containsKey("prompts")),
+                () -> assertEquals("actual", nestedCase.get("actualOutput")),
+                () -> assertEquals("run-id", loaded.identifier()),
+                () -> assertEquals("EvalTest.java", loaded.testFile()),
+                () -> assertEquals(1, loaded.testCases().size()),
+                () -> assertEquals("actual", loaded.testCases().getFirst().actualOutput()),
+                () -> assertEquals("faithfulness", loaded.metricsScores().getFirst().metric()),
+                () -> assertEquals("dataset", loaded.datasetAlias()),
+                () -> assertEquals("dataset-id", loaded.datasetId()),
+                () -> assertTrue(loaded.official()));
     }
 
     @Test
