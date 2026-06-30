@@ -114,7 +114,11 @@ class JEvalCliTest {
                      "token_cost": 0.12, "completion_time": 1.5,
                      "custom_column_key_values": {"risk": "high", "case_id": "case-17"},
                      "tools_called": [{"name": "PolicySearch", "input_parameters": {"query": "refund"}, "output": "30 days"}],
-                     "expected_tools": [{"name": "PolicySearch"}]}
+                     "expected_tools": [{"name": "PolicySearch"}],
+                     "mcp_servers": [{"server_name": "policy"}],
+                     "mcp_tools_called": [{"name": "mcp-search"}],
+                     "mcp_resources_called": [{"uri": "file://policy"}],
+                     "mcp_prompts_called": [{"name": "policy-prompt"}]}
                   ]
                 }
                 """);
@@ -151,6 +155,10 @@ class JEvalCliTest {
         assertTrue(latestText.contains("\"name\":\"PolicySearch\""));
         assertTrue(latestText.contains("\"inputParameters\":{\"query\":\"refund\"}"));
         assertTrue(latestText.contains("\"output\":\"30 days\""));
+        assertTrue(latestText.contains("\"mcpServers\":[{\"server_name\":\"policy\"}]"));
+        assertTrue(latestText.contains("\"mcpToolsCalled\":[{\"name\":\"mcp-search\"}]"));
+        assertTrue(latestText.contains("\"mcpResourcesCalled\":[{\"uri\":\"file://policy\"}]"));
+        assertTrue(latestText.contains("\"mcpPromptsCalled\":[{\"name\":\"policy-prompt\"}]"));
     }
 
     @Test

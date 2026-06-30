@@ -275,7 +275,11 @@ public final class TestRunner {
                     testCase.completionTime(),
                     testCase.customColumnKeyValues(),
                     testCase.toolsCalled(),
-                    testCase.expectedTools());
+                    testCase.expectedTools(),
+                    testCase.mcpServers(),
+                    testCase.mcpToolsCalled(),
+                    testCase.mcpResourcesCalled(),
+                    testCase.mcpPromptsCalled());
         } catch (RuntimeException error) {
             if (!ignoreErrors) {
                 throw error;
@@ -296,7 +300,11 @@ public final class TestRunner {
                     testCase.completionTime(),
                     testCase.customColumnKeyValues(),
                     testCase.toolsCalled(),
-                    testCase.expectedTools());
+                    testCase.expectedTools(),
+                    testCase.mcpServers(),
+                    testCase.mcpToolsCalled(),
+                    testCase.mcpResourcesCalled(),
+                    testCase.mcpPromptsCalled());
         }
     }
 
@@ -333,6 +341,10 @@ public final class TestRunner {
                 .customColumnKeyValues(spec.customColumnKeyValues())
                 .toolsCalled(spec.toolsCalled())
                 .expectedTools(spec.expectedTools())
+                .mcpServers(spec.mcpServers())
+                .mcpToolsCalled(spec.mcpToolsCalled())
+                .mcpResourcesCalled(spec.mcpResourcesCalled())
+                .mcpPromptsCalled(spec.mcpPromptsCalled())
                 .name(spec.name())
                 .tags(spec.tags())
                 .build();
@@ -356,7 +368,11 @@ public final class TestRunner {
                 testCase.completionTime(),
                 testCase.customColumnKeyValues(),
                 testCase.toolsCalled(),
-                testCase.expectedTools());
+                testCase.expectedTools(),
+                testCase.mcpServers(),
+                testCase.mcpToolsCalled(),
+                testCase.mcpResourcesCalled(),
+                testCase.mcpPromptsCalled());
     }
 
     private static List<LlmTestCase> dataset(Path parent, String dataset) {
@@ -481,6 +497,10 @@ public final class TestRunner {
             @JsonAlias("completion_time") Double completionTime,
             @JsonAlias("custom_column_key_values") Map<String, String> customColumnKeyValues,
             @JsonAlias("tools_called") List<ToolCall> toolsCalled,
-            @JsonAlias("expected_tools") List<ToolCall> expectedTools) {
+            @JsonAlias("expected_tools") List<ToolCall> expectedTools,
+            @JsonAlias("mcp_servers") List<Map<String, Object>> mcpServers,
+            @JsonAlias("mcp_tools_called") List<Map<String, Object>> mcpToolsCalled,
+            @JsonAlias("mcp_resources_called") List<Map<String, Object>> mcpResourcesCalled,
+            @JsonAlias("mcp_prompts_called") List<Map<String, Object>> mcpPromptsCalled) {
     }
 }

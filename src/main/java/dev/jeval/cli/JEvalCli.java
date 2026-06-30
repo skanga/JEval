@@ -425,10 +425,10 @@ public final class JEvalCli {
                 result.tags(),
                 result.customColumnKeyValues(),
                 null,
-                null,
-                null,
-                null,
-                null);
+                result.mcpServers(),
+                result.mcpToolsCalled(),
+                result.mcpResourcesCalled(),
+                result.mcpPromptsCalled());
     }
 
     private static MetricData toMetricData(dev.jeval.MetricResult result) {

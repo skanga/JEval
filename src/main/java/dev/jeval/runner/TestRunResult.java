@@ -2,6 +2,7 @@ package dev.jeval.runner;
 
 import dev.jeval.MetricResult;
 import dev.jeval.ToolCall;
+import java.util.Collections;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -36,10 +37,14 @@ public record TestRunResult(
             Double completionTime,
             Map<String, String> customColumnKeyValues,
             List<ToolCall> toolsCalled,
-            List<ToolCall> expectedTools) {
+            List<ToolCall> expectedTools,
+            List<Map<String, Object>> mcpServers,
+            List<Map<String, Object>> mcpToolsCalled,
+            List<Map<String, Object>> mcpResourcesCalled,
+            List<Map<String, Object>> mcpPromptsCalled) {
         public TestCaseResult(String name, boolean success, List<MetricResult> metricResults) {
             this(name, success, metricResults, null, null, null, null, null, null, null, null, null, null, null,
-                    null, null);
+                    null, null, null, null, null, null);
         }
 
         public TestCaseResult {
@@ -53,6 +58,16 @@ public record TestRunResult(
                     : Map.copyOf(new LinkedHashMap<>(customColumnKeyValues));
             toolsCalled = toolsCalled == null ? null : List.copyOf(toolsCalled);
             expectedTools = expectedTools == null ? null : List.copyOf(expectedTools);
+            mcpServers = copyMaps(mcpServers);
+            mcpToolsCalled = copyMaps(mcpToolsCalled);
+            mcpResourcesCalled = copyMaps(mcpResourcesCalled);
+            mcpPromptsCalled = copyMaps(mcpPromptsCalled);
+        }
+
+        private static List<Map<String, Object>> copyMaps(List<Map<String, Object>> values) {
+            return values == null
+                    ? null
+                    : values.stream().map(value -> Collections.unmodifiableMap(new LinkedHashMap<>(value))).toList();
         }
     }
 
