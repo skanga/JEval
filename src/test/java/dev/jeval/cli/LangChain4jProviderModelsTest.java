@@ -150,6 +150,24 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void createsMoonshotModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_MOONSHOT_MODEL=YES
+                MOONSHOT_MODEL_NAME=kimi-k2.6
+                MOONSHOT_API_KEY=moonshot-test
+                MOONSHOT_BASE_URL=https://api.moonshot.ai/v1
+                TEMPERATURE=0.2
+                MAX_TOKENS=128
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForOpenRouterGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -221,6 +239,20 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void usesModelOverrideForMoonshotGenerationLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_MOONSHOT_MODEL=YES
+                MOONSHOT_API_KEY=moonshot-test
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "moonshot-v1-8k");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForOllamaGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -254,7 +286,7 @@ class LangChain4jProviderModelsTest {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));
 
-        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-grok, set-deepseek, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
+        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
 }

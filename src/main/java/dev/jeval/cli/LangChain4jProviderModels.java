@@ -38,6 +38,9 @@ final class LangChain4jProviderModels {
         if ("YES".equals(config.get("USE_GROK_MODEL"))) {
             return new LangChain4jEvaluationModel(grok(config, modelOverride));
         }
+        if ("YES".equals(config.get("USE_MOONSHOT_MODEL"))) {
+            return new LangChain4jEvaluationModel(moonshot(config, modelOverride));
+        }
         if ("YES".equals(config.get("USE_LOCAL_MODEL"))) {
             if (present(config, "OLLAMA_MODEL_NAME") || (present(modelOverride) && !localModelConfigured(config))) {
                 return new LangChain4jEvaluationModel(ollama(config, modelOverride));
@@ -47,7 +50,7 @@ final class LangChain4jProviderModels {
             }
         }
         throw new IllegalArgumentException(
-                "No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-grok, set-deepseek, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
+                "No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
     }
 
     private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
@@ -102,6 +105,16 @@ final class LangChain4jProviderModels {
                 .apiKey(required(config, "GROK_API_KEY"))
                 .modelName(modelName(config, "GROK_MODEL_NAME", modelOverride, "grok-4.3"))
                 .baseUrl(value(config, "GROK_BASE_URL", "https://api.x.ai/v1"));
+        optionalDouble(config, "TEMPERATURE", builder::temperature);
+        optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
+        return builder.build();
+    }
+
+    private static OpenAiChatModel moonshot(Map<String, String> config, String modelOverride) {
+        var builder = OpenAiChatModel.builder()
+                .apiKey(required(config, "MOONSHOT_API_KEY"))
+                .modelName(modelName(config, "MOONSHOT_MODEL_NAME", modelOverride, "kimi-k2.6"))
+                .baseUrl(value(config, "MOONSHOT_BASE_URL", "https://api.moonshot.ai/v1"));
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
         return builder.build();

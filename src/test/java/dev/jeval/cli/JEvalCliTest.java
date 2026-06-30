@@ -36,7 +36,7 @@ class JEvalCliTest {
 
         assertEquals(2, exit);
         assertTrue(text(err).contains(
-                "set-openai|set-anthropic|set-gemini|set-grok|set-deepseek|set-ollama|set-local-model|set-openrouter"));
+                "set-openai|set-anthropic|set-gemini|set-grok|set-moonshot|set-deepseek|set-ollama|set-local-model|set-openrouter"));
     }
 
     @Test
@@ -2785,6 +2785,36 @@ class JEvalCliTest {
         assertEquals(false, readDotenv(env).containsKey("USE_GROK_MODEL"));
         assertEquals(false, readDotenv(env).containsKey("GROK_MODEL_NAME"));
         assertEquals(false, readDotenv(env).containsKey("GROK_BASE_URL"));
+    }
+
+    @Test
+    void moonshotProviderRoundtripUsesExclusiveFlagsAndBaseUrl() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-moonshot", "--model", "kimi-k2.6",
+                "--base-url", "https://api.moonshot.ai/v1", "--save", "dotenv:" + env
+        }, out, err));
+        assertDotenv(env, "USE_MOONSHOT_MODEL", "YES");
+        assertDotenv(env, "MOONSHOT_MODEL_NAME", "kimi-k2.6");
+        assertDotenv(env, "MOONSHOT_BASE_URL", "https://api.moonshot.ai/v1");
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENAI_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_MODEL_NAME"));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-moonshot", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_MOONSHOT_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("MOONSHOT_MODEL_NAME"));
+        assertEquals(false, readDotenv(env).containsKey("MOONSHOT_BASE_URL"));
     }
 
     @Test
