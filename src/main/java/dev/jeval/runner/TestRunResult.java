@@ -30,9 +30,11 @@ public record TestRunResult(
             List<Object> retrievalContext,
             List<String> tags,
             Map<String, Object> metadata,
-            String comments) {
+            String comments,
+            Double tokenCost,
+            Double completionTime) {
         public TestCaseResult(String name, boolean success, List<MetricResult> metricResults) {
-            this(name, success, metricResults, null, null, null, null, null, null, null, null);
+            this(name, success, metricResults, null, null, null, null, null, null, null, null, null, null);
         }
 
         public TestCaseResult {

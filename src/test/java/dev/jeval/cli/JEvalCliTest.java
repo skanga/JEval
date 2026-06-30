@@ -110,7 +110,8 @@ class JEvalCliTest {
                     {"name": "good", "tags": ["smoke"], "input": "q", "actualOutput": "a", "expectedOutput": "a"},
                     {"name": "bad", "tags": ["regression"], "input": "q", "actualOutput": "a", "expectedOutput": "b",
                      "context": ["document context"], "retrieval_context": ["retrieved fact"],
-                     "metadata": {"suite": "nightly", "priority": 2}, "comments": "investigate drift"}
+                     "metadata": {"suite": "nightly", "priority": 2}, "comments": "investigate drift",
+                     "token_cost": 0.12, "completion_time": 1.5}
                   ]
                 }
                 """);
@@ -137,6 +138,8 @@ class JEvalCliTest {
         assertTrue(latestText.contains("\"suite\":\"nightly\""));
         assertTrue(latestText.contains("\"priority\":2"));
         assertTrue(latestText.contains("\"comments\":\"investigate drift\""));
+        assertTrue(latestText.contains("\"tokenCost\":0.12"));
+        assertTrue(latestText.contains("\"completionTime\":1.5"));
     }
 
     @Test

@@ -43,6 +43,7 @@ Current Java parity:
 - CLI/test-runner latest test-run data preserves single-turn case input, actual output, expected output, metric data, and pass/fail status
 - CLI/test-runner latest test-run data preserves single-turn context, retrieval context, and tags from inline specs and dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn metadata and comments from inline specs and dataset-loaded cases
+- CLI/test-runner latest test-run data preserves single-turn token cost and completion time from inline specs
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling
 - `RetrievedContextData` value type with DeepEval-style string serialization, source-preserving dataset markers, and single-turn, multi-turn, and golden retrieval-context builder support
 - `Contestant`, `ArenaTestCase`, and `Arena` with DeepEval-style unique-name, shared-input, shared-expected-output, and multimodal propagation rules

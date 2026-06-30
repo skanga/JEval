@@ -269,7 +269,9 @@ public final class TestRunner {
                     testCase.retrievalContext(),
                     testCase.tags(),
                     testCase.additionalMetadata(),
-                    testCase.comments());
+                    testCase.comments(),
+                    testCase.tokenCost(),
+                    testCase.completionTime());
         } catch (RuntimeException error) {
             if (!ignoreErrors) {
                 throw error;
@@ -285,7 +287,9 @@ public final class TestRunner {
                     testCase.retrievalContext(),
                     testCase.tags(),
                     testCase.additionalMetadata(),
-                    testCase.comments());
+                    testCase.comments(),
+                    testCase.tokenCost(),
+                    testCase.completionTime());
         }
     }
 
@@ -317,6 +321,8 @@ public final class TestRunner {
                 .retrievalContext(spec.retrievalContext())
                 .metadata(spec.metadata())
                 .comments(spec.comments())
+                .tokenCost(spec.tokenCost())
+                .completionTime(spec.completionTime())
                 .name(spec.name())
                 .tags(spec.tags())
                 .build();
@@ -335,7 +341,9 @@ public final class TestRunner {
                 testCase.retrievalContext(),
                 testCase.tags(),
                 testCase.additionalMetadata(),
-                testCase.comments());
+                testCase.comments(),
+                testCase.tokenCost(),
+                testCase.completionTime());
     }
 
     private static List<LlmTestCase> dataset(Path parent, String dataset) {
@@ -455,6 +463,8 @@ public final class TestRunner {
             @JsonAlias("retrieval_context") List<String> retrievalContext,
             List<String> tags,
             Map<String, Object> metadata,
-            String comments) {
+            String comments,
+            @JsonAlias("token_cost") Double tokenCost,
+            @JsonAlias("completion_time") Double completionTime) {
     }
 }
