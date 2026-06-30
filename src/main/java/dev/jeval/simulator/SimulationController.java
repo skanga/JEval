@@ -44,11 +44,22 @@ public final class SimulationController {
             String threadId,
             int simulationCounter,
             int maxUserSimulations) {
+        return run(turns, golden, index, threadId, simulationCounter, maxUserSimulations, "English");
+    }
+
+    public boolean run(
+            List<Turn> turns,
+            ConversationalGolden golden,
+            int index,
+            String threadId,
+            int simulationCounter,
+            int maxUserSimulations,
+            String language) {
         if (expectedOutcomeController) {
             return checkExpectedOutcome(turns, golden);
         }
         var decision = controller == null ? null : controller.apply(buildContext(
-                turns, golden, index, threadId, simulationCounter, maxUserSimulations));
+                turns, golden, index, threadId, simulationCounter, maxUserSimulations, language));
         return normalizeDecision(decision).shouldEnd();
     }
 
@@ -69,6 +80,17 @@ public final class SimulationController {
             String threadId,
             int simulationCounter,
             int maxUserSimulations) {
+        return buildContext(turns, golden, index, threadId, simulationCounter, maxUserSimulations, "English");
+    }
+
+    public SimulationContext buildContext(
+            List<Turn> turns,
+            ConversationalGolden golden,
+            int index,
+            String threadId,
+            int simulationCounter,
+            int maxUserSimulations,
+            String language) {
         return new SimulationContext(
                 turns,
                 golden,
@@ -77,7 +99,8 @@ public final class SimulationController {
                 simulationCounter,
                 maxUserSimulations,
                 lastTurn(turns, "user"),
-                lastTurn(turns, "assistant"));
+                lastTurn(turns, "assistant"),
+                language);
     }
 
     private static Decision normalizeDecision(Decision decision) {

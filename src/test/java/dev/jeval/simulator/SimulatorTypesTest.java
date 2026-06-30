@@ -49,7 +49,8 @@ class SimulatorTypesTest {
                 2,
                 5,
                 new Turn("user", "I need help"),
-                new Turn("assistant", "How can I help?"));
+                new Turn("assistant", "How can I help?"),
+                "Spanish");
 
         turns.add(new Turn("user", "mutated"));
 
@@ -61,6 +62,7 @@ class SimulatorTypesTest {
         assertEquals(5, context.maxUserSimulations());
         assertEquals("I need help", context.lastUserTurn().content());
         assertEquals("How can I help?", context.lastAssistantTurn().content());
+        assertEquals("Spanish", context.language());
     }
 
     @Test

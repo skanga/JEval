@@ -139,7 +139,8 @@ public final class ConversationSimulator {
         var threadId = UUID.randomUUID().toString();
         var simulatedUserTurns = 0;
         while (simulatedUserTurns < maxUserSimulations) {
-            if (stoppingController.run(turns, golden, index, threadId, simulatedUserTurns, maxUserSimulations)) {
+            if (stoppingController.run(turns, golden, index, threadId,
+                    simulatedUserTurns, maxUserSimulations, language)) {
                 break;
             }
             var generatedUserTurn = false;

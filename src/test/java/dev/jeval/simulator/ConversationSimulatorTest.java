@@ -241,6 +241,32 @@ class ConversationSimulatorTest {
     }
 
     @Test
+    void customGraphAndControllerReceiveLanguageLikeDeepEval() {
+        var model = new ScriptedModel(List.of());
+        var controllerLanguages = new ArrayList<String>();
+        var controller = SimulationController.custom(context -> {
+            controllerLanguages.add(context.language());
+            return SimulationController.proceed();
+        });
+        var graph = SimulationNode.ofText(
+                context -> "Question in " + context.language(),
+                true,
+                null,
+                "localized");
+        var simulator = new ConversationSimulator(
+                context -> new Turn("assistant", "answer"),
+                model,
+                "Spanish",
+                graph,
+                controller);
+
+        var testCase = simulator.simulate(ConversationalGolden.builder("localized flow").build(), 3);
+
+        assertEquals(List.of("Spanish"), controllerLanguages);
+        assertEquals("Question in Spanish", testCase.turns().getFirst().content());
+    }
+
+    @Test
     void simulateDefaultsToTenUserSimulationsAndRetainsConversationsLikeDeepEval() {
         var responses = new ArrayList<String>();
         for (var index = 1; index <= 10; index++) {

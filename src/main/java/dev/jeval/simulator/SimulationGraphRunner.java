@@ -41,7 +41,8 @@ public final class SimulationGraphRunner {
                 visits,
                 node.maxVisits() == null ? Integer.MAX_VALUE : node.maxVisits(),
                 lastTurn(turns, "user"),
-                lastTurn(turns, "assistant")));
+                lastTurn(turns, "assistant"),
+                language));
         state.incrementVisits(node);
         return new TurnEmission(turn, node.terminal());
     }

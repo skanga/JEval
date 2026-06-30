@@ -68,7 +68,7 @@ Current Java parity:
 - `EvaluationDataset.addGoldensFromCsvFile(...)` custom column names for conversational CSV scenario, turns, outcome, user description, comments, name, context, metadata, and custom columns
 - Single-turn synthesizer for contexts, docs, scratch styling, and existing goldens, with CLI generation and OpenAI/OpenRouter/Ollama LangChain4j provider wiring
 - Multi-turn synthesizer for contexts, docs, scratch styling, and existing conversational goldens, producing `ConversationalGolden` values with scenario, turns, expected outcome, context, metadata, and DeepEval-style embedded/trailing-comma schema JSON parsing
-- Simulator schema and graph value surface for `ConversationCompletion`, `SimulatedInput`, `EdgeChoice`, controller `Decision`/`Context`, and `SimulationNode` action/edge validation with DeepEval-style string representation
+- Simulator schema and graph value surface for `ConversationCompletion`, `SimulatedInput`, `EdgeChoice`, controller `Decision`/`Context` including language propagation, and `SimulationNode` action/edge validation with DeepEval-style string representation
 - Simulator prompt templates for first user turn, next user turn, expected-outcome completion checks, and simulation-graph edge classification
 - Simulator graph runner with per-conversation state, max-visit caps, terminal emissions, no-edge short-circuiting, and model-routed edge advancement
 - Simulator controller helpers for proceed/end decisions, context construction, custom controller normalization, and expected-outcome completion checks
