@@ -216,10 +216,17 @@ public final class EvaluationDataset {
                     .toolsCalled(toolListOrEmptyIfMissing(row, toolsCalledKeyName, false))
                     .expectedTools(toolListOrEmptyIfMissing(row, expectedToolsKeyName, false))
                     .additionalMetadata(objectMapOrNull(row, additionalMetadataKeyName))
+                    .comments(textOrNull(row, "comments"))
+                    .tokenCost(doubleOrNull(row, "token_cost"))
+                    .completionTime(doubleOrNull(row, "completion_time"))
+                    .customColumnKeyValues(stringMapOrNull(row, "custom_column_key_values"))
                     .mcpServers(objectListOrNull(row, "mcp_servers"))
                     .mcpToolsCalled(objectListOrNull(row, "mcp_tools_called"))
                     .mcpResourcesCalled(objectListOrNull(row, "mcp_resources_called"))
                     .mcpPromptsCalled(objectListOrNull(row, "mcp_prompts_called"))
+                    .trace(objectMapOrNull(row, "trace"))
+                    .name(textOrNull(row, "name"))
+                    .tags(textListOrNull(row, "tags"))
                     .build());
         }
     }
@@ -980,6 +987,16 @@ public final class EvaluationDataset {
             throw new IllegalArgumentException("'" + key + "' must be a string");
         }
         return row.get(key).asText();
+    }
+
+    private static Double doubleOrNull(JsonNode row, String key) {
+        if (key == null || !row.has(key) || row.get(key).isNull()) {
+            return null;
+        }
+        if (!row.get(key).isNumber()) {
+            throw new IllegalArgumentException("'" + key + "' must be a number");
+        }
+        return row.get(key).asDouble();
     }
 
     private static String requiredText(JsonNode row, String key) {

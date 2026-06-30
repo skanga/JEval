@@ -171,16 +171,24 @@ class JEvalCliTest {
                 [
                   {
                     "name": "dataset-bad",
+                    "tags": ["json"],
                     "input": "q",
                     "actual_output": "a",
                     "expected_output": "b",
+                    "context": ["document context"],
+                    "retrieval_context": ["retrieved fact"],
                     "tools_called": [{"name": "PolicySearch", "input_parameters": {"query": "refund"}, "output": "30 days"}],
                     "expected_tools": [{"name": "PolicySearch"}],
                     "mcp_servers": [{"server_name": "policy"}],
                     "mcp_tools_called": [{"name": "mcp-search"}],
                     "mcp_resources_called": [{"uri": "file://policy"}],
                     "mcp_prompts_called": [{"name": "policy-prompt"}],
-                    "metadata": {"suite": "dataset"}
+                    "metadata": {"suite": "dataset"},
+                    "comments": "json comment",
+                    "token_cost": 0.32,
+                    "completion_time": 3.5,
+                    "custom_column_key_values": {"risk": "medium"},
+                    "trace": {"name": "root", "spans": [{"name": "retriever", "score": 0.8}]}
                   }
                 ]
                 """);
@@ -201,6 +209,10 @@ class JEvalCliTest {
         assertEquals(1, exit, text(err));
         var latestText = Files.readString(tempDir.resolve(".deepeval").resolve(".latest_test_run.json"));
         assertTrue(latestText.contains("\"identifier\":\"dataset-release\""));
+        assertTrue(latestText.contains("\"name\":\"dataset-bad\""));
+        assertTrue(latestText.contains("\"context\":[\"document context\"]"));
+        assertTrue(latestText.contains("\"retrievalContext\":[\"retrieved fact\"]"));
+        assertTrue(latestText.contains("\"tags\":[\"json\"]"));
         assertTrue(latestText.contains("\"toolsCalled\":[{"));
         assertTrue(latestText.contains("\"expectedTools\":[{"));
         assertTrue(latestText.contains("\"name\":\"PolicySearch\""));
@@ -212,6 +224,11 @@ class JEvalCliTest {
         assertTrue(latestText.contains("\"mcpPromptsCalled\":[{\"name\":\"policy-prompt\"}]"));
         assertTrue(latestText.contains("\"metadata\":{"));
         assertTrue(latestText.contains("\"suite\":\"dataset\""));
+        assertTrue(latestText.contains("\"comments\":\"json comment\""));
+        assertTrue(latestText.contains("\"tokenCost\":0.32"));
+        assertTrue(latestText.contains("\"completionTime\":3.5"));
+        assertTrue(latestText.contains("\"customColumnKeyValues\":{\"risk\":\"medium\"}"));
+        assertTrue(latestText.contains("\"trace\":{\"name\":\"root\""));
     }
 
     @Test
