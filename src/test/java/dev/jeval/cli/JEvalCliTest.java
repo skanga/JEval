@@ -3104,6 +3104,46 @@ class JEvalCliTest {
         assertDotenv(env, "GOOGLE_GENAI_USE_VERTEXAI", "true");
     }
 
+    @Test
+    void ollamaEmbeddingsSetDeepEvalLocalApiKeySentinel() throws Exception {
+        var env = tempDir.resolve("ollama-embeddings.env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-ollama-embeddings",
+                "--model", "nomic-embed-text",
+                "--base-url", "http://localhost:11434",
+                "--save", "dotenv:" + env
+        }, out, err), text(err));
+        assertDotenv(env, "USE_LOCAL_EMBEDDINGS", "YES");
+        assertDotenv(env, "LOCAL_EMBEDDING_MODEL_NAME", "nomic-embed-text");
+        assertDotenv(env, "LOCAL_EMBEDDING_BASE_URL", "http://localhost:11434");
+        assertDotenv(env, "LOCAL_EMBEDDING_API_KEY", "ollama");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-ollama-embeddings", "--save", "dotenv:" + env}, out, err),
+                text(err));
+        assertEquals(false, readDotenv(env).containsKey("USE_LOCAL_EMBEDDINGS"));
+        assertEquals(false, readDotenv(env).containsKey("LOCAL_EMBEDDING_MODEL_NAME"));
+        assertDotenv(env, "LOCAL_EMBEDDING_API_KEY", "ollama");
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-ollama-embeddings",
+                "--model", "nomic-embed-text",
+                "--save", "dotenv:" + env
+        }, out, err), text(err));
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "unset-ollama-embeddings", "--clear-secrets", "--save", "dotenv:" + env
+        }, out, err), text(err));
+        assertEquals(false, readDotenv(env).containsKey("LOCAL_EMBEDDING_API_KEY"));
+    }
+
     private static PrintStream print(ByteArrayOutputStream bytes) {
         return new PrintStream(bytes, true, StandardCharsets.UTF_8);
     }

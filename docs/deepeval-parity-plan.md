@@ -32,6 +32,7 @@ Current Java parity:
 - Test-run trace span metric aggregation from DeepEval-style agent/tool/retriever/LLM/base trace span payloads, including overall metric summaries, per-span trace metric summaries, and valid-score counts
 - Test-run pass/fail counting across single-turn and conversational API test cases, ignoring message-style cases with null success values
 - Test-run DeepEval-style model dump aliases with optional null exclusion for save/load payload preparation
+- DeepEval-style CLI embedding provider settings for Azure OpenAI, local embeddings, and Ollama embeddings, including Ollama's local embedding API-key sentinel
 - Test-run save/load helpers for DeepEval-style alias JSON files with null-excluding save payloads and typed Java reloads
 - Test-run multimodal API test-case guard matching DeepEval's Confident AI upload rejection behavior
 - Test-run manager in-memory create/get/set/reset/clear and update behavior, including DeepEval's empty-metrics/no-trace skip rule and dataset property propagation

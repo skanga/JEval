@@ -164,6 +164,9 @@ final class CliSettings {
                         updates.put(entry.getValue(), value);
                     }
                 }
+                if ("set-ollama-embeddings".equals(command)) {
+                    updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
+                }
                 updates.putAll(spec.derivedUpdates(args));
             }
             new DotenvFile(savePath(args)).update(updates, removals);
