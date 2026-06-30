@@ -13,7 +13,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -22,6 +24,7 @@ import java.util.concurrent.Semaphore;
 import java.util.function.IntFunction;
 
 public final class Synthesizer {
+    private static final Set<String> TEXT_DOCUMENT_EXTENSIONS = Set.of(".txt", ".md", ".markdown", ".mdx");
     private final EvaluationModel model;
     private final StylingConfig stylingConfig;
     private final ConversationalStylingConfig conversationalStylingConfig;
@@ -811,11 +814,28 @@ public final class Synthesizer {
 
     private static List<Path> documentFiles(Path path) throws IOException {
         if (Files.isRegularFile(path)) {
+            validateDocumentExtension(path);
             return List.of(path);
         }
         try (var files = Files.walk(path)) {
-            return files.filter(Files::isRegularFile).sorted().toList();
+            return files.filter(Files::isRegularFile)
+                    .peek(Synthesizer::validateDocumentExtension)
+                    .sorted()
+                    .toList();
         }
+    }
+
+    private static void validateDocumentExtension(Path path) {
+        var extension = documentExtension(path);
+        if (!TEXT_DOCUMENT_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("Unsupported file format: " + extension);
+        }
+    }
+
+    private static String documentExtension(Path path) {
+        var fileName = path.getFileName().toString();
+        var dot = fileName.lastIndexOf('.');
+        return dot < 0 ? "" : fileName.substring(dot).toLowerCase(Locale.ROOT);
     }
 
     private static void validateChunkOverlap(int chunkSize, int chunkOverlap) {

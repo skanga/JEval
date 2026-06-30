@@ -268,6 +268,27 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromDocsRejectsUnsupportedFileExtensionLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("policy.xyz");
+        Files.writeString(document, "unsupported");
+        var synthesizer = new Synthesizer(
+                new ScriptedModel(List.of()),
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var error = assertThrows(IllegalArgumentException.class, () -> synthesizer.generateGoldensFromDocs(
+                List.of(document),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 10, 0, 0.5, 0.0, 3)));
+
+        assertEquals("Unsupported file format: .xyz", error.getMessage());
+    }
+
+    @Test
     void generateGoldensFromDocsCanMergeCrossFileContextsLikeDeepEval() throws Exception {
         var policy = tempDir.resolve("policy.md");
         var faq = tempDir.resolve("faq.md");

@@ -139,7 +139,10 @@ commands, or deterministic scripted responses with `--responses-file`:
 Existing goldens supplied with `--goldens-file` can be JSON, JSONL, or CSV.
 Docs generation accepts either JEval's `--document-path` or DeepEval's repeatable
 `--documents` option; expected outputs use DeepEval's
-`--include-expected/--no-include-expected` flag pair.
+`--include-expected/--no-include-expected` flag pair. The dependency-free
+document loader currently accepts text and Markdown inputs (`.txt`, `.md`,
+`.markdown`, `.mdx`) and rejects unsupported extensions with DeepEval-style
+errors.
 
 ```powershell
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save dotenv:.env
