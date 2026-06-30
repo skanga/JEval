@@ -144,6 +144,10 @@ public final class EvaluationDataset {
         generateGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT, synthesizer);
     }
 
+    public CompletableFuture<Void> generateGoldensFromDocsAsync(List<Path> documentPaths, Synthesizer synthesizer) {
+        return generateGoldensFromDocsAsync(documentPaths, true, 2, ContextConstructionConfig.DEFAULT, synthesizer);
+    }
+
     public void generateGoldensFromDocs(
             List<Path> documentPaths,
             boolean includeExpectedOutput,
@@ -158,8 +162,28 @@ public final class EvaluationDataset {
         generated.forEach(this::addGolden);
     }
 
+    public CompletableFuture<Void> generateGoldensFromDocsAsync(
+            List<Path> documentPaths,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            ContextConstructionConfig contextConstructionConfig,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateGoldensFromDocsAsync(
+                documentPaths,
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                contextConstructionConfig)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
     public void generateGoldensFromContexts(List<List<String>> contexts, Synthesizer synthesizer) {
         generateGoldensFromContexts(contexts, true, 2, synthesizer);
+    }
+
+    public CompletableFuture<Void> generateGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            Synthesizer synthesizer) {
+        return generateGoldensFromContextsAsync(contexts, true, 2, synthesizer);
     }
 
     public void generateGoldensFromContexts(
@@ -175,8 +199,26 @@ public final class EvaluationDataset {
         generated.forEach(this::addGolden);
     }
 
+    public CompletableFuture<Void> generateGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateGoldensFromContextsAsync(
+                contexts,
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                null)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
     public void generateGoldensFromScratch(int numGoldens, Synthesizer synthesizer) {
         requireSynthesizer(synthesizer).generateGoldensFromScratch(numGoldens).forEach(this::addGolden);
+    }
+
+    public CompletableFuture<Void> generateGoldensFromScratchAsync(int numGoldens, Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateGoldensFromScratchAsync(numGoldens)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
     }
 
     public void addTestCasesFromJsonFile(
