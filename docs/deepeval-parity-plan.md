@@ -26,7 +26,7 @@ Current Java parity:
 - API test-case DTO conversion for single-turn and conversational test cases, including dataset-rank order precedence
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling
 - `RetrievedContextData` value type with DeepEval-style string serialization, source-preserving dataset markers, and single-turn, multi-turn, and golden retrieval-context builder support
-- `Contestant` and `ArenaTestCase` with DeepEval-style unique-name, shared-input, shared-expected-output, and multimodal propagation rules
+- `Contestant`, `ArenaTestCase`, and `Arena` with DeepEval-style unique-name, shared-input, shared-expected-output, and multimodal propagation rules
 - `McpToolCall`, `McpPromptCall`, `McpResourceCall`, and `McpServer` value types from DeepEval `mcp.py`, including null-valued MCP tool args and `validate_mcp_servers`-style list validation
 - `ToolCall` required name validation, string-keyed/null-valued input parameters, equality/hash behavior, and DeepEval-style populated-field string representation
 - `ToolCallParam`

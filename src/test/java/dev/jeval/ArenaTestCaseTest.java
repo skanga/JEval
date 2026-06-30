@@ -1,6 +1,7 @@
 package dev.jeval;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,5 +40,21 @@ class ArenaTestCaseTest {
                         .build());
 
         assertTrue(new ArenaTestCase(List.of(plain, multimodal)).multimodal());
+    }
+
+    @Test
+    void arenaContainerCopiesArenaTestCasesLikeDeepEvalSurface() {
+        var testCase = new ArenaTestCase(List.of(
+                new Contestant("a", new LlmTestCase("input", "actual-a", "expected")),
+                new Contestant("b", new LlmTestCase("input", "actual-b", "expected"))));
+        var testCases = new java.util.ArrayList<>(List.of(testCase));
+
+        var arena = new Arena(testCases);
+        testCases.clear();
+
+        assertEquals(List.of(testCase), arena.testCases());
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class, () -> new Arena(null)),
+                () -> assertThrows(IllegalArgumentException.class, () -> new Arena(List.of())));
     }
 }
