@@ -165,6 +165,56 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunDatasetPreservesDeepEvalToolAndMcpFieldsInLatestData() throws Exception {
+        var dataset = tempDir.resolve("cases.json");
+        Files.writeString(dataset, """
+                [
+                  {
+                    "name": "dataset-bad",
+                    "input": "q",
+                    "actual_output": "a",
+                    "expected_output": "b",
+                    "tools_called": [{"name": "PolicySearch", "input_parameters": {"query": "refund"}, "output": "30 days"}],
+                    "expected_tools": [{"name": "PolicySearch"}],
+                    "mcp_servers": [{"server_name": "policy"}],
+                    "mcp_tools_called": [{"name": "mcp-search"}],
+                    "mcp_resources_called": [{"uri": "file://policy"}],
+                    "mcp_prompts_called": [{"name": "policy-prompt"}],
+                    "metadata": {"suite": "dataset"}
+                  }
+                ]
+                """);
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "dataset-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "dataset": "cases.json"
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--identifier", "dataset-release", "--quiet"},
+                out, err);
+
+        assertEquals(1, exit, text(err));
+        var latestText = Files.readString(tempDir.resolve(".deepeval").resolve(".latest_test_run.json"));
+        assertTrue(latestText.contains("\"identifier\":\"dataset-release\""));
+        assertTrue(latestText.contains("\"toolsCalled\":[{"));
+        assertTrue(latestText.contains("\"expectedTools\":[{"));
+        assertTrue(latestText.contains("\"name\":\"PolicySearch\""));
+        assertTrue(latestText.contains("\"inputParameters\":{\"query\":\"refund\"}"));
+        assertTrue(latestText.contains("\"output\":\"30 days\""));
+        assertTrue(latestText.contains("\"mcpServers\":[{\"server_name\":\"policy\"}]"));
+        assertTrue(latestText.contains("\"mcpToolsCalled\":[{\"name\":\"mcp-search\"}]"));
+        assertTrue(latestText.contains("\"mcpResourcesCalled\":[{\"uri\":\"file://policy\"}]"));
+        assertTrue(latestText.contains("\"mcpPromptsCalled\":[{\"name\":\"policy-prompt\"}]"));
+        assertTrue(latestText.contains("\"metadata\":{"));
+        assertTrue(latestText.contains("\"suite\":\"dataset\""));
+    }
+
+    @Test
     void testRunSupportsDeepEvalIdentifierAlias() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

@@ -41,12 +41,13 @@ Current Java parity:
 - Test-run manager local wrap-up finalization for duration, metric aggregation, pass/fail counts, sorted cases, and `.latest_test_run.json` `testRunData` persistence
 - CLI `test run` latest test-run data persistence to DeepEval's `.deepeval/.latest_test_run.json` `testRunData` wrapper for local runs
 - CLI/test-runner latest test-run data preserves single-turn case input, actual output, expected output, metric data, and pass/fail status
-- CLI/test-runner latest test-run data preserves single-turn context, retrieval context, and tags from inline specs and dataset-loaded cases
-- CLI/test-runner latest test-run data preserves single-turn metadata and comments from inline specs and dataset-loaded cases
+- CLI/test-runner latest test-run data preserves single-turn context and retrieval context from inline specs and dataset-loaded cases
+- CLI/test-runner latest test-run data preserves single-turn tags and comments from inline specs
+- CLI/test-runner latest test-run data preserves single-turn metadata from inline specs and JSON dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn token cost and completion time from inline specs
 - CLI/test-runner latest test-run data preserves single-turn custom column values from inline specs
-- CLI/test-runner latest test-run data preserves single-turn tool calls and expected tools from inline specs
-- CLI/test-runner latest test-run data preserves single-turn MCP server, tool, resource, and prompt payloads from inline specs
+- CLI/test-runner latest test-run data preserves single-turn tool calls and expected tools from inline specs and JSON dataset-loaded cases
+- CLI/test-runner latest test-run data preserves single-turn MCP server, tool, resource, and prompt payloads from inline specs and JSON dataset-loaded cases
 - CLI/test-runner latest test-run data preserves single-turn trace payloads from inline specs
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling
 - `RetrievedContextData` value type with DeepEval-style string serialization, source-preserving dataset markers, and single-turn, multi-turn, and golden retrieval-context builder support
