@@ -354,6 +354,40 @@ class EvaluationDatasetTest {
     }
 
     @Test
+    void datasetGeneratesTextToSqlGoldensFromContext() {
+        var dataset = new EvaluationDataset();
+        dataset.addGolden(Golden.builder("existing").build());
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"How many users are active?\"}]}",
+                "{\"sql\":\"SELECT COUNT(*) FROM users WHERE active = true;\"}")));
+
+        dataset.generateTextToSqlGoldensFromContext(
+                List.of("CREATE TABLE users (id INT, active BOOLEAN);"), true, 1, synthesizer);
+
+        assertEquals(2, dataset.goldens().size());
+        assertEquals("existing", dataset.goldens().getFirst().input());
+        assertEquals("How many users are active?", dataset.goldens().get(1).input());
+        assertEquals("SELECT COUNT(*) FROM users WHERE active = true;", dataset.goldens().get(1).expectedOutput());
+        assertEquals(List.of("CREATE TABLE users (id INT, active BOOLEAN);"), dataset.goldens().get(1).context());
+    }
+
+    @Test
+    void datasetGeneratesTextToSqlGoldensFromContextAsync() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"How many users are active?\"}]}")));
+
+        dataset.generateTextToSqlGoldensFromContextAsync(
+                List.of("CREATE TABLE users (id INT, active BOOLEAN);"), false, 1, synthesizer)
+                .join();
+
+        assertEquals(1, dataset.goldens().size());
+        assertEquals("How many users are active?", dataset.goldens().getFirst().input());
+        assertEquals(null, dataset.goldens().getFirst().expectedOutput());
+        assertEquals(List.of("CREATE TABLE users (id INT, active BOOLEAN);"), dataset.goldens().getFirst().context());
+    }
+
+    @Test
     void datasetGeneratesGoldensFromScratchLikeDeepEval() {
         var dataset = new EvaluationDataset();
         var synthesizer = synthesizer(

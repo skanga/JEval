@@ -231,6 +231,30 @@ public final class EvaluationDataset {
                 .thenAccept(generated -> generated.forEach(this::addGolden));
     }
 
+    public void generateTextToSqlGoldensFromContext(
+            List<String> context,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            Synthesizer synthesizer) {
+        var generated = requireSynthesizer(synthesizer).generateTextToSqlGoldensFromContext(
+                context,
+                includeExpectedOutput,
+                maxGoldensPerContext);
+        generated.forEach(this::addGolden);
+    }
+
+    public CompletableFuture<Void> generateTextToSqlGoldensFromContextAsync(
+            List<String> context,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateTextToSqlGoldensFromContextAsync(
+                context,
+                includeExpectedOutput,
+                maxGoldensPerContext)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
     public void generateGoldensFromScratch(int numGoldens, Synthesizer synthesizer) {
         requireSynthesizer(synthesizer).generateGoldensFromScratch(numGoldens).forEach(this::addGolden);
     }
