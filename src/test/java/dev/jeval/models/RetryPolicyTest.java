@@ -1,6 +1,9 @@
 package dev.jeval.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import java.util.Set;
@@ -65,6 +68,65 @@ class RetryPolicyTest {
                 Set.of(),
                 customMarkers));
         assertEquals(false, RetryPolicy.isTransient(testPolicy(false), new HttpStatusError(500)));
+    }
+
+    @Test
+    void readsRetrySettingsFromEnvironmentWithDeepEvalDefaultsAndSafeFallbacks() {
+        assertEquals(new RetryPolicy.RetrySettings(2, 1.0, 2.0, 2.0, 5.0),
+                RetryPolicy.retrySettings(Map.of()));
+
+        var settings = RetryPolicy.retrySettings(Map.of(
+                "DEEPEVAL_RETRY_MAX_ATTEMPTS", "3",
+                "DEEPEVAL_RETRY_INITIAL_SECONDS", "0.5",
+                "DEEPEVAL_RETRY_EXP_BASE", "3",
+                "DEEPEVAL_RETRY_JITTER", "0",
+                "DEEPEVAL_RETRY_CAP_SECONDS", "9"));
+
+        assertEquals(3, settings.maxAttempts());
+        assertEquals(0.5, settings.initialSeconds());
+        assertEquals(3.0, settings.expBase());
+        assertEquals(0.0, settings.jitterSeconds());
+        assertEquals(9.0, settings.capSeconds());
+
+        assertEquals(new RetryPolicy.RetrySettings(2, 1.0, 2.0, 2.0, 5.0),
+                RetryPolicy.retrySettings(Map.of(
+                        "DEEPEVAL_RETRY_MAX_ATTEMPTS", "0",
+                        "DEEPEVAL_RETRY_INITIAL_SECONDS", "not-a-float",
+                        "DEEPEVAL_RETRY_EXP_BASE", "0.5",
+                        "DEEPEVAL_RETRY_JITTER", "-1",
+                        "DEEPEVAL_RETRY_CAP_SECONDS", "NaN")));
+    }
+
+    @Test
+    void computesDynamicWaitAndStopLikeDeepEval() {
+        var settings = new RetryPolicy.RetrySettings(3, 0.5, 3.0, 0.0, 9.0);
+
+        assertEquals(0.5, RetryPolicy.retryDelaySeconds(settings, 1));
+        assertEquals(1.5, RetryPolicy.retryDelaySeconds(settings, 2));
+        assertEquals(4.5, RetryPolicy.retryDelaySeconds(settings, 3));
+        assertFalse(RetryPolicy.shouldStopAfterAttempt(settings, 2));
+        assertTrue(RetryPolicy.shouldStopAfterAttempt(settings, 3));
+
+        assertEquals(0.0, RetryPolicy.retryDelaySeconds(new RetryPolicy.RetrySettings(2, 1.0, 2.0, 2.0, 0.0), 1));
+        assertEquals(2.0, RetryPolicy.retryDelaySeconds(new RetryPolicy.RetrySettings(2, 5.0, 2.0, 0.0, 2.0), 1));
+    }
+
+    @Test
+    void sdkRetryProviderParsingAndPolicyLookupMatchDeepEval() {
+        var policy = testPolicy(true);
+
+        assertEquals(Set.of("*"),
+                RetryPolicy.sdkRetryProviders(Map.of("DEEPEVAL_SDK_RETRY_PROVIDERS", "openai, *")));
+        assertEquals(Set.of("openai", "azure-openai"),
+                RetryPolicy.sdkRetryProviders(Map.of("DEEPEVAL_SDK_RETRY_PROVIDERS", "OpenAI; azure_openai ; openai")));
+
+        assertTrue(RetryPolicy.sdkRetriesFor("anything", Set.of("*")));
+        assertTrue(RetryPolicy.sdkRetriesFor("Azure OpenAI", Set.of("azure-openai")));
+        assertFalse(RetryPolicy.sdkRetriesFor("bedrock", Set.of("openai")));
+
+        assertNull(RetryPolicy.getRetryPolicyFor("openai", Map.of("openai", policy), Set.of("openai")));
+        assertEquals(policy, RetryPolicy.getRetryPolicyFor("OpenAI", Map.of("openai", policy), Set.of()));
+        assertNull(RetryPolicy.getRetryPolicyFor("missing", Map.of("openai", policy), Set.of()));
     }
 
     private static RetryPolicy.ErrorPolicy testPolicy(boolean retry5xx) {

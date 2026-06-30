@@ -109,6 +109,12 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar unset-openai --save dotenv:.env
 OpenAI, OpenRouter, and Ollama provider settings can be used by `generate`; other provider
 commands currently persist configuration only.
 
+Provider retry helpers honor DeepEval-style environment settings:
+`DEEPEVAL_RETRY_MAX_ATTEMPTS`, `DEEPEVAL_RETRY_INITIAL_SECONDS`,
+`DEEPEVAL_RETRY_EXP_BASE`, `DEEPEVAL_RETRY_JITTER`,
+`DEEPEVAL_RETRY_CAP_SECONDS`, and `DEEPEVAL_SDK_RETRY_PROVIDERS`
+(`openai`, `azure-openai`, or `*` to delegate retries to provider SDKs).
+
 ## CLI generate
 
 The `generate` command supports single-turn and multi-turn `contexts`, `docs`,

@@ -43,7 +43,7 @@ Current Java parity:
 - Prompt HTTP response and push request API value records
 - `Prompt` and `PromptMessage` manual construction plus file loading/interpolation for `.txt` templates and JSON message lists/dictionaries, including DeepEval-style loaded-template return values and text fallback for invalid JSON/message shapes
 - `Prompt` constructor storage for model settings, output type/schema, API key, and branch
-- Provider-model retry policy core for dependency-free transient error classification, error-code extraction from response/body/gRPC-style/status shapes, non-retryable quota codes, message markers, and HTTP 5xx retry toggles
+- Provider-model retry policy core for dependency-free transient error classification, error-code extraction from response/body/gRPC-style/status shapes, non-retryable quota codes, message markers, HTTP 5xx retry toggles, DeepEval-style retry env settings/backoff/stop helpers, and SDK retry provider opt-out lookup
 - `Evaluator.evaluate(...)` for one test case and a list of test cases
 - `Evaluator.evaluate(...)` for one conversational test case and `evaluateConversations(...)` for lists
 - `Evaluator.assertTest(...)` for single-turn and conversational test cases
