@@ -15,6 +15,7 @@ Implemented:
 - Model-backed metric shells and prompt/schema parsing paths for the ported DeepEval single-turn, conversational, arena, MCP, trace, and DAG metrics
 - Multimodal image metrics: text-to-image, image editing, image coherence, image helpfulness, and image reference
 - Optimizer algorithm configuration, prompt configuration/report value types, and tie-breaker policy surfaces for SIMBA, COPRO, and GEPA
+- DeepEval-style annotation payload values and validation for thumbs and five-star ratings
 - Shared DeepEval-style validation and formatting utilities
 
 See `docs/deepeval-parity-plan.md` for the detailed parity ledger.
