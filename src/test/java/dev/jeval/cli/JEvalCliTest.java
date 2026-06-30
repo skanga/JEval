@@ -36,7 +36,7 @@ class JEvalCliTest {
 
         assertEquals(2, exit);
         assertTrue(text(err).contains(
-                "set-openai|set-anthropic|set-gemini|set-deepseek|set-ollama|set-local-model|set-openrouter"));
+                "set-openai|set-anthropic|set-gemini|set-grok|set-deepseek|set-ollama|set-local-model|set-openrouter"));
     }
 
     @Test
@@ -2755,6 +2755,36 @@ class JEvalCliTest {
         assertEquals(false, readDotenv(env).containsKey("OPENROUTER_COST_PER_INPUT_TOKEN"));
         assertEquals(false, readDotenv(env).containsKey("OPENROUTER_COST_PER_OUTPUT_TOKEN"));
         assertDotenv(env, "TEMPERATURE", "0.3");
+    }
+
+    @Test
+    void grokProviderRoundtripUsesExclusiveFlagsAndBaseUrl() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-grok", "--model", "grok-4.3",
+                "--base-url", "https://api.x.ai/v1", "--save", "dotenv:" + env
+        }, out, err));
+        assertDotenv(env, "USE_GROK_MODEL", "YES");
+        assertDotenv(env, "GROK_MODEL_NAME", "grok-4.3");
+        assertDotenv(env, "GROK_BASE_URL", "https://api.x.ai/v1");
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENAI_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_MODEL_NAME"));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-grok", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_GROK_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("GROK_MODEL_NAME"));
+        assertEquals(false, readDotenv(env).containsKey("GROK_BASE_URL"));
     }
 
     @Test

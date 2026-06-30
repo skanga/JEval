@@ -37,7 +37,7 @@ final class CliSettings {
             "OPENAI_MODEL_NAME", "AZURE_MODEL_NAME", "AZURE_DEPLOYMENT_NAME", "AZURE_OPENAI_ENDPOINT",
             "OPENAI_API_VERSION", "ANTHROPIC_MODEL_NAME", "AWS_BEDROCK_MODEL_NAME", "AWS_BEDROCK_REGION",
             "OLLAMA_MODEL_NAME", "LOCAL_MODEL_NAME", "LOCAL_MODEL_BASE_URL", "LOCAL_MODEL_FORMAT",
-            "GROK_MODEL_NAME", "MOONSHOT_MODEL_NAME", "DEEPSEEK_MODEL_NAME", "GEMINI_MODEL_NAME",
+            "GROK_MODEL_NAME", "GROK_BASE_URL", "MOONSHOT_MODEL_NAME", "DEEPSEEK_MODEL_NAME", "GEMINI_MODEL_NAME",
             "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GOOGLE_GENAI_USE_VERTEXAI", "AZURE_MODEL_VERSION",
             "LITELLM_MODEL_NAME", "LITELLM_API_BASE",
             "LITELLM_PROXY_API_BASE", "PORTKEY_MODEL_NAME", "PORTKEY_BASE_URL", "PORTKEY_PROVIDER_NAME",
@@ -361,7 +361,8 @@ final class CliSettings {
                         "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY");
                 case "set-grok", "unset-grok" -> llmWithSecrets(
                         "USE_GROK_MODEL",
-                        Map.of("--model", "GROK_MODEL_NAME", "-m", "GROK_MODEL_NAME"),
+                        Map.of("--model", "GROK_MODEL_NAME", "-m", "GROK_MODEL_NAME",
+                                "--base-url", "GROK_BASE_URL", "-u", "GROK_BASE_URL"),
                         "GROK_API_KEY");
                 case "set-moonshot", "unset-moonshot" -> llmWithSecrets(
                         "USE_MOONSHOT_MODEL",
