@@ -21,10 +21,52 @@ class SynthesizerSchemasTest {
     }
 
     @Test
+    void parseSyntheticDataExtractsEmbeddedJsonLikeDeepEval() {
+        var data = SynthesizerSchemas.parseSyntheticData("""
+                Generated data:
+                ```json
+                {"data":[{"input":"Question?","expected_output":"Answer","used_source_files":["doc.md"],}],}
+                ```
+                """);
+
+        assertEquals(1, data.size());
+        assertEquals("Question?", data.getFirst().input());
+        assertEquals("Answer", data.getFirst().expectedOutput());
+        assertEquals("doc.md", data.getFirst().usedSourceFiles().getFirst());
+    }
+
+    @Test
     void parsesRewrittenInput() {
         assertEquals("clear question", SynthesizerSchemas.parseRewrittenInput("""
                 {"rewritten_input":"clear question"}
                 """));
+    }
+
+    @Test
+    void parseScalarAndFeedbackSchemasExtractEmbeddedJsonLikeDeepEval() {
+        var rewritten = SynthesizerSchemas.parseRewrittenInput("""
+                ```json
+                {"rewritten_input":"Clear question?",}
+                ```
+                """);
+        var input = SynthesizerSchemas.parseInput("""
+                model says {"input":"Styled question?",} thanks
+                """);
+        var feedback = SynthesizerSchemas.parseInputFeedback("""
+                Feedback:
+                {"feedback":"Good enough","score":0.75,}
+                """);
+        var styling = SynthesizerSchemas.parseStylingConfig("""
+                {"scenario":"students","task":"ask questions","input_format":"short question",}
+                """);
+
+        assertEquals("Clear question?", rewritten);
+        assertEquals("Styled question?", input);
+        assertEquals("Good enough", feedback.feedback());
+        assertEquals(0.75, feedback.score());
+        assertEquals("students", styling.scenario());
+        assertEquals("ask questions", styling.task());
+        assertEquals("short question", styling.inputFormat());
     }
 
     @Test
@@ -47,5 +89,21 @@ class SynthesizerSchemasTest {
         assertTrue(prompt.contains("refund support"));
         assertTrue(prompt.contains("Refunds take 5 days."));
         assertTrue(prompt.contains("Expected outcome format: Return a numbered checklist."));
+    }
+
+    @Test
+    void parseConversationalDataExtractsEmbeddedJsonLikeDeepEval() {
+        var data = SynthesizerSchemas.parseConversationalData("""
+                Conversation:
+                ```json
+                {"data":[{"scenario":"refund support","turns":[{"role":"user","content":"Can I get a refund?",}],"expected_outcome":"Refund explained",}],}
+                ```
+                """);
+
+        assertEquals(1, data.size());
+        assertEquals("refund support", data.getFirst().scenario());
+        assertEquals("Refund explained", data.getFirst().expectedOutcome());
+        assertEquals("user", data.getFirst().turns().getFirst().role());
+        assertEquals("Can I get a refund?", data.getFirst().turns().getFirst().content());
     }
 }

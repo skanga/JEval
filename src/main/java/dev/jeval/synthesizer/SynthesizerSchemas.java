@@ -3,6 +3,7 @@ package dev.jeval.synthesizer;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import dev.jeval.Turn;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.jeval.metrics.MetricUtils;
 import java.util.List;
 
 final class SynthesizerSchemas {
@@ -13,7 +14,7 @@ final class SynthesizerSchemas {
 
     static List<SyntheticData> parseSyntheticData(String json) {
         try {
-            return JSON.readValue(json, SyntheticDataList.class).data();
+            return parse(json, SyntheticDataList.class).data();
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse synthetic data JSON", error);
         }
@@ -21,7 +22,7 @@ final class SynthesizerSchemas {
 
     static String parseRewrittenInput(String json) {
         try {
-            return JSON.readValue(json, RewrittenInput.class).rewrittenInput();
+            return parse(json, RewrittenInput.class).rewrittenInput();
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse rewritten input JSON", error);
         }
@@ -29,7 +30,7 @@ final class SynthesizerSchemas {
 
     static String parseInput(String json) {
         try {
-            return JSON.readValue(json, SyntheticInput.class).input();
+            return parse(json, SyntheticInput.class).input();
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse synthetic input JSON", error);
         }
@@ -37,7 +38,7 @@ final class SynthesizerSchemas {
 
     static StylingConfig parseStylingConfig(String json) {
         try {
-            var styling = JSON.readValue(json, PromptStyling.class);
+            var styling = parse(json, PromptStyling.class);
             return new StylingConfig(styling.scenario(), styling.task(), styling.inputFormat(), null);
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse prompt styling JSON", error);
@@ -46,7 +47,7 @@ final class SynthesizerSchemas {
 
     static InputFeedback parseInputFeedback(String json) {
         try {
-            return JSON.readValue(json, InputFeedback.class);
+            return parse(json, InputFeedback.class);
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse input feedback JSON", error);
         }
@@ -54,7 +55,7 @@ final class SynthesizerSchemas {
 
     static ScenarioFeedback parseScenarioFeedback(String json) {
         try {
-            return JSON.readValue(json, ScenarioFeedback.class);
+            return parse(json, ScenarioFeedback.class);
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse scenario feedback JSON", error);
         }
@@ -62,7 +63,7 @@ final class SynthesizerSchemas {
 
     static String parseRewrittenScenario(String json) {
         try {
-            return JSON.readValue(json, RewrittenScenario.class).rewrittenScenario();
+            return parse(json, RewrittenScenario.class).rewrittenScenario();
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse rewritten scenario JSON", error);
         }
@@ -70,7 +71,7 @@ final class SynthesizerSchemas {
 
     static String parseScenario(String json) {
         try {
-            return JSON.readValue(json, SyntheticScenario.class).scenario();
+            return parse(json, SyntheticScenario.class).scenario();
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse synthetic scenario JSON", error);
         }
@@ -78,10 +79,14 @@ final class SynthesizerSchemas {
 
     static List<ConversationalData> parseConversationalData(String json) {
         try {
-            return JSON.readValue(json, ConversationalDataList.class).data();
+            return parse(json, ConversationalDataList.class).data();
         } catch (Exception error) {
             throw new IllegalArgumentException("Unable to parse conversational synthetic data JSON", error);
         }
+    }
+
+    private static <T> T parse(String json, Class<T> type) throws com.fasterxml.jackson.core.JsonProcessingException {
+        return JSON.treeToValue(MetricUtils.trimAndLoadJson(json), type);
     }
 
     record SyntheticData(
