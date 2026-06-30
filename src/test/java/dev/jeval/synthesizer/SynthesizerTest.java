@@ -85,6 +85,11 @@ class SynthesizerTest {
         assertEquals(1, goldens.size());
         assertEquals("What is France's capital?", goldens.getFirst().input());
         assertEquals(null, goldens.getFirst().expectedOutput());
+        var metadata = goldens.getFirst().additionalMetadata();
+        assertEquals(List.of(), metadata.get("context_source_files"));
+        assertEquals(List.of(), metadata.get("used_source_files"));
+        assertTrue(metadata.containsKey("context_quality"));
+        assertEquals(null, metadata.get("context_quality"));
         assertEquals(false, model.prompts().getFirst().contains("expected_output"));
         assertEquals(1, model.prompts().size());
     }
@@ -420,6 +425,13 @@ class SynthesizerTest {
                 List.of(List.of("Refunds are available within 30 days.")), false, 1, null);
 
         assertEquals(List.of("first scenario"), goldens.stream().map(ConversationalGolden::scenario).toList());
+        var metadata = goldens.getFirst().additionalMetadata();
+        assertTrue(metadata.containsKey("source_files"));
+        assertEquals(null, metadata.get("source_files"));
+        assertEquals(List.of(), metadata.get("context_source_files"));
+        assertEquals(List.of(), metadata.get("used_source_files"));
+        assertTrue(metadata.containsKey("context_quality"));
+        assertEquals(null, metadata.get("context_quality"));
     }
 
     @Test

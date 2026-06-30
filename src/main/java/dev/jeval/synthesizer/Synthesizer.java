@@ -614,15 +614,9 @@ public final class Synthesizer {
         if (syntheticInputQuality != null) {
             metadata.put("synthetic_input_quality", syntheticInputQuality);
         }
-        if (sourceFile != null) {
-            metadata.put("context_source_files", List.of(sourceFile));
-        }
-        if (contextQuality != null) {
-            metadata.put("context_quality", contextQuality);
-        }
-        if (data.usedSourceFiles() != null) {
-            metadata.put("used_source_files", data.usedSourceFiles());
-        }
+        metadata.put("context_source_files", sourceFile == null ? List.of() : List.of(sourceFile));
+        metadata.put("context_quality", contextQuality);
+        metadata.put("used_source_files", data.usedSourceFiles() == null ? List.of() : data.usedSourceFiles());
         return metadata;
     }
 
@@ -637,16 +631,10 @@ public final class Synthesizer {
         if (syntheticScenarioQuality != null) {
             metadata.put("synthetic_scenario_quality", syntheticScenarioQuality);
         }
-        if (sourceFile != null) {
-            metadata.put("source_files", sourceFile);
-            metadata.put("context_source_files", List.of(sourceFile));
-        }
-        if (contextQuality != null) {
-            metadata.put("context_quality", contextQuality);
-        }
-        if (data.usedSourceFiles() != null) {
-            metadata.put("used_source_files", data.usedSourceFiles());
-        }
+        metadata.put("source_files", sourceFile);
+        metadata.put("context_source_files", sourceFile == null ? List.of() : List.of(sourceFile));
+        metadata.put("context_quality", contextQuality);
+        metadata.put("used_source_files", data.usedSourceFiles() == null ? List.of() : data.usedSourceFiles());
         return metadata;
     }
 }
