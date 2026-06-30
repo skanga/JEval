@@ -303,6 +303,61 @@ class SynthesizerTest {
     }
 
     @Test
+    void asyncGenerateGoldensFromContextsReturnsFutureLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"Async context question?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateGoldensFromContextsAsync(
+                List.of(List.of("async context")), false, 1, null).join();
+
+        assertEquals(List.of("Async context question?"), goldens.stream().map(Golden::input).toList());
+    }
+
+    @Test
+    void asyncGenerateGoldensFromScratchReturnsFutureLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"async scratch\"}]}",
+                "{\"input\":\"async scratch\"}"));
+        var synthesizer = new Synthesizer(
+                model,
+                new StylingConfig("students learning geography", "ask study questions", "one question", null),
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+
+        var goldens = synthesizer.generateGoldensFromScratchAsync(1).join();
+
+        assertEquals(List.of("async scratch"), goldens.stream().map(Golden::input).toList());
+    }
+
+    @Test
+    void asyncGenerateGoldensFromDocsReturnsFutureLikeDeepEval() throws Exception {
+        var document = tempDir.resolve("async-policy.md");
+        Files.writeString(document, "alpha beta");
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"Async doc question?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocsAsync(
+                List.of(document),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 2, 0, 0.5, 0.0, 3)).join();
+
+        assertEquals(List.of("Async doc question?"), goldens.stream().map(Golden::input).toList());
+        assertEquals(List.of("async-policy.md"), goldens.stream().map(Golden::sourceFile).toList());
+    }
+
+    @Test
     void generatesGoldensFromScratchAndKeepsPerGoldenEvolutionMetadata() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"first\"},{\"input\":\"second\"}]}",

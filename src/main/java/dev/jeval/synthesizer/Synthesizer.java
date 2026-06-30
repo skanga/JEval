@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -104,8 +106,40 @@ public final class Synthesizer {
         return generateGoldensFromContexts(contexts, true, 2, null);
     }
 
+    public CompletableFuture<List<Golden>> generateGoldensFromContextsAsync(List<List<String>> contexts) {
+        return generateGoldensFromContextsAsync(contexts, true, 2, null);
+    }
+
+    public CompletableFuture<List<Golden>> generateGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<?> sourceFiles) {
+        return CompletableFuture.supplyAsync(
+                () -> generateGoldensFromContexts(contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles));
+    }
+
     public List<Golden> generateGoldensFromDocs(List<Path> documentPaths) throws IOException {
         return generateGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT);
+    }
+
+    public CompletableFuture<List<Golden>> generateGoldensFromDocsAsync(List<Path> documentPaths) {
+        return generateGoldensFromDocsAsync(documentPaths, true, 2, ContextConstructionConfig.DEFAULT);
+    }
+
+    public CompletableFuture<List<Golden>> generateGoldensFromDocsAsync(
+            List<Path> documentPaths,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            ContextConstructionConfig contextConstructionConfig) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return generateGoldensFromDocs(documentPaths, includeExpectedOutput, maxGoldensPerContext,
+                        contextConstructionConfig);
+            } catch (IOException error) {
+                throw new CompletionException(error);
+            }
+        });
     }
 
     public List<Golden> generateGoldensFromDocs(
@@ -181,6 +215,10 @@ public final class Synthesizer {
     public List<Golden> generateGoldensFromScratch(int numGoldens) {
         validateScratchStylingConfig(stylingConfig);
         return generateGoldensFromScratch(numGoldens, stylingConfig);
+    }
+
+    public CompletableFuture<List<Golden>> generateGoldensFromScratchAsync(int numGoldens) {
+        return CompletableFuture.supplyAsync(() -> generateGoldensFromScratch(numGoldens));
     }
 
     private List<Golden> generateGoldensFromScratch(int numGoldens, StylingConfig activeStylingConfig) {
