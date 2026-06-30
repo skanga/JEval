@@ -882,6 +882,28 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromGoldensTreatsExplicitEmptyContextAsContextLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"scenario\":\"database class\",\"task\":\"ask SQL study questions\",\"input_format\":\"one question\"}",
+                "{\"data\":[{\"input\":\"raw empty-context question\"}]}",
+                "{\"input\":\"styled empty-context question\"}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        var original = Golden.builder("How is the empty context handled?")
+                .context(List.of())
+                .sourceFile("empty.txt")
+                .build();
+
+        var goldens = synthesizer.generateGoldensFromGoldens(List.of(original), 1, false);
+
+        assertEquals("styled empty-context question", goldens.getFirst().input());
+        assertEquals(List.of(), goldens.getFirst().context());
+        assertEquals("empty.txt", goldens.getFirst().sourceFile());
+        assertTrue(model.prompts().get(1).contains("Context:"));
+        assertEquals(false, model.prompts().get(1).contains("Generate 1 synthetic user inputs for this scenario"));
+    }
+
+    @Test
     void generatesGoldensFromExistingGoldensWithoutStylingConfig() {
         var model = new ScriptedModel(List.of(
                 "{\"scenario\":\"students learning geography\",\"task\":\"ask study questions\",\"input_format\":\"one question\"}",
@@ -1359,6 +1381,32 @@ class SynthesizerTest {
         assertEquals(List.of("Refunds are available within 30 days."), goldens.getFirst().context());
         assertTrue(model.prompts().getFirst().contains("extract the common structural elements"));
         assertTrue(model.prompts().get(2).contains("Participant Roles: customer and support agent"));
+    }
+
+    @Test
+    void generateConversationalGoldensFromGoldensTreatsExplicitEmptyContextAsContextLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"scenario_context":"support desk","conversational_task":"resolve refund issues","participant_roles":"customer and support agent"}
+                """,
+                """
+                {"data":[{"scenario":"raw empty-context scenario","turns":[
+                  {"role":"user","content":"Can I still get a refund?"}
+                ]}]}
+                """,
+                "{\"scenario\":\"styled empty-context scenario\"}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        var original = ConversationalGolden.builder("customer asks about refund timing")
+                .context(List.of())
+                .build();
+
+        var goldens = synthesizer.generateConversationalGoldensFromGoldens(List.of(original), 1, false);
+
+        assertEquals("styled empty-context scenario", goldens.getFirst().scenario());
+        assertEquals(List.of(), goldens.getFirst().context());
+        assertTrue(model.prompts().get(1).contains("Context:"));
+        assertEquals(false, model.prompts().get(1).contains("Generate 1 synthetic multi-turn conversation scenarios."));
     }
 
     @Test

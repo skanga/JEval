@@ -315,7 +315,7 @@ public final class Synthesizer {
         var inputs = new ArrayList<String>();
         for (var golden : goldens) {
             inputs.add(golden.input());
-            if (golden.context() != null && !golden.context().isEmpty()) {
+            if (golden.context() != null) {
                 contexts.add(golden.context());
                 sourceFiles.add(golden.sourceFile());
             }
@@ -515,7 +515,7 @@ public final class Synthesizer {
         var scenarios = new ArrayList<String>();
         for (var golden : goldens) {
             scenarios.add(golden.scenario());
-            if (golden.context() != null && !golden.context().isEmpty()) {
+            if (golden.context() != null) {
                 contexts.add(golden.context());
             }
         }

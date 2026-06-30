@@ -1187,7 +1187,11 @@ class JEvalCliTest {
                 Old question?,Old answer
                 """);
         var responses = tempDir.resolve("responses.txt");
-        Files.writeString(responses, "{\"data\":[{\"input\":\"Csv question?\",\"expected_output\":\"Csv answer\"}]}");
+        Files.writeString(responses, String.join(System.lineSeparator(),
+                "{\"scenario\":\"students\",\"task\":\"ask study questions\",\"input_format\":\"one question\"}",
+                "{\"data\":[{\"input\":\"Csv question?\",\"expected_output\":\"Csv answer\"}]}",
+                "{\"input\":\"Csv question?\"}",
+                "Generated CSV answer"));
         var output = tempDir.resolve("generated");
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();
@@ -1201,7 +1205,7 @@ class JEvalCliTest {
         assertEquals(0, exit, text(err));
         var generated = Files.readString(output.resolve("from-csv.json"));
         assertTrue(generated.contains("\"input\" : \"Csv question?\""));
-        assertTrue(generated.contains("\"expected_output\" : null"));
+        assertTrue(generated.contains("\"expected_output\" : \"Generated CSV answer\""));
     }
 
     @Test

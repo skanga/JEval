@@ -167,7 +167,9 @@ are generated from existing goldens without an explicit `StylingConfig`, JEval
 infers prompt styling from those existing inputs before generating replacements,
 including the contextual branch. Conversational generation follows the same
 DeepEval-style pattern with inferred `ConversationalStylingConfig` from existing
-scenarios before using scratch or contextual generation.
+scenarios before using scratch or contextual generation. Existing goldens with
+an explicit empty context list still use contextual generation, matching
+DeepEval's `context is None` branching.
 
 ```java
 import dev.jeval.Golden;
