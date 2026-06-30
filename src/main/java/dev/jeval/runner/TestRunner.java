@@ -1,6 +1,7 @@
 package dev.jeval.runner;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.EvaluationDataset;
@@ -414,11 +415,55 @@ public final class TestRunner {
         return LlmTestCase.builder(text(node, "input"))
                 .actualOutput(text(node, "actual_output"))
                 .expectedOutput(text(node, "expected_output"))
+                .context(textList(node, "context"))
+                .retrievalContext(textList(node, "retrieval_context"))
+                .metadata(objectMap(node, node.has("metadata") ? "metadata" : "additional_metadata"))
+                .comments(text(node, "comments"))
+                .tokenCost(doubleOrNull(node, "token_cost"))
+                .completionTime(doubleOrNull(node, "completion_time"))
+                .customColumnKeyValues(stringMap(node, "custom_column_key_values"))
+                .toolsCalled(toolCalls(node, "tools_called"))
+                .expectedTools(toolCalls(node, "expected_tools"))
+                .mcpServers(objectList(node, "mcp_servers"))
+                .mcpToolsCalled(objectList(node, "mcp_tools_called"))
+                .mcpResourcesCalled(objectList(node, "mcp_resources_called"))
+                .mcpPromptsCalled(objectList(node, "mcp_prompts_called"))
+                .trace(objectMap(node, "trace"))
+                .name(text(node, "name"))
+                .tags(textList(node, "tags"))
                 .build();
     }
 
     private static String text(JsonNode node, String key) {
         return node.has(key) && !node.get(key).isNull() ? node.get(key).asText() : null;
+    }
+
+    private static Double doubleOrNull(JsonNode node, String key) {
+        return node.has(key) && !node.get(key).isNull() ? node.get(key).asDouble() : null;
+    }
+
+    private static List<String> textList(JsonNode node, String key) {
+        return convertOrNull(node, key, new TypeReference<>() {});
+    }
+
+    private static List<ToolCall> toolCalls(JsonNode node, String key) {
+        return convertOrNull(node, key, new TypeReference<>() {});
+    }
+
+    private static List<Map<String, Object>> objectList(JsonNode node, String key) {
+        return convertOrNull(node, key, new TypeReference<>() {});
+    }
+
+    private static Map<String, Object> objectMap(JsonNode node, String key) {
+        return convertOrNull(node, key, new TypeReference<>() {});
+    }
+
+    private static Map<String, String> stringMap(JsonNode node, String key) {
+        return convertOrNull(node, key, new TypeReference<>() {});
+    }
+
+    private static <T> T convertOrNull(JsonNode node, String key, TypeReference<T> type) {
+        return node.has(key) && !node.get(key).isNull() ? JSON.convertValue(node.get(key), type) : null;
     }
 
     private static Metric metric(MetricSpec spec) {

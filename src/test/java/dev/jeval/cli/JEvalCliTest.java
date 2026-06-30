@@ -215,6 +215,50 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunJsonlDatasetPreservesDeepEvalLatestData() throws Exception {
+        var dataset = tempDir.resolve("cases.jsonl");
+        Files.writeString(dataset, """
+                {"name":"jsonl-bad","tags":["jsonl"],"input":"q","actual_output":"a","expected_output":"b","context":["document context"],"retrieval_context":["retrieved fact"],"metadata":{"suite":"jsonl"},"comments":"jsonl comment","token_cost":0.42,"completion_time":2.5,"custom_column_key_values":{"risk":"medium"},"tools_called":[{"name":"PolicySearch","input_parameters":{"query":"refund"},"output":"30 days"}],"expected_tools":[{"name":"PolicySearch"}],"mcp_servers":[{"server_name":"policy"}],"mcp_tools_called":[{"name":"mcp-search"}],"mcp_resources_called":[{"uri":"file://policy"}],"mcp_prompts_called":[{"name":"policy-prompt"}],"trace":{"name":"root","spans":[{"name":"retriever","score":0.8}]}}
+                """);
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "jsonl-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "dataset": "cases.jsonl"
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--identifier", "jsonl-release", "--quiet"},
+                out, err);
+
+        assertEquals(1, exit, text(err));
+        var latestText = Files.readString(tempDir.resolve(".deepeval").resolve(".latest_test_run.json"));
+        assertTrue(latestText.contains("\"identifier\":\"jsonl-release\""));
+        assertTrue(latestText.contains("\"name\":\"jsonl-bad\""));
+        assertTrue(latestText.contains("\"context\":[\"document context\"]"));
+        assertTrue(latestText.contains("\"retrievalContext\":[\"retrieved fact\"]"));
+        assertTrue(latestText.contains("\"tags\":[\"jsonl\"]"));
+        assertTrue(latestText.contains("\"metadata\":{"));
+        assertTrue(latestText.contains("\"suite\":\"jsonl\""));
+        assertTrue(latestText.contains("\"comments\":\"jsonl comment\""));
+        assertTrue(latestText.contains("\"tokenCost\":0.42"));
+        assertTrue(latestText.contains("\"completionTime\":2.5"));
+        assertTrue(latestText.contains("\"customColumnKeyValues\":{\"risk\":\"medium\"}"));
+        assertTrue(latestText.contains("\"toolsCalled\":[{"));
+        assertTrue(latestText.contains("\"expectedTools\":[{"));
+        assertTrue(latestText.contains("\"inputParameters\":{\"query\":\"refund\"}"));
+        assertTrue(latestText.contains("\"output\":\"30 days\""));
+        assertTrue(latestText.contains("\"mcpServers\":[{\"server_name\":\"policy\"}]"));
+        assertTrue(latestText.contains("\"mcpToolsCalled\":[{\"name\":\"mcp-search\"}]"));
+        assertTrue(latestText.contains("\"mcpResourcesCalled\":[{\"uri\":\"file://policy\"}]"));
+        assertTrue(latestText.contains("\"mcpPromptsCalled\":[{\"name\":\"policy-prompt\"}]"));
+        assertTrue(latestText.contains("\"trace\":{\"name\":\"root\""));
+    }
+
+    @Test
     void testRunSupportsDeepEvalIdentifierAlias() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
