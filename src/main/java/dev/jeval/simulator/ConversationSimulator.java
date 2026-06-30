@@ -2,10 +2,15 @@ package dev.jeval.simulator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ConversationalGolden;
+import dev.jeval.ConversationalTestCase;
 import dev.jeval.EvaluationModel;
 import dev.jeval.Turn;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 public final class ConversationSimulator {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -13,6 +18,8 @@ public final class ConversationSimulator {
     private final ModelCallback modelCallback;
     private final EvaluationModel simulatorModel;
     private final String language;
+    private final SimulationGraphRunner graphRunner;
+    private final SimulationController stoppingController;
 
     public ConversationSimulator(ModelCallback modelCallback, EvaluationModel simulatorModel) {
         this(modelCallback, simulatorModel, "English");
@@ -22,6 +29,8 @@ public final class ConversationSimulator {
         this.modelCallback = Objects.requireNonNull(modelCallback, "modelCallback");
         this.simulatorModel = Objects.requireNonNull(simulatorModel, "simulatorModel");
         this.language = language == null || language.isBlank() ? "English" : language;
+        this.graphRunner = new SimulationGraphRunner(defaultSimulationNode());
+        this.stoppingController = SimulationController.expectedOutcome(simulatorModel);
     }
 
     public String language() {
@@ -58,6 +67,100 @@ public final class ConversationSimulator {
             throw new IllegalArgumentException("model_callback must return a Turn.");
         }
         return turn;
+    }
+
+    public List<ConversationalTestCase> simulate(List<ConversationalGolden> goldens, int maxUserSimulations) {
+        if (maxUserSimulations <= 0) {
+            throw new IllegalArgumentException("max_user_simulations must be a positive integer.");
+        }
+        Objects.requireNonNull(goldens, "goldens");
+        var conversations = new ArrayList<ConversationalTestCase>();
+        for (var index = 0; index < goldens.size(); index++) {
+            conversations.add(simulate(goldens.get(index), maxUserSimulations, index));
+        }
+        return List.copyOf(conversations);
+    }
+
+    public ConversationalTestCase simulate(ConversationalGolden golden, int maxUserSimulations) {
+        if (maxUserSimulations <= 0) {
+            throw new IllegalArgumentException("max_user_simulations must be a positive integer.");
+        }
+        return simulate(golden, maxUserSimulations, 0);
+    }
+
+    private ConversationalTestCase simulate(ConversationalGolden golden, int maxUserSimulations, int index) {
+        Objects.requireNonNull(golden, "golden");
+        var turns = new ArrayList<Turn>();
+        if (golden.turns() != null) {
+            turns.addAll(golden.turns());
+        }
+        var state = graphRunner.newConversationState();
+        var threadId = UUID.randomUUID().toString();
+        var simulatedUserTurns = 0;
+        while (simulatedUserTurns < maxUserSimulations) {
+            if (stoppingController.run(turns, golden, index, threadId, simulatedUserTurns, maxUserSimulations)) {
+                break;
+            }
+            var generatedUserTurn = false;
+            var terminalEmission = false;
+            String input;
+            if (!turns.isEmpty() && "user".equals(turns.getLast().role())) {
+                input = turns.getLast().content();
+            } else {
+                var emission = graphRunner.run(state, turns, golden, threadId, language);
+                if (emission.turn() == null) {
+                    break;
+                }
+                turns.add(emission.turn());
+                input = emission.turn().content();
+                generatedUserTurn = true;
+                terminalEmission = emission.end();
+            }
+
+            var assistantTurn = generateTurnFromCallback(input, turns, threadId);
+            turns.add(assistantTurn);
+            if (generatedUserTurn) {
+                simulatedUserTurns++;
+            }
+            graphRunner.advance(simulatorModel, state, assistantTurn.content());
+            if (terminalEmission) {
+                break;
+            }
+        }
+        return toTestCase(golden, turns);
+    }
+
+    private SimulationNode defaultSimulationNode() {
+        return SimulationNode.ofText(context -> context.turns().isEmpty()
+                ? generateFirstUserInput(context.golden())
+                : generateNextUserInput(context.golden(), context.turns()), false, null, "default_simulation_node");
+    }
+
+    private static ConversationalTestCase toTestCase(ConversationalGolden golden, List<Turn> turns) {
+        return ConversationalTestCase.builder(turns)
+                .scenario(golden.scenario())
+                .expectedOutcome(golden.expectedOutcome())
+                .userDescription(golden.userDescription())
+                .context(golden.context())
+                .metadata(simulatedMetadata(golden))
+                .comments(golden.comments())
+                .name(golden.name())
+                .datasetRank(golden.datasetRank())
+                .datasetAlias(golden.datasetAlias())
+                .datasetId(golden.datasetId())
+                .multimodal(golden.multimodal())
+                .build();
+    }
+
+    private static Map<String, Object> simulatedMetadata(ConversationalGolden golden) {
+        var metadata = new LinkedHashMap<String, Object>();
+        if (golden.additionalMetadata() != null) {
+            metadata.putAll(golden.additionalMetadata());
+        }
+        if (golden.userDescription() != null) {
+            metadata.put("User Description", golden.userDescription());
+        }
+        return metadata.isEmpty() ? null : metadata;
     }
 
     @FunctionalInterface

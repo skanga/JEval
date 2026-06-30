@@ -9,6 +9,8 @@ import dev.jeval.EvaluationModel;
 import dev.jeval.Turn;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -81,6 +83,84 @@ class ConversationSimulatorTest {
         assertEquals("hello", seen.get().input());
         assertEquals("thread-1", seen.get().threadId());
         assertEquals(1, seen.get().turns().size());
+    }
+
+    @Test
+    void simulateGeneratesConversationUntilMaxUserSimulations() {
+        var model = new ScriptedModel(List.of(
+                "{\"simulated_input\":\"Hi, I need billing help.\"}",
+                "{\"simulated_input\":\"Can you clarify the charge?\"}"));
+        var seenInputs = new ArrayList<String>();
+        var seenTurnCounts = new ArrayList<Integer>();
+        var simulator = new ConversationSimulator(context -> {
+            seenInputs.add(context.input());
+            seenTurnCounts.add(context.turns().size());
+            return new Turn("assistant", "assistant reply to " + context.input());
+        }, model);
+        var golden = ConversationalGolden.builder("A user needs billing help.")
+                .userDescription("Maya")
+                .expectedOutcome(null)
+                .context(List.of("Billing policy context"))
+                .additionalMetadata(Map.of("source", "seed"))
+                .comments("generated from simulator")
+                .name("billing flow")
+                .build();
+
+        var testCases = simulator.simulate(List.of(golden), 2);
+
+        assertEquals(1, testCases.size());
+        var testCase = testCases.getFirst();
+        assertEquals("A user needs billing help.", testCase.scenario());
+        assertEquals("Maya", testCase.userDescription());
+        assertEquals(List.of("Billing policy context"), testCase.context());
+        assertEquals("generated from simulator", testCase.comments());
+        assertEquals("billing flow", testCase.name());
+        assertEquals("seed", testCase.metadata().get("source"));
+        assertEquals("Maya", testCase.metadata().get("User Description"));
+        assertEquals(List.of(
+                new Turn("user", "Hi, I need billing help."),
+                new Turn("assistant", "assistant reply to Hi, I need billing help."),
+                new Turn("user", "Can you clarify the charge?"),
+                new Turn("assistant", "assistant reply to Can you clarify the charge?")),
+                testCase.turns());
+        assertEquals(List.of("Hi, I need billing help.", "Can you clarify the charge?"), seenInputs);
+        assertEquals(List.of(1, 3), seenTurnCounts);
+        assertEquals(2, model.prompts().size());
+        assertTrue(model.prompts().getFirst().contains("start a conversation in English"));
+        assertTrue(model.prompts().get(1).contains("generate the next user input in English"));
+    }
+
+    @Test
+    void simulateRejectsNonPositiveMaxUserSimulations() {
+        var simulator = new ConversationSimulator(input -> new Turn("assistant", "ok"), new ScriptedModel(List.of()));
+        var golden = ConversationalGolden.builder("scenario").build();
+
+        assertThrows(IllegalArgumentException.class, () -> simulator.simulate(List.of(golden), 0));
+    }
+
+    @Test
+    void simulateStopsWhenExpectedOutcomeAlreadyComplete() {
+        var model = new ScriptedModel(List.of("{\"is_complete\":true,\"reason\":\"done\"}"));
+        var callbacks = new AtomicInteger();
+        var simulator = new ConversationSimulator(context -> {
+            callbacks.incrementAndGet();
+            return new Turn("assistant", "unexpected");
+        }, model);
+        var initialTurns = List.of(
+                new Turn("user", "I reset my password."),
+                new Turn("assistant", "You are all set."));
+        var golden = ConversationalGolden.builder("A user needs account help.")
+                .expectedOutcome("The user has reset their password.")
+                .userDescription("Pat")
+                .turns(initialTurns)
+                .build();
+
+        var testCases = simulator.simulate(List.of(golden), 5);
+
+        assertEquals(initialTurns, testCases.getFirst().turns());
+        assertEquals(0, callbacks.get());
+        assertEquals(1, model.prompts().size());
+        assertTrue(model.prompts().getFirst().contains("Conversation Completion Checker"));
     }
 
     private static final class ScriptedModel implements EvaluationModel {
