@@ -833,8 +833,10 @@ class SynthesizerTest {
     @Test
     void generatesGoldensFromExistingGoldensWithContext() {
         var model = new ScriptedModel(List.of(
+                "{\"scenario\":\"database class\",\"task\":\"ask SQL study questions\",\"input_format\":\"one question\"}",
                 "{\"data\":[{\"input\":\"What does the table store?\"}]}",
-                "{\"rewritten_input\":\"What data is stored in the table?\"}"));
+                "{\"rewritten_input\":\"What data is stored in the table?\"}",
+                "{\"input\":\"What data is stored in the table?\"}"));
         var synthesizer = new Synthesizer(
                 model,
                 null,
@@ -853,6 +855,30 @@ class SynthesizerTest {
         assertEquals("What data is stored in the table?", goldens.getFirst().input());
         assertEquals(List.of("CREATE TABLE students (id INT)"), goldens.getFirst().context());
         assertEquals("schema.sql", goldens.getFirst().sourceFile());
+        assertTrue(model.prompts().getFirst().contains("infer the common prompt structure"));
+    }
+
+    @Test
+    void generatesGoldensFromContextGoldensWithInferredStylingLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"scenario\":\"database class\",\"task\":\"ask SQL study questions\",\"input_format\":\"one question\"}",
+                "{\"data\":[{\"input\":\"raw context question\"}]}",
+                "{\"input\":\"styled context question\"}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        var original = Golden.builder("How is the students table structured?")
+                .context(List.of("CREATE TABLE students (id INT)"))
+                .sourceFile("schema.sql")
+                .build();
+
+        var goldens = synthesizer.generateGoldensFromGoldens(List.of(original), 1, false);
+
+        assertEquals(1, goldens.size());
+        assertEquals("styled context question", goldens.getFirst().input());
+        assertEquals(List.of("CREATE TABLE students (id INT)"), goldens.getFirst().context());
+        assertEquals("schema.sql", goldens.getFirst().sourceFile());
+        assertTrue(model.prompts().getFirst().contains("infer the common prompt structure"));
+        assertTrue(model.prompts().get(2).contains("Input Format: one question"));
     }
 
     @Test
@@ -901,7 +927,9 @@ class SynthesizerTest {
     @Test
     void generateGoldensFromMixedExistingGoldensUsesContextBranchLikeDeepEval() {
         var model = new ScriptedModel(List.of(
+                "{\"scenario\":\"mixed class\",\"task\":\"ask context questions\",\"input_format\":\"one question\"}",
                 "{\"data\":[{\"input\":\"Context question\"}]}",
+                "{\"input\":\"Styled context question\"}",
                 "Context answer"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
@@ -914,16 +942,19 @@ class SynthesizerTest {
         var goldens = synthesizer.generateGoldensFromGoldens(List.of(contextual, plain), 1, true);
 
         assertEquals(1, goldens.size());
-        assertEquals("Context question", goldens.get(0).input());
+        assertEquals("Styled context question", goldens.get(0).input());
         assertEquals(List.of("context"), goldens.get(0).context());
         assertEquals("Context answer", goldens.get(0).expectedOutput());
-        assertEquals(2, model.prompts().size());
+        assertTrue(model.prompts().getFirst().contains("infer the common prompt structure"));
+        assertEquals(4, model.prompts().size());
     }
 
     @Test
     void asyncGenerateGoldensFromExistingGoldensReturnsFutureLikeDeepEval() {
         var model = new ScriptedModel(List.of(
-                "{\"data\":[{\"input\":\"Async expanded question?\"}]}"));
+                "{\"scenario\":\"async class\",\"task\":\"ask async questions\",\"input_format\":\"one question\"}",
+                "{\"data\":[{\"input\":\"Async expanded question?\"}]}",
+                "{\"input\":\"Styled async expanded question?\"}"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var original = Golden.builder("old")
@@ -933,7 +964,7 @@ class SynthesizerTest {
 
         var goldens = synthesizer.generateGoldensFromGoldensAsync(List.of(original), 1, false).join();
 
-        assertEquals(List.of("Async expanded question?"), goldens.stream().map(Golden::input).toList());
+        assertEquals(List.of("Styled async expanded question?"), goldens.stream().map(Golden::input).toList());
         assertEquals(List.of("Async context"), goldens.getFirst().context());
         assertEquals("async.txt", goldens.getFirst().sourceFile());
     }

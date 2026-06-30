@@ -162,7 +162,10 @@ The synthesizer can generate single-turn `Golden` values from contexts, scratch
 styling, or existing goldens, and multi-turn `ConversationalGolden` values from
 contexts, scratch styling, or existing conversational goldens. It also includes
 DeepEval-style text-to-SQL generation from schema context. It uses any
-`EvaluationModel`, including the LangChain4j adapter.
+`EvaluationModel`, including the LangChain4j adapter. When single-turn goldens
+are generated from existing goldens without an explicit `StylingConfig`, JEval
+infers prompt styling from those existing inputs before generating replacements,
+including the contextual branch.
 
 ```java
 import dev.jeval.Golden;

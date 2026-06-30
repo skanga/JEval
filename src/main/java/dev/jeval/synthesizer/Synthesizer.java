@@ -200,10 +200,21 @@ public final class Synthesizer {
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             List<?> sourceFiles) {
+        return generateGoldensFromContexts(
+                contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, stylingConfig);
+    }
+
+    private List<Golden> generateGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            StylingConfig activeStylingConfig) {
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateGoldensForContext(
-                        index, contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, null, null))) {
+                        index, contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, null, null,
+                        activeStylingConfig))) {
             goldens.addAll(batch);
         }
         return retainGoldens(goldens);
@@ -230,7 +241,7 @@ public final class Synthesizer {
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateGoldensForContext(
                         index, contexts, includeExpectedOutput, maxGoldensPerContext,
-                        sourceFiles, contextScores, targetFilesPerContext))) {
+                        sourceFiles, contextScores, targetFilesPerContext, stylingConfig))) {
             goldens.addAll(batch);
         }
         return retainGoldens(goldens);
@@ -243,7 +254,8 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<?> sourceFiles,
             List<Double> contextScores,
-            Integer targetFilesPerContext) {
+            Integer targetFilesPerContext,
+            StylingConfig activeStylingConfig) {
         var goldens = new ArrayList<Golden>();
         var context = List.copyOf(contexts.get(contextIndex));
         var contextSourceFiles = contextSourceFiles(sourceFiles, contextIndex);
@@ -264,7 +276,8 @@ public final class Synthesizer {
                     item.score(),
                     contextQuality,
                     contextSourceFiles,
-                    contextIndex * maxGoldensPerContext + goldens.size()));
+                    contextIndex * maxGoldensPerContext + goldens.size(),
+                    activeStylingConfig));
         }
         return List.copyOf(goldens);
     }
@@ -301,16 +314,19 @@ public final class Synthesizer {
         var sourceFiles = new ArrayList<String>();
         var inputs = new ArrayList<String>();
         for (var golden : goldens) {
+            inputs.add(golden.input());
             if (golden.context() != null && !golden.context().isEmpty()) {
                 contexts.add(golden.context());
                 sourceFiles.add(golden.sourceFile());
-            } else {
-                inputs.add(golden.input());
             }
         }
         var generated = new ArrayList<Golden>();
         if (!contexts.isEmpty()) {
-            generated.addAll(generateGoldensFromContexts(contexts, includeExpectedOutput, maxGoldensPerGolden, sourceFiles));
+            var activeStylingConfig = stylingConfig == null
+                    ? extractStylingConfig(inputs)
+                    : stylingConfig;
+            generated.addAll(generateGoldensFromContexts(
+                    contexts, includeExpectedOutput, maxGoldensPerGolden, sourceFiles, activeStylingConfig));
         } else if (!inputs.isEmpty()) {
             var activeStylingConfig = stylingConfig == null
                     ? extractStylingConfig(inputs)
