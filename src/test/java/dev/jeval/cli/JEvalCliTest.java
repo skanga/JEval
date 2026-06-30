@@ -1249,6 +1249,49 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateTextToSqlWritesGoldensFile() throws Exception {
+        var contexts = tempDir.resolve("schemas.json");
+        Files.writeString(contexts, "[[\"CREATE TABLE users (id INT, active BOOLEAN);\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, """
+                {"data":[{"input":"How many users are active?"}]}
+                {"sql":"SELECT COUNT(*) FROM users WHERE active = true;"}
+                """);
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "text-to-sql", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "sql-goldens"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("sql-goldens.json"));
+        assertTrue(generated.contains("\"input\" : \"How many users are active?\""));
+        assertTrue(generated.contains("\"expected_output\" : \"SELECT COUNT(*) FROM users WHERE active = true;\""));
+        assertTrue(generated.contains("CREATE TABLE users"));
+    }
+
+    @Test
+    void generateTextToSqlRejectsMultiTurnBeforeProviderLookup() throws Exception {
+        var contexts = tempDir.resolve("schemas.json");
+        Files.writeString(contexts, "[[\"CREATE TABLE users (id INT, active BOOLEAN);\"]]");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "text-to-sql", "--variation", "multi-turn",
+                "--contexts-file", contexts.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("--method text-to-sql only supports --variation single-turn"));
+        assertFalse(text(err).contains("No supported provider"));
+    }
+
+    @Test
     void generatePrintsDeepEvalStyleSaveMessage() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");

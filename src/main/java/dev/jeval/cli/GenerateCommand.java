@@ -46,13 +46,18 @@ final class GenerateCommand {
             err.println("Only --variation single-turn and multi-turn are implemented in JEval CLI generate.");
             return 2;
         }
+        if ("text-to-sql".equals(method) && !"single-turn".equals(variation)) {
+            err.println("--method text-to-sql only supports --variation single-turn");
+            return 2;
+        }
         var fileType = lowerOption(args, "--file-type", "json");
         if (!supportedFileType(fileType)) {
             err.println("Invalid file type. Available file types to save as: json, csv, jsonl");
             return 2;
         }
-        if ("contexts".equals(method) && option(args, "--contexts-file", null) == null) {
-            err.println("--contexts-file is required for --method contexts");
+        if (("contexts".equals(method) || "text-to-sql".equals(method))
+                && option(args, "--contexts-file", null) == null) {
+            err.println("--contexts-file is required for --method " + method);
             return 2;
         }
         if ("scratch".equals(method)) {
@@ -106,6 +111,7 @@ final class GenerateCommand {
             PrintStream err) throws IOException {
         return switch (method == null ? "" : method) {
             case "contexts" -> fromContexts(args, synthesizer, err);
+            case "text-to-sql" -> fromTextToSql(args, synthesizer, err);
             case "scratch" -> fromScratch(args, synthesizer, err);
             case "goldens" -> fromGoldens(args, synthesizer, err);
             case "docs" -> fromDocs(args, synthesizer, err);
@@ -210,6 +216,24 @@ final class GenerateCommand {
                 includeExpected(args),
                 integer(args, "--max-goldens-per-context", 2),
                 null);
+    }
+
+    private static List<Golden> fromTextToSql(String[] args, Synthesizer synthesizer, PrintStream err)
+            throws IOException {
+        var file = option(args, "--contexts-file", null);
+        if (file == null) {
+            err.println("--contexts-file is required for --method text-to-sql");
+            return null;
+        }
+        var contexts = loadContexts(Path.of(file));
+        var goldens = new ArrayList<Golden>();
+        for (var context : contexts) {
+            goldens.addAll(synthesizer.generateTextToSqlGoldensFromContext(
+                    context,
+                    includeExpected(args),
+                    integer(args, "--max-goldens-per-context", 2)));
+        }
+        return List.copyOf(goldens);
     }
 
     private static List<Golden> fromScratch(String[] args, Synthesizer synthesizer, PrintStream err) {
@@ -481,6 +505,7 @@ final class GenerateCommand {
 
     private static boolean supportedMethod(String method) {
         return "contexts".equals(method)
+                || "text-to-sql".equals(method)
                 || "scratch".equals(method)
                 || "goldens".equals(method)
                 || "docs".equals(method);
