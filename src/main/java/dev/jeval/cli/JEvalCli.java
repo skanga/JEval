@@ -424,7 +424,7 @@ public final class JEvalCli {
                 result.comments(),
                 result.tags(),
                 result.customColumnKeyValues(),
-                null,
+                result.trace(),
                 result.mcpServers(),
                 result.mcpToolsCalled(),
                 result.mcpResourcesCalled(),

@@ -41,10 +41,11 @@ public record TestRunResult(
             List<Map<String, Object>> mcpServers,
             List<Map<String, Object>> mcpToolsCalled,
             List<Map<String, Object>> mcpResourcesCalled,
-            List<Map<String, Object>> mcpPromptsCalled) {
+            List<Map<String, Object>> mcpPromptsCalled,
+            Map<String, Object> trace) {
         public TestCaseResult(String name, boolean success, List<MetricResult> metricResults) {
             this(name, success, metricResults, null, null, null, null, null, null, null, null, null, null, null,
-                    null, null, null, null, null, null);
+                    null, null, null, null, null, null, null);
         }
 
         public TestCaseResult {
@@ -62,12 +63,17 @@ public record TestRunResult(
             mcpToolsCalled = copyMaps(mcpToolsCalled);
             mcpResourcesCalled = copyMaps(mcpResourcesCalled);
             mcpPromptsCalled = copyMaps(mcpPromptsCalled);
+            trace = copyMap(trace);
         }
 
         private static List<Map<String, Object>> copyMaps(List<Map<String, Object>> values) {
             return values == null
                     ? null
                     : values.stream().map(value -> Collections.unmodifiableMap(new LinkedHashMap<>(value))).toList();
+        }
+
+        private static Map<String, Object> copyMap(Map<String, Object> value) {
+            return value == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(value));
         }
     }
 

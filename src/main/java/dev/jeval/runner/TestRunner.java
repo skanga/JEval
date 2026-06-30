@@ -279,7 +279,8 @@ public final class TestRunner {
                     testCase.mcpServers(),
                     testCase.mcpToolsCalled(),
                     testCase.mcpResourcesCalled(),
-                    testCase.mcpPromptsCalled());
+                    testCase.mcpPromptsCalled(),
+                    testCase.trace());
         } catch (RuntimeException error) {
             if (!ignoreErrors) {
                 throw error;
@@ -304,7 +305,8 @@ public final class TestRunner {
                     testCase.mcpServers(),
                     testCase.mcpToolsCalled(),
                     testCase.mcpResourcesCalled(),
-                    testCase.mcpPromptsCalled());
+                    testCase.mcpPromptsCalled(),
+                    testCase.trace());
         }
     }
 
@@ -345,6 +347,7 @@ public final class TestRunner {
                 .mcpToolsCalled(spec.mcpToolsCalled())
                 .mcpResourcesCalled(spec.mcpResourcesCalled())
                 .mcpPromptsCalled(spec.mcpPromptsCalled())
+                .trace(spec.trace())
                 .name(spec.name())
                 .tags(spec.tags())
                 .build();
@@ -372,7 +375,8 @@ public final class TestRunner {
                 testCase.mcpServers(),
                 testCase.mcpToolsCalled(),
                 testCase.mcpResourcesCalled(),
-                testCase.mcpPromptsCalled());
+                testCase.mcpPromptsCalled(),
+                testCase.trace());
     }
 
     private static List<LlmTestCase> dataset(Path parent, String dataset) {
@@ -501,6 +505,7 @@ public final class TestRunner {
             @JsonAlias("mcp_servers") List<Map<String, Object>> mcpServers,
             @JsonAlias("mcp_tools_called") List<Map<String, Object>> mcpToolsCalled,
             @JsonAlias("mcp_resources_called") List<Map<String, Object>> mcpResourcesCalled,
-            @JsonAlias("mcp_prompts_called") List<Map<String, Object>> mcpPromptsCalled) {
+            @JsonAlias("mcp_prompts_called") List<Map<String, Object>> mcpPromptsCalled,
+            Map<String, Object> trace) {
     }
 }

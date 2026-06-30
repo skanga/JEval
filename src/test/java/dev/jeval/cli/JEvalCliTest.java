@@ -118,7 +118,8 @@ class JEvalCliTest {
                      "mcp_servers": [{"server_name": "policy"}],
                      "mcp_tools_called": [{"name": "mcp-search"}],
                      "mcp_resources_called": [{"uri": "file://policy"}],
-                     "mcp_prompts_called": [{"name": "policy-prompt"}]}
+                     "mcp_prompts_called": [{"name": "policy-prompt"}],
+                     "trace": {"name": "root", "spans": [{"name": "retriever", "score": 0.8}]}}
                   ]
                 }
                 """);
@@ -159,6 +160,8 @@ class JEvalCliTest {
         assertTrue(latestText.contains("\"mcpToolsCalled\":[{\"name\":\"mcp-search\"}]"));
         assertTrue(latestText.contains("\"mcpResourcesCalled\":[{\"uri\":\"file://policy\"}]"));
         assertTrue(latestText.contains("\"mcpPromptsCalled\":[{\"name\":\"policy-prompt\"}]"));
+        assertTrue(latestText.contains("\"trace\":{\"name\":\"root\""));
+        assertTrue(latestText.contains("\"spans\":[{\"name\":\"retriever\",\"score\":0.8}]"));
     }
 
     @Test
