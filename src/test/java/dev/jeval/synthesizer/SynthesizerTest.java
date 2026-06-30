@@ -247,6 +247,7 @@ class SynthesizerTest {
                 goldens.getFirst().additionalMetadata().get("used_source_files"));
         assertTrue(model.prompts().getFirst().contains("[SOURCE: policy.md] policy chunk"));
         assertTrue(model.prompts().getFirst().contains("[SOURCE: faq.md] faq chunk"));
+        assertTrue(model.prompts().getFirst().contains("at least 2 different source files"));
     }
 
     @Test
@@ -364,6 +365,7 @@ class SynthesizerTest {
                 goldens.getFirst().additionalMetadata().get("used_source_files"));
         assertTrue(model.prompts().getFirst().contains("[SOURCE: policy.md] policy chunk"));
         assertTrue(model.prompts().getFirst().contains("[SOURCE: faq.md] faq chunk"));
+        assertTrue(model.prompts().getFirst().contains("at least 2 different source files"));
     }
 
     @Test

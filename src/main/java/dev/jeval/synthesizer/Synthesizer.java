@@ -153,7 +153,8 @@ public final class Synthesizer {
                 includeExpectedOutput,
                 maxGoldensPerContext,
                 documentContexts.sourceFiles(),
-                documentContexts.contextScores());
+                documentContexts.contextScores(),
+                documentContexts.targetFilesPerContext());
     }
 
     public List<Golden> generateGoldensFromContexts(
@@ -164,7 +165,7 @@ public final class Synthesizer {
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateGoldensForContext(
-                        index, contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, null))) {
+                        index, contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, null, null))) {
             goldens.addAll(batch);
         }
         return retainGoldens(goldens);
@@ -176,10 +177,22 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<?> sourceFiles,
             List<Double> contextScores) {
+        return generateGoldensFromContexts(
+                contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, contextScores, null);
+    }
+
+    private List<Golden> generateGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<Double> contextScores,
+            Integer targetFilesPerContext) {
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateGoldensForContext(
-                        index, contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, contextScores))) {
+                        index, contexts, includeExpectedOutput, maxGoldensPerContext,
+                        sourceFiles, contextScores, targetFilesPerContext))) {
             goldens.addAll(batch);
         }
         return retainGoldens(goldens);
@@ -191,7 +204,8 @@ public final class Synthesizer {
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             List<?> sourceFiles,
-            List<Double> contextScores) {
+            List<Double> contextScores,
+            Integer targetFilesPerContext) {
         var goldens = new ArrayList<Golden>();
         var context = List.copyOf(contexts.get(contextIndex));
         var contextSourceFiles = contextSourceFiles(sourceFiles, contextIndex);
@@ -201,7 +215,11 @@ public final class Synthesizer {
                 : null;
         var data = SynthesizerSchemas.parseSyntheticData(
                 model.generate(SynthesizerPrompts.generateSyntheticInputs(
-                        context, maxGoldensPerContext, includeExpectedOutput, contextSourceFiles)));
+                        context,
+                        maxGoldensPerContext,
+                        includeExpectedOutput,
+                        contextSourceFiles,
+                        targetFilesPerContext)));
         var qualifiedData = rewriteInputs(context, data);
         for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(golden(item.data(), context, sourceFile, includeExpectedOutput,
@@ -281,7 +299,7 @@ public final class Synthesizer {
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
-                        maxGoldensPerContext, sourceFiles, null))) {
+                        maxGoldensPerContext, sourceFiles, null, null))) {
             goldens.addAll(batch);
         }
         return retainConversationalGoldens(goldens);
@@ -339,7 +357,8 @@ public final class Synthesizer {
                 includeExpectedOutcome,
                 maxGoldensPerContext,
                 documentContexts.sourceFiles(),
-                documentContexts.contextScores());
+                documentContexts.contextScores(),
+                documentContexts.targetFilesPerContext());
     }
 
     private List<ConversationalGolden> generateConversationalGoldensFromContexts(
@@ -348,10 +367,21 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<?> sourceFiles,
             List<Double> contextScores) {
+        return generateConversationalGoldensFromContexts(
+                contexts, includeExpectedOutcome, maxGoldensPerContext, sourceFiles, contextScores, null);
+    }
+
+    private List<ConversationalGolden> generateConversationalGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<Double> contextScores,
+            Integer targetFilesPerContext) {
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
-                        maxGoldensPerContext, sourceFiles, contextScores))) {
+                        maxGoldensPerContext, sourceFiles, contextScores, targetFilesPerContext))) {
             goldens.addAll(batch);
         }
         return retainConversationalGoldens(goldens);
@@ -363,7 +393,8 @@ public final class Synthesizer {
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             List<?> sourceFiles,
-            List<Double> contextScores) {
+            List<Double> contextScores,
+            Integer targetFilesPerContext) {
         var goldens = new ArrayList<ConversationalGolden>();
         var context = List.copyOf(contexts.get(contextIndex));
         var contextSourceFiles = contextSourceFiles(sourceFiles, contextIndex);
@@ -374,7 +405,7 @@ public final class Synthesizer {
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                 SynthesizerPrompts.generateSyntheticConversationalScenarios(
                         context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome,
-                        contextSourceFiles)));
+                        contextSourceFiles, targetFilesPerContext)));
         var qualifiedData = rewriteScenarios(context, data);
         for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(conversationalGolden(
@@ -631,7 +662,7 @@ public final class Synthesizer {
         var contextScores = new ArrayList<Double>();
         addDocumentContexts(documentPaths, config, contexts, sourceFiles, contextScores);
         if (!config.allowCrossFileContexts()) {
-            return new DocumentContexts(contexts, new ArrayList<>(sourceFiles), contextScores);
+            return new DocumentContexts(contexts, new ArrayList<>(sourceFiles), contextScores, null);
         }
         return mergeCrossFileContexts(contexts, sourceFiles, contextScores, config);
     }
@@ -642,14 +673,14 @@ public final class Synthesizer {
             List<Double> contextScores,
             ContextConstructionConfig config) {
         if (!canMergeCrossFileContexts(contexts, sourceFiles)) {
-            return new DocumentContexts(contexts, new ArrayList<>(sourceFiles), contextScores);
+            return new DocumentContexts(contexts, new ArrayList<>(sourceFiles), contextScores, null);
         }
         var distinctFiles = unique(sourceFiles);
         var targetCount = config.targetFilesPerContext() == null
                 ? Math.min(2, Math.min(distinctFiles.size(), config.maxFilesPerContext()))
                 : Math.min(config.targetFilesPerContext(), Math.min(distinctFiles.size(), config.maxFilesPerContext()));
         if (targetCount < 2) {
-            return new DocumentContexts(contexts, new ArrayList<>(sourceFiles), contextScores);
+            return new DocumentContexts(contexts, new ArrayList<>(sourceFiles), contextScores, null);
         }
 
         var consumed = new boolean[contexts.size()];
@@ -678,7 +709,7 @@ public final class Synthesizer {
             mergedSourceFiles.add(sources.size() == 1 ? sources.getFirst() : List.copyOf(sources));
             mergedScores.add(contextScores != null && i < contextScores.size() ? contextScores.get(i) : null);
         }
-        return new DocumentContexts(mergedContexts, mergedSourceFiles, mergedScores);
+        return new DocumentContexts(mergedContexts, mergedSourceFiles, mergedScores, targetCount);
     }
 
     private static boolean canMergeCrossFileContexts(List<List<String>> contexts, List<String> sourceFiles) {
@@ -787,7 +818,8 @@ public final class Synthesizer {
     private record DocumentContexts(
             List<List<String>> contexts,
             List<?> sourceFiles,
-            List<Double> contextScores) {
+            List<Double> contextScores,
+            Integer targetFilesPerContext) {
     }
 
     private <T> List<List<T>> generateContextBatches(int contextCount, IntFunction<List<T>> generator) {

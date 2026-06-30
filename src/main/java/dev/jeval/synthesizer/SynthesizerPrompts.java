@@ -20,10 +20,20 @@ final class SynthesizerPrompts {
             int maxGoldensPerContext,
             boolean includeExpectedOutput,
             List<String> availableSourceFiles) {
+        return generateSyntheticInputs(
+                context, maxGoldensPerContext, includeExpectedOutput, availableSourceFiles, null);
+    }
+
+    static String generateSyntheticInputs(
+            List<String> context,
+            int maxGoldensPerContext,
+            boolean includeExpectedOutput,
+            List<String> availableSourceFiles,
+            Integer targetFilesPerContext) {
         var shape = includeExpectedOutput
                 ? "{\"data\":[{\"input\":\"...\",\"expected_output\":\"...\"}]}"
                 : "{\"data\":[{\"input\":\"...\"}]}";
-        var sourceFilesSection = sourceFilesSection(context, availableSourceFiles, "input");
+        var sourceFilesSection = sourceFilesSection(context, availableSourceFiles, "input", targetFilesPerContext);
         return """
                 Generate up to %d synthetic user inputs from the context below.
                 Return only JSON in this shape: %s.
@@ -148,10 +158,21 @@ final class SynthesizerPrompts {
             ConversationalStylingConfig stylingConfig,
             boolean includeExpectedOutcome,
             List<String> availableSourceFiles) {
+        return generateSyntheticConversationalScenarios(
+                context, maxGoldensPerContext, stylingConfig, includeExpectedOutcome, availableSourceFiles, null);
+    }
+
+    static String generateSyntheticConversationalScenarios(
+            List<String> context,
+            int maxGoldensPerContext,
+            ConversationalStylingConfig stylingConfig,
+            boolean includeExpectedOutcome,
+            List<String> availableSourceFiles,
+            Integer targetFilesPerContext) {
         var shape = includeExpectedOutcome
                 ? "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}],\"expected_outcome\":\"...\"}]}"
                 : "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}]}]}";
-        var sourceFilesSection = sourceFilesSection(context, availableSourceFiles, "scenario");
+        var sourceFilesSection = sourceFilesSection(context, availableSourceFiles, "scenario", targetFilesPerContext);
         return """
                 Generate up to %d synthetic multi-turn conversation scenarios from the context below.
                 Return only JSON in this shape: %s.
@@ -171,17 +192,29 @@ final class SynthesizerPrompts {
                 String.join("\n", formatContextWithSources(context, availableSourceFiles)));
     }
 
-    private static String sourceFilesSection(List<String> context, List<String> availableSourceFiles, String itemKey) {
+    private static String sourceFilesSection(
+            List<String> context,
+            List<String> availableSourceFiles,
+            String itemKey,
+            Integer targetFilesPerContext) {
         var sourceFiles = distinctAlignedSourceFiles(context, availableSourceFiles);
         if (sourceFiles.size() < 2) {
             return "";
         }
+        var targetInstruction = targetFilesPerContext == null
+                ? ""
+                : "\nEach generated `" + itemKey + "` MUST meaningfully combine information from at least "
+                        + targetFilesPerContext
+                        + " different source files. Ensure ATLEAST "
+                        + targetFilesPerContext
+                        + " source files are used in the `" + itemKey + "`.";
         return """
 
                 This context is constructed from multiple files with these source labels: %s.
+                %s
                 For each generated item, include a `used_source_files` key listing only the source labels actually used to form that `%s`.
                 `used_source_files` MUST be a JSON array of strings and each value MUST come from: %s.
-                """.formatted(sourceFiles, itemKey, sourceFiles);
+                """.formatted(sourceFiles, targetInstruction, itemKey, sourceFiles);
     }
 
     private static List<String> formatContextWithSources(List<String> context, List<String> sourceFiles) {
