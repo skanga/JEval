@@ -147,12 +147,13 @@ public final class Synthesizer {
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             ContextConstructionConfig contextConstructionConfig) throws IOException {
-        var contexts = new ArrayList<List<String>>();
-        var sourceFiles = new ArrayList<String>();
-        var contextScores = new ArrayList<Double>();
-        addDocumentContexts(documentPaths, config(contextConstructionConfig), contexts, sourceFiles, contextScores);
+        var documentContexts = documentContexts(documentPaths, config(contextConstructionConfig));
         return generateGoldensFromContexts(
-                contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, contextScores);
+                documentContexts.contexts(),
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                documentContexts.sourceFiles(),
+                documentContexts.contextScores());
     }
 
     public List<Golden> generateGoldensFromContexts(
@@ -332,12 +333,13 @@ public final class Synthesizer {
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             ContextConstructionConfig contextConstructionConfig) throws IOException {
-        var contexts = new ArrayList<List<String>>();
-        var sourceFiles = new ArrayList<String>();
-        var contextScores = new ArrayList<Double>();
-        addDocumentContexts(documentPaths, config(contextConstructionConfig), contexts, sourceFiles, contextScores);
+        var documentContexts = documentContexts(documentPaths, config(contextConstructionConfig));
         return generateConversationalGoldensFromContexts(
-                contexts, includeExpectedOutcome, maxGoldensPerContext, sourceFiles, contextScores);
+                documentContexts.contexts(),
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                documentContexts.sourceFiles(),
+                documentContexts.contextScores());
     }
 
     private List<ConversationalGolden> generateConversationalGoldensFromContexts(
@@ -621,6 +623,82 @@ public final class Synthesizer {
         return config == null ? ContextConstructionConfig.DEFAULT : config;
     }
 
+    private static DocumentContexts documentContexts(
+            List<Path> documentPaths,
+            ContextConstructionConfig config) throws IOException {
+        var contexts = new ArrayList<List<String>>();
+        var sourceFiles = new ArrayList<String>();
+        var contextScores = new ArrayList<Double>();
+        addDocumentContexts(documentPaths, config, contexts, sourceFiles, contextScores);
+        if (!config.allowCrossFileContexts()) {
+            return new DocumentContexts(contexts, new ArrayList<>(sourceFiles), contextScores);
+        }
+        return mergeCrossFileContexts(contexts, sourceFiles, contextScores, config);
+    }
+
+    private static DocumentContexts mergeCrossFileContexts(
+            List<List<String>> contexts,
+            List<String> sourceFiles,
+            List<Double> contextScores,
+            ContextConstructionConfig config) {
+        if (!canMergeCrossFileContexts(contexts, sourceFiles)) {
+            return new DocumentContexts(contexts, new ArrayList<>(sourceFiles), contextScores);
+        }
+        var distinctFiles = unique(sourceFiles);
+        var targetCount = config.targetFilesPerContext() == null
+                ? Math.min(2, Math.min(distinctFiles.size(), config.maxFilesPerContext()))
+                : Math.min(config.targetFilesPerContext(), Math.min(distinctFiles.size(), config.maxFilesPerContext()));
+        if (targetCount < 2) {
+            return new DocumentContexts(contexts, new ArrayList<>(sourceFiles), contextScores);
+        }
+
+        var consumed = new boolean[contexts.size()];
+        var mergedContexts = new ArrayList<List<String>>();
+        var mergedSourceFiles = new ArrayList<Object>();
+        var mergedScores = new ArrayList<Double>();
+        for (var i = 0; i < contexts.size(); i++) {
+            if (consumed[i]) {
+                continue;
+            }
+            consumed[i] = true;
+            var context = new ArrayList<>(contexts.get(i));
+            var sources = new ArrayList<String>();
+            addUnique(sources, sourceFiles.get(i));
+
+            for (var j = 0; j < contexts.size() && sources.size() < targetCount; j++) {
+                if (consumed[j] || sources.contains(sourceFiles.get(j))) {
+                    continue;
+                }
+                consumed[j] = true;
+                context.addAll(contexts.get(j));
+                addUnique(sources, sourceFiles.get(j));
+            }
+
+            mergedContexts.add(List.copyOf(context));
+            mergedSourceFiles.add(sources.size() == 1 ? sources.getFirst() : List.copyOf(sources));
+            mergedScores.add(contextScores != null && i < contextScores.size() ? contextScores.get(i) : null);
+        }
+        return new DocumentContexts(mergedContexts, mergedSourceFiles, mergedScores);
+    }
+
+    private static boolean canMergeCrossFileContexts(List<List<String>> contexts, List<String> sourceFiles) {
+        return contexts.size() >= 2 && unique(sourceFiles).size() >= 2;
+    }
+
+    private static List<String> unique(List<String> values) {
+        var unique = new ArrayList<String>();
+        for (var value : values) {
+            addUnique(unique, value);
+        }
+        return List.copyOf(unique);
+    }
+
+    private static void addUnique(List<String> values, String value) {
+        if (value != null && !value.isBlank() && !values.contains(value)) {
+            values.add(value);
+        }
+    }
+
     private static List<String> contextSourceFiles(List<?> sourceFiles, int contextIndex) {
         if (sourceFiles == null || contextIndex >= sourceFiles.size()) {
             return List.of();
@@ -704,6 +782,12 @@ public final class Synthesizer {
                     .append(".");
         }
         throw new IllegalArgumentException(message.toString());
+    }
+
+    private record DocumentContexts(
+            List<List<String>> contexts,
+            List<?> sourceFiles,
+            List<Double> contextScores) {
     }
 
     private <T> List<List<T>> generateContextBatches(int contextCount, IntFunction<List<T>> generator) {

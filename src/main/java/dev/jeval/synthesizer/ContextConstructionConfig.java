@@ -7,9 +7,24 @@ public record ContextConstructionConfig(
         int chunkOverlap,
         double contextQualityThreshold,
         double contextSimilarityThreshold,
-        int maxRetries) {
+        int maxRetries,
+        boolean allowCrossFileContexts,
+        Integer targetFilesPerContext,
+        int maxFilesPerContext) {
     public static final ContextConstructionConfig DEFAULT =
-            new ContextConstructionConfig(3, 1, 1024, 0, 0.5, 0.0, 3);
+            new ContextConstructionConfig(3, 1, 1024, 0, 0.5, 0.0, 3, false, null, 3);
+
+    public ContextConstructionConfig(
+            int maxContextsPerDocument,
+            int minContextsPerDocument,
+            int chunkSize,
+            int chunkOverlap,
+            double contextQualityThreshold,
+            double contextSimilarityThreshold,
+            int maxRetries) {
+        this(maxContextsPerDocument, minContextsPerDocument, chunkSize, chunkOverlap,
+                contextQualityThreshold, contextSimilarityThreshold, maxRetries, false, null, 3);
+    }
 
     public ContextConstructionConfig {
         if (maxContextsPerDocument < 1) {
@@ -32,6 +47,12 @@ public record ContextConstructionConfig(
         }
         if (maxRetries < 0) {
             throw new IllegalArgumentException("max_retries must be non-negative");
+        }
+        if (targetFilesPerContext != null && targetFilesPerContext < 2) {
+            throw new IllegalArgumentException("target_files_per_context must be at least 2 when provided.");
+        }
+        if (maxFilesPerContext < 2) {
+            throw new IllegalArgumentException("max_files_per_context must be at least 2.");
         }
     }
 }

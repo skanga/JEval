@@ -217,6 +217,39 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromDocsCanMergeCrossFileContextsLikeDeepEval() throws Exception {
+        var policy = tempDir.resolve("policy.md");
+        var faq = tempDir.resolve("faq.md");
+        Files.writeString(policy, "policy chunk");
+        Files.writeString(faq, "faq chunk");
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"How do policy and FAQ connect?\",\"used_source_files\":[\"policy.md\",\"faq.md\"]}]}"));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateGoldensFromDocs(
+                List.of(policy, faq),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 10, 0, 0.5, 0.0, 3, true, 2, 3));
+
+        assertEquals(1, goldens.size());
+        assertEquals(List.of("policy chunk", "faq chunk"), goldens.getFirst().context());
+        assertEquals("policy.md", goldens.getFirst().sourceFile());
+        assertEquals(List.of("policy.md", "faq.md"),
+                goldens.getFirst().additionalMetadata().get("context_source_files"));
+        assertEquals(List.of("policy.md", "faq.md"),
+                goldens.getFirst().additionalMetadata().get("used_source_files"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: policy.md] policy chunk"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: faq.md] faq chunk"));
+    }
+
+    @Test
     void saveAsWritesLastSyntheticGoldensLikeDeepEval() throws Exception {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Paris\"}]}",
@@ -297,6 +330,40 @@ class SynthesizerTest {
         assertEquals(List.of(0.0, 0.0), goldens.stream()
                 .map(golden -> golden.additionalMetadata().get("context_quality"))
                 .toList());
+    }
+
+    @Test
+    void generateConversationalGoldensFromDocsCanMergeCrossFileContextsLikeDeepEval() throws Exception {
+        var policy = tempDir.resolve("policy.md");
+        var faq = tempDir.resolve("faq.md");
+        Files.writeString(policy, "policy chunk");
+        Files.writeString(faq, "faq chunk");
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"policy and FAQ support","turns":[{"role":"user","content":"Need both"}],"used_source_files":["policy.md","faq.md"]}]}
+                """));
+        var synthesizer = new Synthesizer(
+                model,
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var goldens = synthesizer.generateConversationalGoldensFromDocs(
+                List.of(policy, faq),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 10, 0, 0.5, 0.0, 3, true, 2, 3));
+
+        assertEquals(1, goldens.size());
+        assertEquals(List.of("policy chunk", "faq chunk"), goldens.getFirst().context());
+        assertEquals(List.of("policy.md", "faq.md"),
+                goldens.getFirst().additionalMetadata().get("context_source_files"));
+        assertEquals(List.of("policy.md", "faq.md"),
+                goldens.getFirst().additionalMetadata().get("used_source_files"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: policy.md] policy chunk"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: faq.md] faq chunk"));
     }
 
     @Test
