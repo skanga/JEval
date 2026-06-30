@@ -49,11 +49,14 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -o
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --color no --durations 5 -w -n 2
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -X -W
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json::case-name --quiet
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --results-folder evals --results-subfolder prompt-v3
 ```
 
 Each run writes DeepEval-style local artifacts to `.deepeval/.latest_run_full.json`
 and `.deepeval/test_run_<YYYYMMDD_HHMMSS>.json`; JEval also keeps the legacy
-`.jeval/.jeval` snapshot.
+`.jeval/.jeval` snapshot. Use `--results-folder` and optional
+`--results-subfolder`, or set `DEEPEVAL_RESULTS_FOLDER`, to also write
+timestamped DeepEval-style run files to a custom directory.
 
 Inspect the latest local run or a folder of timestamped runs:
 

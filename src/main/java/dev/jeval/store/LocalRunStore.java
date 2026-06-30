@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 public final class LocalRunStore {
     private static final ObjectMapper JSON = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
@@ -29,6 +30,31 @@ public final class LocalRunStore {
         JSON.writeValue(deepevalDirectory.resolve(".latest_run_full.json").toFile(), result);
         JSON.writeValue(timestampedRunPath(deepevalDirectory).toFile(), result);
         return compatibilityFile;
+    }
+
+    public Path writeConfigured(TestRunResult result, String resultsFolder, String resultsSubfolder) throws IOException {
+        var targetDirectory = resolveTargetDirectory(resultsFolder, resultsSubfolder, System.getenv());
+        if (targetDirectory == null) {
+            return null;
+        }
+        Files.createDirectories(targetDirectory);
+        var file = timestampedRunPath(targetDirectory);
+        JSON.writeValue(file.toFile(), result);
+        return file;
+    }
+
+    static Path resolveTargetDirectory(String resultsFolder, String resultsSubfolder, Map<String, String> env) {
+        var folder = resultsFolder == null || resultsFolder.isBlank()
+                ? env.get("DEEPEVAL_RESULTS_FOLDER")
+                : resultsFolder;
+        if (folder == null || folder.isBlank()) {
+            return null;
+        }
+        var target = Path.of(folder);
+        if (resultsSubfolder != null && !resultsSubfolder.isBlank()) {
+            target = target.resolve(resultsSubfolder);
+        }
+        return target;
     }
 
     private static Path timestampedRunPath(Path directory) {

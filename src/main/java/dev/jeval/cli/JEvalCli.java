@@ -83,7 +83,9 @@ public final class JEvalCli {
             if (options.official()) {
                 err.println("Warning: --official is not supported by local JEval runs. Skipping.");
             }
-            new LocalRunStore(storeRoot).write(result);
+            var localRunStore = new LocalRunStore(storeRoot);
+            localRunStore.write(result);
+            localRunStore.writeConfigured(result, options.resultsFolder(), options.resultsSubfolder());
             var report = report(displayed(result, options.display()), options.format());
             if (options.output() != null) {
                 Files.createDirectories(options.output());
@@ -196,6 +198,8 @@ public final class JEvalCli {
     private static Options options(String[] args, int start, PrintStream err) {
         var format = "markdown";
         Path output = null;
+        String resultsFolder = null;
+        String resultsSubfolder = null;
         var quiet = false;
         String identifier = null;
         var repeat = 1;
@@ -240,6 +244,20 @@ public final class JEvalCli {
                         return null;
                     }
                     output = Path.of(args[i]);
+                }
+                case "--results-folder" -> {
+                    if (++i == args.length) {
+                        usage(err);
+                        return null;
+                    }
+                    resultsFolder = args[i];
+                }
+                case "--results-subfolder" -> {
+                    if (++i == args.length) {
+                        usage(err);
+                        return null;
+                    }
+                    resultsSubfolder = args[i];
                 }
                 case "-id", "--identifier" -> {
                     if (++i == args.length) {
@@ -299,7 +317,9 @@ public final class JEvalCli {
                 skipOnMissingParams,
                 official,
                 useCache,
-                mark);
+                mark,
+                resultsFolder,
+                resultsSubfolder);
     }
 
     private static String report(dev.jeval.runner.TestRunResult result, String format) {
@@ -333,7 +353,7 @@ public final class JEvalCli {
     }
 
     private static void usage(PrintStream err) {
-        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|-X|--exit-on-first-failure] [-i|--ignore-errors] [-s|--skip-on-missing-params] [-c|--use-cache] [-v|--verbose] [-d|--display all|passing|failing] [-m|--mark tag] [-o|--official] [--color yes|no|auto] [--durations count] [--pdb] [-w|-W|--show-warnings] [-n|--num-processes count] [--format markdown|html] [--output dir] [--quiet]");
+        err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|-X|--exit-on-first-failure] [-i|--ignore-errors] [-s|--skip-on-missing-params] [-c|--use-cache] [-v|--verbose] [-d|--display all|passing|failing] [-m|--mark tag] [-o|--official] [--color yes|no|auto] [--durations count] [--pdb] [-w|-W|--show-warnings] [-n|--num-processes count] [--format markdown|html] [--output dir] [--results-folder dir] [--results-subfolder name] [--quiet]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
         err.println("       jeval settings -u key=value|-U key|-l [filter] [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv:.env] [-q|--quiet]");
@@ -355,7 +375,9 @@ public final class JEvalCli {
             boolean skipOnMissingParams,
             boolean official,
             boolean useCache,
-            String mark) {
+            String mark,
+            String resultsFolder,
+            String resultsSubfolder) {
     }
 
     private record InspectOptions(Path path, Path folder, String format) {

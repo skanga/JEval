@@ -701,6 +701,39 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunWritesDeepEvalResultsFolderAndSubfolder() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "folder-store",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var target = tempDir.resolve("evals");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "test", "run", file.toString(), "--quiet",
+                "--results-folder", target.toString(),
+                "--results-subfolder", "prompt-v3"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var nested = target.resolve("prompt-v3");
+        try (var files = Files.list(nested)) {
+            var runs = files
+                    .filter(path -> path.getFileName().toString().matches("test_run_\\d{8}_\\d{6}(?:_\\d+)?\\.json"))
+                    .toList();
+            assertEquals(1, runs.size());
+            assertTrue(Files.readString(runs.getFirst()).contains("\"name\" : \"folder-store\""));
+        }
+    }
+
+    @Test
     void quietSuppressesConsoleReportButStillRunsDirectory() throws Exception {
         var dir = tempDir.resolve("cases");
         Files.createDirectories(dir);

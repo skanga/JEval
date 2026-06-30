@@ -3,6 +3,7 @@ package dev.jeval.store;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.runner.TestRunner;
+import java.util.Map;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -63,5 +64,18 @@ class LocalRunStoreTest {
 
         assertTrue(second.getFileName().toString().endsWith("_2.json"));
         assertTrue(third.getFileName().toString().endsWith("_3.json"));
+    }
+
+    @Test
+    void resolveTargetDirectorySupportsFolderSubfolderAndEnvFallbackLikeDeepEval() {
+        var configured = tempDir.resolve("configured");
+        var fromEnv = tempDir.resolve("from-env");
+
+        assertTrue(LocalRunStore.resolveTargetDirectory(
+                configured.toString(), "test_runs", Map.of("DEEPEVAL_RESULTS_FOLDER", fromEnv.toString()))
+                .equals(configured.resolve("test_runs")));
+        assertTrue(LocalRunStore.resolveTargetDirectory(null, "", Map.of("DEEPEVAL_RESULTS_FOLDER", fromEnv.toString()))
+                .equals(fromEnv));
+        assertTrue(LocalRunStore.resolveTargetDirectory(null, "ignored", Map.of()) == null);
     }
 }
