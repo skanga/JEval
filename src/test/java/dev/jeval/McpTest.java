@@ -58,6 +58,18 @@ class McpTest {
     }
 
     @Test
+    void validateMcpServersMatchesDeepEvalHelperSurface() {
+        var servers = List.of(new McpServer("policy"));
+
+        assertDoesNotThrow(() -> McpServer.validateMcpServers(servers));
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> McpServer.validateMcpServers(null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> McpServer.validateMcpServers((List<?>) List.of("policy"))));
+    }
+
+    @Test
     void resourceCallRequiresUrlLikeUri() {
         assertAll(
                 () -> assertThrows(IllegalArgumentException.class,

@@ -26,4 +26,15 @@ public record McpServer(
         availableResources = availableResources == null ? null : List.copyOf(availableResources);
         availablePrompts = availablePrompts == null ? null : List.copyOf(availablePrompts);
     }
+
+    public static void validateMcpServers(List<?> mcpServers) {
+        if (mcpServers == null) {
+            throw new IllegalArgumentException("'mcp_servers' must be a list of McpServer");
+        }
+        for (var mcpServer : mcpServers) {
+            if (!(mcpServer instanceof McpServer)) {
+                throw new IllegalArgumentException("'mcp_servers' must be a list of McpServer");
+            }
+        }
+    }
 }
