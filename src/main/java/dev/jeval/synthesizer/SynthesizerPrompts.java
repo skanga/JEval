@@ -139,6 +139,16 @@ final class SynthesizerPrompts {
                 """.formatted(String.join("\n", inputs));
     }
 
+    static String extractConversationalStructureFromScenarios(List<String> scenarios) {
+        return """
+                Analyze the following conversational scenarios and extract the common structural elements.
+                Return only JSON in this shape: {"scenario_context":"...","conversational_task":"...","participant_roles":"..."}.
+
+                Example Scenarios:
+                %s
+                """.formatted(String.join("\n", scenarios.stream().map(scenario -> "- " + scenario).toList()));
+    }
+
     static String generateExpectedOutput(List<String> context, String input, String expectedOutputFormat) {
         return """
                 Generate the expected output for the input using only the context.
@@ -392,22 +402,6 @@ final class SynthesizerPrompts {
                 Participant roles: %s
                 """.formatted(numGoldens, stylingConfig.scenarioContext(),
                 stylingConfig.conversationalTask(), stylingConfig.participantRoles());
-    }
-
-    static String generateSyntheticConversationalScenariosFromGoldens(
-            List<String> scenarios,
-            int numGoldens,
-            boolean includeExpectedOutcome) {
-        var shape = includeExpectedOutcome
-                ? "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}],\"expected_outcome\":\"...\"}]}"
-                : "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}]}]}";
-        return """
-                Generate %d new synthetic multi-turn conversation scenarios similar in style and domain to these examples.
-                Return only JSON in this shape: %s.
-
-                Examples:
-                %s
-                """.formatted(numGoldens, shape, String.join("\n", scenarios));
     }
 
     static String generateConversationalExpectedOutcome(

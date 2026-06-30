@@ -1309,11 +1309,15 @@ class SynthesizerTest {
     void generatesConversationalGoldensFromExistingGoldensWithContext() {
         var model = new ScriptedModel(List.of(
                 """
+                {"scenario_context":"refund support","conversational_task":"explain refund eligibility","participant_roles":"customer and support agent"}
+                """,
+                """
                 {"data":[{"scenario":"refund follow up","turns":[
                   {"role":"user","content":"Can I still get a refund?"},
                   {"role":"assistant","content":"Yes, within 30 days."}
                 ],"expected_outcome":"Refund eligibility explained"}]}
                 """,
+                "{\"scenario\":\"styled refund follow up\"}",
                 "Refund eligibility explained"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
@@ -1324,20 +1328,52 @@ class SynthesizerTest {
         var goldens = synthesizer.generateConversationalGoldensFromGoldens(List.of(original), 1, true);
 
         assertEquals(1, goldens.size());
-        assertEquals("refund follow up", goldens.getFirst().scenario());
+        assertEquals("styled refund follow up", goldens.getFirst().scenario());
         assertEquals(List.of("Refunds are available within 30 days."), goldens.getFirst().context());
         assertEquals("Refund eligibility explained", goldens.getFirst().expectedOutcome());
+        assertTrue(model.prompts().getFirst().contains("extract the common structural elements"));
+    }
+
+    @Test
+    void generatesConversationalContextGoldensWithInferredStylingLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"scenario_context":"support desk","conversational_task":"resolve refund issues","participant_roles":"customer and support agent"}
+                """,
+                """
+                {"data":[{"scenario":"raw refund scenario","turns":[
+                  {"role":"user","content":"Can I still get a refund?"}
+                ]}]}
+                """,
+                "{\"scenario\":\"styled refund scenario\"}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        var original = ConversationalGolden.builder("customer asks about refund timing")
+                .context(List.of("Refunds are available within 30 days."))
+                .build();
+
+        var goldens = synthesizer.generateConversationalGoldensFromGoldens(List.of(original), 1, false);
+
+        assertEquals(1, goldens.size());
+        assertEquals("styled refund scenario", goldens.getFirst().scenario());
+        assertEquals(List.of("Refunds are available within 30 days."), goldens.getFirst().context());
+        assertTrue(model.prompts().getFirst().contains("extract the common structural elements"));
+        assertTrue(model.prompts().get(2).contains("Participant Roles: customer and support agent"));
     }
 
     @Test
     void generatesConversationalGoldensFromExistingGoldensWithoutContext() {
         var model = new ScriptedModel(List.of(
                 """
+                {"scenario_context":"travel support","conversational_task":"book flights","participant_roles":"traveler and agent"}
+                """,
+                """
                 {"data":[{"scenario":"flight change request","turns":[
                   {"role":"user","content":"Change my flight"},
                   {"role":"assistant","content":"I can help with that."}
                 ]}]}
-                """));
+                """,
+                "{\"scenario\":\"styled flight change request\"}"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var original = ConversationalGolden.builder("traveler wants to rebook a flight").build();
@@ -1345,19 +1381,25 @@ class SynthesizerTest {
         var goldens = synthesizer.generateConversationalGoldensFromGoldens(List.of(original), 1, false);
 
         assertEquals(1, goldens.size());
-        assertEquals("flight change request", goldens.getFirst().scenario());
+        assertEquals("styled flight change request", goldens.getFirst().scenario());
         assertEquals("user", goldens.getFirst().turns().getFirst().role());
-        assertEquals(true, model.prompts().getFirst().contains("traveler wants to rebook a flight"));
+        assertTrue(model.prompts().getFirst().contains("traveler wants to rebook a flight"));
+        assertTrue(model.prompts().get(1).contains("Generate 1 synthetic multi-turn conversation scenarios"));
+        assertEquals(false, model.prompts().get(1).contains("similar in style and domain"));
     }
 
     @Test
     void generateConversationalGoldensFromMixedExistingGoldensUsesContextBranchLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 """
+                {"scenario_context":"mixed support","conversational_task":"answer context questions","participant_roles":"user and assistant"}
+                """,
+                """
                 {"data":[{"scenario":"context scenario","turns":[
                   {"role":"user","content":"Ask about context"}
                 ],"expected_outcome":"Context explained"}]}
                 """,
+                "{\"scenario\":\"styled context scenario\"}",
                 "Context explained"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
@@ -1369,20 +1411,25 @@ class SynthesizerTest {
         var goldens = synthesizer.generateConversationalGoldensFromGoldens(List.of(contextual, plain), 1, true);
 
         assertEquals(1, goldens.size());
-        assertEquals("context scenario", goldens.getFirst().scenario());
+        assertEquals("styled context scenario", goldens.getFirst().scenario());
         assertEquals(List.of("context"), goldens.getFirst().context());
         assertEquals("Context explained", goldens.getFirst().expectedOutcome());
-        assertEquals(2, model.prompts().size());
+        assertTrue(model.prompts().getFirst().contains("extract the common structural elements"));
+        assertEquals(4, model.prompts().size());
     }
 
     @Test
     void asyncGenerateConversationalGoldensFromExistingGoldensReturnsFutureLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 """
+                {"scenario_context":"async support","conversational_task":"answer async questions","participant_roles":"user and assistant"}
+                """,
+                """
                 {"data":[{"scenario":"async conversational expansion","turns":[
                   {"role":"user","content":"Async question"}
                 ]}]}
-                """));
+                """,
+                "{\"scenario\":\"styled async conversational expansion\"}"));
         var synthesizer = new Synthesizer(
                 model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
         var original = ConversationalGolden.builder("old async scenario").build();
@@ -1390,7 +1437,7 @@ class SynthesizerTest {
         var goldens = synthesizer.generateConversationalGoldensFromGoldensAsync(
                 List.of(original), 1, false).join();
 
-        assertEquals(List.of("async conversational expansion"),
+        assertEquals(List.of("styled async conversational expansion"),
                 goldens.stream().map(ConversationalGolden::scenario).toList());
         assertEquals("Async question", goldens.getFirst().turns().getFirst().content());
     }

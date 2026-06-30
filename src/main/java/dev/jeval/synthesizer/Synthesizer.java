@@ -350,10 +350,20 @@ public final class Synthesizer {
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             List<?> sourceFiles) {
+        return generateConversationalGoldensFromContexts(
+                contexts, includeExpectedOutcome, maxGoldensPerContext, sourceFiles, conversationalStylingConfig);
+    }
+
+    private List<ConversationalGolden> generateConversationalGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            ConversationalStylingConfig activeStylingConfig) {
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
-                        maxGoldensPerContext, sourceFiles, null, null))) {
+                        maxGoldensPerContext, sourceFiles, null, null, activeStylingConfig))) {
             goldens.addAll(batch);
         }
         return retainConversationalGoldens(goldens);
@@ -435,7 +445,8 @@ public final class Synthesizer {
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
-                        maxGoldensPerContext, sourceFiles, contextScores, targetFilesPerContext))) {
+                        maxGoldensPerContext, sourceFiles, contextScores, targetFilesPerContext,
+                        conversationalStylingConfig))) {
             goldens.addAll(batch);
         }
         return retainConversationalGoldens(goldens);
@@ -448,7 +459,8 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<?> sourceFiles,
             List<Double> contextScores,
-            Integer targetFilesPerContext) {
+            Integer targetFilesPerContext,
+            ConversationalStylingConfig activeStylingConfig) {
         var goldens = new ArrayList<ConversationalGolden>();
         var context = List.copyOf(contexts.get(contextIndex));
         var contextSourceFiles = contextSourceFiles(sourceFiles, contextIndex);
@@ -458,27 +470,35 @@ public final class Synthesizer {
                 : null;
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                 SynthesizerPrompts.generateSyntheticConversationalScenarios(
-                        context, maxGoldensPerContext, conversationalStylingConfig, includeExpectedOutcome,
+                        context, maxGoldensPerContext, activeStylingConfig, includeExpectedOutcome,
                         contextSourceFiles, targetFilesPerContext)));
         var qualifiedData = rewriteScenarios(context, data);
         for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(conversationalGolden(
                     item.data(), context, sourceFile, includeExpectedOutcome, item.score(), contextQuality,
-                    contextSourceFiles, contextIndex * maxGoldensPerContext + goldens.size()));
+                    contextSourceFiles, contextIndex * maxGoldensPerContext + goldens.size(),
+                    activeStylingConfig));
         }
         return List.copyOf(goldens);
     }
 
     public List<ConversationalGolden> generateConversationalGoldensFromScratch(int numGoldens) {
-        validateConversationalScratchStylingConfig();
+        validateConversationalScratchStylingConfig(conversationalStylingConfig);
+        return generateConversationalGoldensFromScratch(numGoldens, conversationalStylingConfig);
+    }
+
+    private List<ConversationalGolden> generateConversationalGoldensFromScratch(
+            int numGoldens,
+            ConversationalStylingConfig activeStylingConfig) {
+        validateConversationalScratchStylingConfig(activeStylingConfig);
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                         SynthesizerPrompts.generateSyntheticConversationalScenariosFromScratch(
-                                conversationalStylingConfig, numGoldens)));
+                                activeStylingConfig, numGoldens)));
         var qualifiedData = rewriteScenarios(List.of(), data);
         var goldens = new ArrayList<ConversationalGolden>();
         for (var item : qualifiedData) {
             goldens.add(conversationalGolden(item.data(), null, null, false, item.score(), null, List.of(),
-                    goldens.size()));
+                    goldens.size(), activeStylingConfig));
         }
         return retainConversationalGoldens(goldens);
     }
@@ -494,26 +514,21 @@ public final class Synthesizer {
         var contexts = new ArrayList<List<String>>();
         var scenarios = new ArrayList<String>();
         for (var golden : goldens) {
+            scenarios.add(golden.scenario());
             if (golden.context() != null && !golden.context().isEmpty()) {
                 contexts.add(golden.context());
-            } else {
-                scenarios.add(golden.scenario());
             }
         }
         var generated = new ArrayList<ConversationalGolden>();
+        var activeStylingConfig = conversationalStylingConfig == null
+                ? extractConversationalStylingConfig(scenarios)
+                : conversationalStylingConfig;
         if (!contexts.isEmpty()) {
             generated.addAll(generateConversationalGoldensFromContexts(
-                    contexts, includeExpectedOutcome, maxGoldensPerGolden, null));
+                    contexts, includeExpectedOutcome, maxGoldensPerGolden, null, activeStylingConfig));
         } else if (!scenarios.isEmpty()) {
-            var data = SynthesizerSchemas.parseConversationalData(model.generate(
-                    SynthesizerPrompts.generateSyntheticConversationalScenariosFromGoldens(
-                            scenarios, scenarios.size() * maxGoldensPerGolden, includeExpectedOutcome)));
-            var qualifiedData = rewriteScenarios(scenarios, data);
-            for (var item : qualifiedData) {
-                generated.add(conversationalGolden(
-                        item.data(), null, null, includeExpectedOutcome, item.score(), null, List.of(),
-                        generated.size()));
-            }
+            generated.addAll(generateConversationalGoldensFromScratch(
+                    scenarios.size() * maxGoldensPerGolden, activeStylingConfig));
         }
         return retainConversationalGoldens(generated);
     }
@@ -548,6 +563,20 @@ public final class Synthesizer {
             Double contextQuality,
             List<String> contextSourceFiles,
             int goldenIndex) {
+        return conversationalGolden(data, context, sourceFile, includeExpectedOutcome, syntheticScenarioQuality,
+                contextQuality, contextSourceFiles, goldenIndex, conversationalStylingConfig);
+    }
+
+    private ConversationalGolden conversationalGolden(
+            ConversationalData data,
+            List<String> context,
+            String sourceFile,
+            boolean includeExpectedOutcome,
+            Double syntheticScenarioQuality,
+            Double contextQuality,
+            List<String> contextSourceFiles,
+            int goldenIndex,
+            ConversationalStylingConfig activeStylingConfig) {
         var evolutions = new ArrayList<String>();
         var scenario = data.scenario();
         for (var i = 0; i < evolutionConfig.numEvolutions(); i++) {
@@ -556,16 +585,16 @@ public final class Synthesizer {
                     SynthesizerPrompts.evolveScenario(scenario, context, evolution)));
             evolutions.add(evolution.value());
         }
-        if (shouldStyle(conversationalStylingConfig)) {
+        if (shouldStyle(activeStylingConfig)) {
             scenario = SynthesizerSchemas.parseScenario(model.generate(
-                    SynthesizerPrompts.rewriteEvolvedScenario(scenario, conversationalStylingConfig)));
+                    SynthesizerPrompts.rewriteEvolvedScenario(scenario, activeStylingConfig)));
         }
         String expectedOutcome = null;
         if (includeExpectedOutcome) {
             expectedOutcome = model.generate(SynthesizerPrompts.generateConversationalExpectedOutcome(
                     scenario,
                     context,
-                    conversationalStylingConfig == null ? null : conversationalStylingConfig.expectedOutcomeFormat()));
+                    activeStylingConfig == null ? null : activeStylingConfig.expectedOutcomeFormat()));
         }
         return ConversationalGolden.builder(scenario)
                 .turns(data.turns())
@@ -1032,6 +1061,11 @@ public final class Synthesizer {
                 SynthesizerPrompts.extractPromptStructureFromInputs(inputs.stream().limit(10).toList())));
     }
 
+    private ConversationalStylingConfig extractConversationalStylingConfig(List<String> scenarios) {
+        return SynthesizerSchemas.parseConversationalStylingConfig(model.generate(
+                SynthesizerPrompts.extractConversationalStructureFromScenarios(scenarios.stream().limit(10).toList())));
+    }
+
     private void validateScratchStylingConfig(StylingConfig config) {
         if (config == null
                 || config.scenario() == null
@@ -1042,11 +1076,11 @@ public final class Synthesizer {
         }
     }
 
-    private void validateConversationalScratchStylingConfig() {
-        if (conversationalStylingConfig == null
-                || conversationalStylingConfig.scenarioContext() == null
-                || conversationalStylingConfig.conversationalTask() == null
-                || conversationalStylingConfig.participantRoles() == null) {
+    private void validateConversationalScratchStylingConfig(ConversationalStylingConfig config) {
+        if (config == null
+                || config.scenarioContext() == null
+                || config.conversationalTask() == null
+                || config.participantRoles() == null) {
             throw new IllegalStateException(
                     "`scenario_context`, `conversational_task`, and `participant_roles` in `conversational_styling_config` must not be None when generating conversational goldens from scratch.");
         }

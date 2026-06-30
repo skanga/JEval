@@ -165,7 +165,9 @@ DeepEval-style text-to-SQL generation from schema context. It uses any
 `EvaluationModel`, including the LangChain4j adapter. When single-turn goldens
 are generated from existing goldens without an explicit `StylingConfig`, JEval
 infers prompt styling from those existing inputs before generating replacements,
-including the contextual branch.
+including the contextual branch. Conversational generation follows the same
+DeepEval-style pattern with inferred `ConversationalStylingConfig` from existing
+scenarios before using scratch or contextual generation.
 
 ```java
 import dev.jeval.Golden;

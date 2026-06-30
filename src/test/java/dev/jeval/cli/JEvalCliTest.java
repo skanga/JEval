@@ -1856,8 +1856,10 @@ class JEvalCliTest {
                 ]
                 """);
         var responses = tempDir.resolve("responses.txt");
-        Files.writeString(responses,
-                "{\"data\":[{\"scenario\":\"flight change request\",\"turns\":[{\"role\":\"user\",\"content\":\"Change my flight\"}],\"expected_outcome\":\"Flight change started\"}]}");
+        Files.writeString(responses, String.join(System.lineSeparator(),
+                "{\"scenario_context\":\"travel support\",\"conversational_task\":\"change flights\",\"participant_roles\":\"traveler and agent\"}",
+                "{\"data\":[{\"scenario\":\"flight change request\",\"turns\":[{\"role\":\"user\",\"content\":\"Change my flight\"}],\"expected_outcome\":\"Flight change started\"}]}",
+                "{\"scenario\":\"flight change request\"}"));
         var output = tempDir.resolve("generated");
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();
@@ -1881,8 +1883,13 @@ class JEvalCliTest {
                 ]
                 """);
         var responses = tempDir.resolve("responses.txt");
-        Files.writeString(responses,
-                "{\"data\":[{\"scenario\":\"first scenario\",\"turns\":[{\"role\":\"user\",\"content\":\"One\"}],\"expected_outcome\":\"First outcome\"},{\"scenario\":\"second scenario\",\"turns\":[{\"role\":\"user\",\"content\":\"Two\"}],\"expected_outcome\":\"Second outcome\"}]}");
+        Files.writeString(responses, String.join(System.lineSeparator(),
+                "{\"scenario_context\":\"travel support\",\"conversational_task\":\"change flights\",\"participant_roles\":\"traveler and agent\"}",
+                "{\"data\":[{\"scenario\":\"first scenario\",\"turns\":[{\"role\":\"user\",\"content\":\"One\"}],\"expected_outcome\":\"First outcome\"},{\"scenario\":\"second scenario\",\"turns\":[{\"role\":\"user\",\"content\":\"Two\"}],\"expected_outcome\":\"Second outcome\"}]}",
+                "{\"scenario\":\"first scenario\"}",
+                "First outcome",
+                "{\"scenario\":\"second scenario\"}",
+                "Second outcome"));
         var output = tempDir.resolve("generated");
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();

@@ -53,6 +53,16 @@ final class SynthesizerSchemas {
         }
     }
 
+    static ConversationalStylingConfig parseConversationalStylingConfig(String json) {
+        try {
+            var styling = parse(json, ConversationalPromptStyling.class);
+            return new ConversationalStylingConfig(
+                    styling.scenarioContext(), styling.conversationalTask(), styling.participantRoles(), null);
+        } catch (Exception error) {
+            throw new IllegalArgumentException("Unable to parse conversational prompt styling JSON", error);
+        }
+    }
+
     static InputFeedback parseInputFeedback(String json) {
         try {
             return parse(json, InputFeedback.class);
@@ -119,6 +129,12 @@ final class SynthesizerSchemas {
             String scenario,
             String task,
             @JsonAlias("input_format") String inputFormat) {
+    }
+
+    private record ConversationalPromptStyling(
+            @JsonAlias("scenario_context") String scenarioContext,
+            @JsonAlias("conversational_task") String conversationalTask,
+            @JsonAlias("participant_roles") String participantRoles) {
     }
 
     record InputFeedback(String feedback, double score) {
