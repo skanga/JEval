@@ -35,7 +35,8 @@ class JEvalCliTest {
         var exit = run(new String[] {}, out, err);
 
         assertEquals(2, exit);
-        assertTrue(text(err).contains("set-openai|set-anthropic|set-gemini|set-ollama|set-local-model|set-openrouter"));
+        assertTrue(text(err).contains(
+                "set-openai|set-anthropic|set-gemini|set-deepseek|set-ollama|set-local-model|set-openrouter"));
     }
 
     @Test

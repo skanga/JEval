@@ -115,6 +115,23 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void createsDeepSeekModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_DEEPSEEK_MODEL=YES
+                DEEPSEEK_MODEL_NAME=deepseek-v4-flash
+                DEEPSEEK_API_KEY=sk-ds-test
+                TEMPERATURE=0.2
+                MAX_TOKENS=128
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env));
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForOpenRouterGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -158,6 +175,20 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void usesModelOverrideForDeepSeekGenerationLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_DEEPSEEK_MODEL=YES
+                DEEPSEEK_API_KEY=sk-ds-test
+                """);
+
+        var model = LangChain4jProviderModels.from(new DotenvFile(env), "deepseek-v4-pro");
+
+        assertNotNull(model);
+        assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
     void usesModelOverrideForOllamaGenerationLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
@@ -191,7 +222,7 @@ class LangChain4jProviderModelsTest {
         var error = assertThrows(IllegalArgumentException.class,
                 () -> LangChain4jProviderModels.from(new DotenvFile(tempDir.resolve(".env"))));
 
-        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
+        assertEquals("No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-deepseek, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
 }

@@ -367,7 +367,7 @@ public final class JEvalCli {
         err.println("       jeval settings -u key=value|-U key|-l [filter] [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv:.env] [-q|--quiet]");
         err.println("       jeval unset-debug [-s|--save dotenv:.env] [-q|--quiet]");
-        err.println("       jeval set-openai|set-anthropic|set-gemini|set-ollama|set-local-model|set-openrouter ... [-s|--save dotenv:.env]");
+        err.println("       jeval set-openai|set-anthropic|set-gemini|set-deepseek|set-ollama|set-local-model|set-openrouter ... [-s|--save dotenv:.env]");
         err.println("       jeval generate --method contexts|text-to-sql|docs|scratch|goldens --variation single-turn|multi-turn [-s|--save dotenv:.env] ...");
         err.println("       jeval generate --method docs --documents file [--allow-cross-file-contexts] [--target-files-per-context n] [--max-files-per-context n] ...");
     }

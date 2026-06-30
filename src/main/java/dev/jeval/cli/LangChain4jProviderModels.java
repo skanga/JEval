@@ -32,6 +32,9 @@ final class LangChain4jProviderModels {
                 && !"true".equalsIgnoreCase(value(config, "GOOGLE_GENAI_USE_VERTEXAI", "false"))) {
             return new LangChain4jEvaluationModel(gemini(config, modelOverride));
         }
+        if ("YES".equals(config.get("USE_DEEPSEEK_MODEL"))) {
+            return new LangChain4jEvaluationModel(deepSeek(config, modelOverride));
+        }
         if ("YES".equals(config.get("USE_LOCAL_MODEL"))) {
             if (present(config, "OLLAMA_MODEL_NAME") || (present(modelOverride) && !localModelConfigured(config))) {
                 return new LangChain4jEvaluationModel(ollama(config, modelOverride));
@@ -41,7 +44,7 @@ final class LangChain4jProviderModels {
             }
         }
         throw new IllegalArgumentException(
-                "No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
+                "No supported provider is configured; run set-openai, set-anthropic, set-gemini, set-deepseek, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
     }
 
     private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
@@ -78,6 +81,16 @@ final class LangChain4jProviderModels {
                 .modelName(modelName(config, "GEMINI_MODEL_NAME", modelOverride, "gemini-2.5-flash"));
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxOutputTokens);
+        return builder.build();
+    }
+
+    private static OpenAiChatModel deepSeek(Map<String, String> config, String modelOverride) {
+        var builder = OpenAiChatModel.builder()
+                .apiKey(required(config, "DEEPSEEK_API_KEY"))
+                .modelName(modelName(config, "DEEPSEEK_MODEL_NAME", modelOverride, "deepseek-v4-flash"))
+                .baseUrl(value(config, "DEEPSEEK_BASE_URL", "https://api.deepseek.com"));
+        optionalDouble(config, "TEMPERATURE", builder::temperature);
+        optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
         return builder.build();
     }
 
