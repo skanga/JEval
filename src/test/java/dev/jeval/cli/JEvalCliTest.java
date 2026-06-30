@@ -1059,6 +1059,29 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateSupportsDeepEvalIncludeExpectedAliasAfterNegativeFlag() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--no-include-expected", "--include-expected",
+                "--output-dir", output.toString(), "--file-name", "with-expected"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("with-expected.json"));
+        assertTrue(generated.contains("Capital?"));
+        assertTrue(generated.contains("\"expected_output\" : \"Generated expected output\""));
+    }
+
+    @Test
     void generateScratchWritesGoldensFile() throws Exception {
         var responses = tempDir.resolve("responses.txt");
         Files.writeString(responses, "{\"data\":[{\"input\":\"Study question?\"}]}");

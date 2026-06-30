@@ -402,7 +402,15 @@ final class GenerateCommand {
     }
 
     private static boolean includeExpected(String[] args) {
-        return !has(args, "--no-expected-output") && !has(args, "--no-include-expected");
+        var value = true;
+        for (var arg : args) {
+            if ("--include-expected".equals(arg)) {
+                value = true;
+            } else if ("--no-include-expected".equals(arg) || "--no-expected-output".equals(arg)) {
+                value = false;
+            }
+        }
+        return value;
     }
 
     private static boolean booleanPair(String[] args, String positiveName, String negativeName, boolean fallback) {

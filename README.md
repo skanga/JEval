@@ -138,7 +138,8 @@ The `generate` command supports single-turn and multi-turn `contexts`, `docs`,
 commands, or deterministic scripted responses with `--responses-file`:
 Existing goldens supplied with `--goldens-file` can be JSON, JSONL, or CSV.
 Docs generation accepts either JEval's `--document-path` or DeepEval's repeatable
-`--documents` option; expected outputs can be suppressed with `--no-include-expected`.
+`--documents` option; expected outputs use DeepEval's
+`--include-expected/--no-include-expected` flag pair.
 
 ```powershell
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-openai --model gpt-4o-mini --save dotenv:.env
