@@ -32,7 +32,7 @@ Current Java parity:
 - `ToolCallParam`
 - `MultiTurnParam`
 - `SingleTurnParam`
-- Core `Utils` and `Scorer` dependency-free helpers for text shortening/normalization, missing checks, camel-to-snake conversion, deterministic sorted serialization, trace-safe JSON serialization for records/maps/iterables/arrays with DeepEval-style repeated-reference detection, key-preserving nested null-byte cleanup, LCS, DeepEval-default word chunking and batching, exact/quasi matching, truth-identification scoring, and pass@k scoring
+- Core `Utils` and `Scorer` dependency-free helpers for text shortening/normalization, missing checks, safe integer/float env parsing, camel-to-snake conversion, deterministic sorted serialization, trace-safe JSON serialization for records/maps/iterables/arrays with DeepEval-style repeated-reference detection, key-preserving nested null-byte cleanup, LCS, DeepEval-default word chunking and batching, exact/quasi matching, truth-identification scoring, and pass@k scoring
 - Prompt interpolation type enum and dispatch helpers for mustache, spaced mustache, f-string, dollar-bracket, and lenient Jinja placeholders with DeepEval-style missing-variable errors and JSON-brace preservation
 - `PromptType` enum and prompt type tracking for text versus message-list prompts
 - Prompt API value enums for model settings, tool mode, output type, and schema data type

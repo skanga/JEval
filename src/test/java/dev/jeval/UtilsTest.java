@@ -65,6 +65,22 @@ class UtilsTest {
     }
 
     @Test
+    void readEnvIntMatchesDeepEvalSafeFallbacks() {
+        assertEquals(7, Utils.readEnvInt(Map.of("X_INT", "7"), "X_INT", 3, null));
+        assertEquals(3, Utils.readEnvInt(Map.of("X_INT", "nope"), "X_INT", 3, null));
+        assertEquals(3, Utils.readEnvInt(Map.of(), "X_INT", 3, null));
+        assertEquals(5, Utils.readEnvInt(Map.of("X_INT", "1"), "X_INT", 5, 3));
+    }
+
+    @Test
+    void readEnvFloatMatchesDeepEvalSafeFallbacks() {
+        assertEquals(2.5, Utils.readEnvFloat(Map.of("X_FLOAT", "2.5"), "X_FLOAT", 1.0, null));
+        assertEquals(1.0, Utils.readEnvFloat(Map.of("X_FLOAT", "nah"), "X_FLOAT", 1.0, null));
+        assertEquals(1.0, Utils.readEnvFloat(Map.of(), "X_FLOAT", 1.0, null));
+        assertEquals(2.0, Utils.readEnvFloat(Map.of("X_FLOAT", "0.1"), "X_FLOAT", 2.0, 0.5));
+    }
+
+    @Test
     void checkIfMultimodalMatchesDeepEvalPlaceholderPattern() {
         assertEquals(false, Utils.checkIfMultimodal("plain text"));
         assertEquals(true, Utils.checkIfMultimodal("see [DEEPEVAL:IMAGE:https://example.com/a.png]"));

@@ -79,6 +79,48 @@ public final class Utils {
         return text == null || text.strip().isEmpty();
     }
 
+    public static int readEnvInt(String name, int defaultValue) {
+        return readEnvInt(System.getenv(), name, defaultValue, null);
+    }
+
+    public static int readEnvInt(String name, int defaultValue, int minValue) {
+        return readEnvInt(System.getenv(), name, defaultValue, minValue);
+    }
+
+    static int readEnvInt(Map<String, String> env, String name, int defaultValue, Integer minValue) {
+        var raw = env.get(name);
+        if (raw == null) {
+            return defaultValue;
+        }
+        try {
+            var value = Integer.parseInt(raw.strip());
+            return minValue == null || value >= minValue ? value : defaultValue;
+        } catch (NumberFormatException error) {
+            return defaultValue;
+        }
+    }
+
+    public static double readEnvFloat(String name, double defaultValue) {
+        return readEnvFloat(System.getenv(), name, defaultValue, null);
+    }
+
+    public static double readEnvFloat(String name, double defaultValue, double minValue) {
+        return readEnvFloat(System.getenv(), name, defaultValue, minValue);
+    }
+
+    static double readEnvFloat(Map<String, String> env, String name, double defaultValue, Double minValue) {
+        var raw = env.get(name);
+        if (raw == null) {
+            return defaultValue;
+        }
+        try {
+            var value = Double.parseDouble(raw.strip());
+            return Double.isFinite(value) && (minValue == null || value >= minValue) ? value : defaultValue;
+        } catch (NumberFormatException error) {
+            return defaultValue;
+        }
+    }
+
     public static boolean checkIfMultimodal(String input) {
         return input != null && MULTIMODAL_PLACEHOLDER.matcher(input).find();
     }
