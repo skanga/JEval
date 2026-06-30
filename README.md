@@ -114,6 +114,8 @@ Provider retry helpers honor DeepEval-style environment settings:
 `DEEPEVAL_RETRY_EXP_BASE`, `DEEPEVAL_RETRY_JITTER`,
 `DEEPEVAL_RETRY_CAP_SECONDS`, and `DEEPEVAL_SDK_RETRY_PROVIDERS`
 (`openai`, `azure-openai`, or `*` to delegate retries to provider SDKs).
+The retry executor retries transient provider failures up to the configured
+attempt cap and leaves SDK-delegated or policy-less providers as single calls.
 
 ## CLI generate
 

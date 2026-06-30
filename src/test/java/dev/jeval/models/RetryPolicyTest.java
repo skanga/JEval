@@ -3,10 +3,12 @@ package dev.jeval.models;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class RetryPolicyTest {
@@ -127,6 +129,88 @@ class RetryPolicyTest {
         assertNull(RetryPolicy.getRetryPolicyFor("openai", Map.of("openai", policy), Set.of("openai")));
         assertEquals(policy, RetryPolicy.getRetryPolicyFor("OpenAI", Map.of("openai", policy), Set.of()));
         assertNull(RetryPolicy.getRetryPolicyFor("missing", Map.of("openai", policy), Set.of()));
+    }
+
+    @Test
+    void executeWithRetryRetriesTransientErrorsUntilSuccess() throws Exception {
+        var calls = new AtomicInteger();
+        var settings = new RetryPolicy.RetrySettings(3, 0.0, 2.0, 0.0, 0.0);
+
+        var result = RetryPolicy.executeWithRetry(
+                "openai",
+                () -> {
+                    if (calls.incrementAndGet() < 3) {
+                        throw new NetTimeout();
+                    }
+                    return "ok";
+                },
+                Map.of("openai", testPolicy(true)),
+                Set.of(),
+                settings);
+
+        assertEquals("ok", result);
+        assertEquals(3, calls.get());
+    }
+
+    @Test
+    void executeWithRetryCapsTransientRetriesAtMaxAttempts() {
+        var calls = new AtomicInteger();
+        var settings = new RetryPolicy.RetrySettings(2, 0.0, 2.0, 0.0, 0.0);
+
+        var error = assertThrows(RetryPolicy.RetryExhaustedException.class, () -> RetryPolicy.executeWithRetry(
+                "openai",
+                () -> {
+                    calls.incrementAndGet();
+                    throw new NetTimeout();
+                },
+                Map.of("openai", testPolicy(true)),
+                Set.of(),
+                settings));
+
+        assertEquals(2, calls.get());
+        assertTrue(error.getCause() instanceof NetTimeout);
+    }
+
+    @Test
+    void executeWithRetryDoesNotRetryWhenSdkEnabledPolicyMissingOrErrorIsNotTransient() {
+        var settings = new RetryPolicy.RetrySettings(3, 0.0, 2.0, 0.0, 0.0);
+        var policies = Map.of("openai", testPolicy(true));
+
+        var sdkCalls = new AtomicInteger();
+        assertThrows(NetTimeout.class, () -> RetryPolicy.executeWithRetry(
+                "openai",
+                () -> {
+                    sdkCalls.incrementAndGet();
+                    throw new NetTimeout();
+                },
+                policies,
+                Set.of("openai"),
+                settings));
+        assertEquals(1, sdkCalls.get());
+
+        var missingPolicyCalls = new AtomicInteger();
+        assertThrows(NetTimeout.class, () -> RetryPolicy.executeWithRetry(
+                "missing",
+                () -> {
+                    missingPolicyCalls.incrementAndGet();
+                    throw new NetTimeout();
+                },
+                policies,
+                Set.of(),
+                settings));
+        assertEquals(1, missingPolicyCalls.get());
+
+        var authCalls = new AtomicInteger();
+        assertThrows(AuthError.class, () -> RetryPolicy.executeWithRetry(
+                "openai",
+                () -> {
+                    authCalls.incrementAndGet();
+                    throw new AuthError();
+                },
+                policies,
+                Set.of(),
+                settings));
+        assertEquals(1, authCalls.get());
     }
 
     private static RetryPolicy.ErrorPolicy testPolicy(boolean retry5xx) {

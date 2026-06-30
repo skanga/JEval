@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 
@@ -160,6 +161,41 @@ public final class RetryPolicy {
         return policies.get(slugify(provider));
     }
 
+    public static <T> T executeWithRetry(
+            String provider,
+            Callable<T> operation,
+            Map<String, ErrorPolicy> policies) throws Exception {
+        return executeWithRetry(provider, operation, policies, sdkRetryProviders(), retrySettings());
+    }
+
+    public static <T> T executeWithRetry(
+            String provider,
+            Callable<T> operation,
+            Map<String, ErrorPolicy> policies,
+            Iterable<?> sdkRetryProviders,
+            RetrySettings settings) throws Exception {
+        var policy = getRetryPolicyFor(provider, policies, sdkRetryProviders);
+        if (policy == null) {
+            return operation.call();
+        }
+
+        var attempt = 1;
+        while (true) {
+            try {
+                return operation.call();
+            } catch (Exception error) {
+                if (!isTransient(policy, error)) {
+                    throw error;
+                }
+                if (shouldStopAfterAttempt(settings, attempt)) {
+                    throw new RetryExhaustedException(provider, attempt, error);
+                }
+                sleepBeforeRetry(retryDelaySeconds(settings, attempt));
+                attempt++;
+            }
+        }
+    }
+
     private static boolean matches(Set<Class<? extends Throwable>> types, Throwable error) {
         for (var type : types) {
             if (type.isInstance(error)) {
@@ -235,6 +271,14 @@ public final class RetryPolicy {
             }
         }
         return null;
+    }
+
+    private static void sleepBeforeRetry(double seconds) throws InterruptedException {
+        if (seconds <= 0.0) {
+            return;
+        }
+        var totalNanos = Math.round(seconds * 1_000_000_000.0);
+        Thread.sleep(totalNanos / 1_000_000L, (int) (totalNanos % 1_000_000L));
     }
 
     private static Object attribute(Object target, String name) {
@@ -348,6 +392,12 @@ public final class RetryPolicy {
 
         private static Set<Class<? extends Throwable>> copy(Set<Class<? extends Throwable>> types) {
             return types == null ? Set.of() : Set.copyOf(types);
+        }
+    }
+
+    public static final class RetryExhaustedException extends RuntimeException {
+        private RetryExhaustedException(String provider, int attempts, Throwable cause) {
+            super("Retry attempts exhausted for " + slugify(provider) + " after " + attempts + " attempt(s).", cause);
         }
     }
 }
