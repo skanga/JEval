@@ -4,6 +4,15 @@ import dev.jeval.ConversationalApiTestCase;
 import dev.jeval.ConversationalTestCase;
 import dev.jeval.LlmApiTestCase;
 import dev.jeval.LlmTestCase;
+import dev.jeval.Utils;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Map;
 
 public final class TestRunManager {
     private TestRun testRun;
@@ -61,6 +70,29 @@ public final class TestRunManager {
         return disableRequest;
     }
 
+    public void saveTestRun(Path path) throws IOException {
+        createParentDirectories(path);
+        getTestRun().save(path);
+    }
+
+    public void saveTestRun(Path path, String saveUnderKey) throws IOException {
+        createParentDirectories(path);
+        if (saveUnderKey == null || saveUnderKey.isBlank()) {
+            saveTestRun(path);
+            return;
+        }
+        var wrapper = Map.of(saveUnderKey, getTestRun().modelDump(true, true));
+        var bytes = Utils.serializeToJson(wrapper).getBytes(StandardCharsets.UTF_8);
+        try (var channel = FileChannel.open(
+                path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+            var buffer = ByteBuffer.wrap(bytes);
+            while (buffer.hasRemaining()) {
+                channel.write(buffer);
+            }
+            channel.force(true);
+        }
+    }
+
     public void updateTestRun(LlmApiTestCase apiTestCase, LlmTestCase testCase) {
         if (shouldSkip(apiTestCase)) {
             return;
@@ -87,5 +119,12 @@ public final class TestRunManager {
 
     private static boolean shouldSkip(LlmApiTestCase apiTestCase) {
         return apiTestCase.metricsData() != null && apiTestCase.metricsData().isEmpty() && apiTestCase.trace() == null;
+    }
+
+    private static void createParentDirectories(Path path) throws IOException {
+        var parent = path.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
     }
 }

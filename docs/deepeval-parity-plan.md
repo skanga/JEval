@@ -35,6 +35,7 @@ Current Java parity:
 - Test-run save/load helpers for DeepEval-style alias JSON files with null-excluding save payloads and typed Java reloads
 - Test-run multimodal API test-case guard matching DeepEval's Confident AI upload rejection behavior
 - Test-run manager in-memory create/get/set/reset/clear and update behavior, including DeepEval's empty-metrics/no-trace skip rule and dataset property propagation
+- Test-run manager disk save helpers with parent directory creation, DeepEval alias/null-excluding payloads, and optional wrapper-key output
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling
 - `RetrievedContextData` value type with DeepEval-style string serialization, source-preserving dataset markers, and single-turn, multi-turn, and golden retrieval-context builder support
 - `Contestant`, `ArenaTestCase`, and `Arena` with DeepEval-style unique-name, shared-input, shared-expected-output, and multimodal propagation rules

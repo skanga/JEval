@@ -2,17 +2,27 @@ package dev.jeval.runner;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jeval.ApiTestCases;
 import dev.jeval.LlmTestCase;
 import dev.jeval.MetricData;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class TestRunManagerTest {
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    @TempDir
+    Path tempDir;
 
     @Test
     void createAndGetTestRunUseDeepEvalDefaults() {
@@ -87,5 +97,43 @@ class TestRunManagerTest {
                 () -> assertEquals("dataset", run.datasetAlias()),
                 () -> assertEquals("dataset-id", run.datasetId()),
                 () -> assertEquals(0.5, run.evaluationCost()));
+    }
+
+    @Test
+    void saveTestRunWritesDeepEvalAliasJsonAndCreatesParents() throws Exception {
+        var manager = new TestRunManager();
+        manager.createTestRun("run-id", "EvalTest.java", false);
+        var file = tempDir.resolve("nested").resolve("test_run.json");
+
+        manager.saveTestRun(file);
+        var saved = JSON.readValue(file.toFile(), Map.class);
+
+        assertAll(
+                () -> assertTrue(Files.exists(file)),
+                () -> assertEquals("run-id", saved.get("identifier")),
+                () -> assertEquals("EvalTest.java", saved.get("testFile")),
+                () -> assertTrue(saved.containsKey("testCases")),
+                () -> assertFalse(saved.containsKey("test_file")),
+                () -> assertFalse(saved.containsKey("evaluationCost")),
+                () -> assertFalse(saved.containsKey("datasetAlias")));
+    }
+
+    @Test
+    void saveTestRunCanWrapPayloadUnderDeepEvalKey() throws Exception {
+        var manager = new TestRunManager();
+        manager.createTestRun("run-id", "EvalTest.java", false);
+        var file = tempDir.resolve("wrapped").resolve("test_run.json");
+
+        manager.saveTestRun(file, "testRun");
+        var saved = JSON.readValue(file.toFile(), Map.class);
+        var wrapped = (Map<String, Object>) saved.get("testRun");
+
+        assertAll(
+                () -> assertEquals(1, saved.size()),
+                () -> assertEquals("run-id", wrapped.get("identifier")),
+                () -> assertEquals("EvalTest.java", wrapped.get("testFile")),
+                () -> assertTrue(wrapped.containsKey("testCases")),
+                () -> assertFalse(wrapped.containsKey("test_file")),
+                () -> assertFalse(wrapped.containsKey("evaluationCost")));
     }
 }
