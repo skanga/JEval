@@ -213,6 +213,66 @@ class RetryPolicyTest {
         assertEquals(1, authCalls.get());
     }
 
+    @Test
+    void readsTimeoutSettingsFromEnvironmentLikeDeepEval() {
+        assertEquals(new RetryPolicy.TimeoutSettings(false, 0.0),
+                RetryPolicy.timeoutSettings(Map.of()));
+        assertEquals(new RetryPolicy.TimeoutSettings(false, 0.01),
+                RetryPolicy.timeoutSettings(Map.of("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "0.01")));
+        assertEquals(new RetryPolicy.TimeoutSettings(false, 0.02),
+                RetryPolicy.timeoutSettings(Map.of("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS", "0.02")));
+        assertEquals(new RetryPolicy.TimeoutSettings(true, 0.01),
+                RetryPolicy.timeoutSettings(Map.of(
+                        "DEEPEVAL_DISABLE_TIMEOUTS", "true",
+                        "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "0.01")));
+        assertEquals(new RetryPolicy.TimeoutSettings(false, 0.0),
+                RetryPolicy.timeoutSettings(Map.of("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "bogus")));
+    }
+
+    @Test
+    void executeWithRetryTreatsPerAttemptTimeoutAsRetryableAndCapped() {
+        var calls = new AtomicInteger();
+        var settings = new RetryPolicy.RetrySettings(3, 0.0, 2.0, 0.0, 0.0);
+        var timeoutSettings = new RetryPolicy.TimeoutSettings(false, 0.01);
+
+        var error = assertThrows(RetryPolicy.RetryExhaustedException.class, () -> RetryPolicy.executeWithRetry(
+                "openai",
+                () -> {
+                    calls.incrementAndGet();
+                    Thread.sleep(50);
+                    return "too late";
+                },
+                Map.of("openai", testPolicy(true)),
+                Set.of(),
+                settings,
+                timeoutSettings));
+
+        assertEquals(3, calls.get());
+        assertTrue(error.getCause() instanceof RetryPolicy.RetryTimeoutException);
+    }
+
+    @Test
+    void executeWithRetrySkipsPerAttemptTimeoutWhenTimeoutsAreDisabled() throws Exception {
+        var calls = new AtomicInteger();
+        var settings = new RetryPolicy.RetrySettings(3, 0.0, 2.0, 0.0, 0.0);
+        var timeoutSettings = new RetryPolicy.TimeoutSettings(true, 0.01);
+
+        var result = RetryPolicy.executeWithRetry(
+                "openai",
+                () -> {
+                    calls.incrementAndGet();
+                    Thread.sleep(20);
+                    return "ok";
+                },
+                Map.of("openai", testPolicy(true)),
+                Set.of(),
+                settings,
+                timeoutSettings);
+
+        assertEquals("ok", result);
+        assertEquals(1, calls.get());
+    }
+
     private static RetryPolicy.ErrorPolicy testPolicy(boolean retry5xx) {
         return RetryPolicy.errorPolicy(
                 Set.of(AuthError.class),

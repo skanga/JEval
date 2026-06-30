@@ -7,7 +7,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
 public final class RetryPolicy {
@@ -97,6 +101,18 @@ public final class RetryPolicy {
                 readEnvFloat(env, "DEEPEVAL_RETRY_CAP_SECONDS", 5.0, 0.0));
     }
 
+    public static TimeoutSettings timeoutSettings() {
+        return timeoutSettings(System.getenv());
+    }
+
+    static TimeoutSettings timeoutSettings(Map<String, String> env) {
+        var perAttempt = readEnvFloat(env, "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", 0.0, 0.0);
+        if (perAttempt == 0.0) {
+            perAttempt = readEnvFloat(env, "DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS", 0.0, 0.0);
+        }
+        return new TimeoutSettings(readEnvBoolean(env, "DEEPEVAL_DISABLE_TIMEOUTS", false), perAttempt);
+    }
+
     public static double retryDelaySeconds(RetrySettings settings, int attemptNumber) {
         var jitter = settings.jitterSeconds() == 0.0
                 ? 0.0
@@ -165,7 +181,7 @@ public final class RetryPolicy {
             String provider,
             Callable<T> operation,
             Map<String, ErrorPolicy> policies) throws Exception {
-        return executeWithRetry(provider, operation, policies, sdkRetryProviders(), retrySettings());
+        return executeWithRetry(provider, operation, policies, sdkRetryProviders(), retrySettings(), timeoutSettings());
     }
 
     public static <T> T executeWithRetry(
@@ -174,17 +190,33 @@ public final class RetryPolicy {
             Map<String, ErrorPolicy> policies,
             Iterable<?> sdkRetryProviders,
             RetrySettings settings) throws Exception {
+        return executeWithRetry(
+                provider,
+                operation,
+                policies,
+                sdkRetryProviders,
+                settings,
+                new TimeoutSettings(true, 0.0));
+    }
+
+    public static <T> T executeWithRetry(
+            String provider,
+            Callable<T> operation,
+            Map<String, ErrorPolicy> policies,
+            Iterable<?> sdkRetryProviders,
+            RetrySettings settings,
+            TimeoutSettings timeoutSettings) throws Exception {
         var policy = getRetryPolicyFor(provider, policies, sdkRetryProviders);
         if (policy == null) {
-            return operation.call();
+            return callWithTimeout(operation, timeoutSettings);
         }
 
         var attempt = 1;
         while (true) {
             try {
-                return operation.call();
+                return callWithTimeout(operation, timeoutSettings);
             } catch (Exception error) {
-                if (!isTransient(policy, error)) {
+                if (!isRetryable(policy, error)) {
                     throw error;
                 }
                 if (shouldStopAfterAttempt(settings, attempt)) {
@@ -194,6 +226,10 @@ public final class RetryPolicy {
                 attempt++;
             }
         }
+    }
+
+    private static boolean isRetryable(ErrorPolicy policy, Throwable error) {
+        return error instanceof RetryTimeoutException || isTransient(policy, error);
     }
 
     private static boolean matches(Set<Class<? extends Throwable>> types, Throwable error) {
@@ -281,6 +317,37 @@ public final class RetryPolicy {
         Thread.sleep(totalNanos / 1_000_000L, (int) (totalNanos % 1_000_000L));
     }
 
+    private static <T> T callWithTimeout(Callable<T> operation, TimeoutSettings settings) throws Exception {
+        if (settings.disabled() || settings.perAttemptSeconds() <= 0.0) {
+            return operation.call();
+        }
+        var executor = Executors.newSingleThreadExecutor(task -> {
+            var thread = new Thread(task, "jeval-timeout-worker");
+            thread.setDaemon(true);
+            return thread;
+        });
+        var future = executor.submit(operation);
+        try {
+            return future.get(
+                    Math.round(settings.perAttemptSeconds() * 1_000_000_000.0),
+                    TimeUnit.NANOSECONDS);
+        } catch (TimeoutException error) {
+            future.cancel(true);
+            throw new RetryTimeoutException(settings.perAttemptSeconds(), error);
+        } catch (ExecutionException error) {
+            var cause = error.getCause();
+            if (cause instanceof Exception exception) {
+                throw exception;
+            }
+            if (cause instanceof Error fatal) {
+                throw fatal;
+            }
+            throw new IllegalStateException(cause);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     private static Object attribute(Object target, String name) {
         if (target == null) {
             return null;
@@ -311,6 +378,14 @@ public final class RetryPolicy {
         } catch (NumberFormatException error) {
             return defaultValue;
         }
+    }
+
+    private static boolean readEnvBoolean(Map<String, String> env, String name, boolean defaultValue) {
+        var raw = env.get(name);
+        if (raw == null || raw.isBlank()) {
+            return defaultValue;
+        }
+        return Set.of("1", "true", "yes", "y", "on").contains(raw.strip().toLowerCase(Locale.ROOT));
     }
 
     private static double readEnvFloat(Map<String, String> env, String name, double defaultValue, double minValue) {
@@ -373,6 +448,9 @@ public final class RetryPolicy {
             double capSeconds) {
     }
 
+    public record TimeoutSettings(boolean disabled, double perAttemptSeconds) {
+    }
+
     public record ErrorPolicy(
             Set<Class<? extends Throwable>> authExceptions,
             Set<Class<? extends Throwable>> rateLimitExceptions,
@@ -398,6 +476,12 @@ public final class RetryPolicy {
     public static final class RetryExhaustedException extends RuntimeException {
         private RetryExhaustedException(String provider, int attempts, Throwable cause) {
             super("Retry attempts exhausted for " + slugify(provider) + " after " + attempts + " attempt(s).", cause);
+        }
+    }
+
+    public static final class RetryTimeoutException extends RuntimeException {
+        private RetryTimeoutException(double seconds, Throwable cause) {
+            super("call timed out after " + seconds + "s (per attempt).", cause);
         }
     }
 }
