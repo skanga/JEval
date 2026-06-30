@@ -24,6 +24,7 @@ Current Java parity:
 - `Golden` and `ConversationalGolden` with optional fields, DeepEval-style metadata aliases, dataset metadata, runtime context/tool-call/custom-column validation, multimodal placeholder detection, and registered image mapping
 - Golden/test-case conversion helpers, including dataset-rank indexing when datasets materialize goldens as test cases
 - API test-case DTO conversion for single-turn and conversational test cases, including dataset-rank order precedence
+- API metric payload data and DeepEval-style update helpers for single-turn and conversational API test cases, including metric appends, sticky failure status, run-duration updates, and evaluation-cost accumulation
 - `MllmImage` local/remote/Base64 image placeholder support, placeholder parsing, and Windows-safe remote URL handling
 - `RetrievedContextData` value type with DeepEval-style string serialization, source-preserving dataset markers, and single-turn, multi-turn, and golden retrieval-context builder support
 - `Contestant`, `ArenaTestCase`, and `Arena` with DeepEval-style unique-name, shared-input, shared-expected-output, and multimodal propagation rules

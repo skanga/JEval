@@ -1,7 +1,7 @@
 package dev.jeval;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +52,22 @@ public record LlmApiTestCase(
         return modelDump(false);
     }
 
+    public LlmApiTestCase updateMetricData(MetricData metricData) {
+        var updatedMetricsData = appendMetricData(metricsData, metricData);
+        var updatedSuccess = success == null ? metricData.success() : success && metricData.success();
+        var updatedEvaluationCost = addEvaluationCost(evaluationCost, metricData.evaluationCost());
+        return copyWith(updatedSuccess, updatedMetricsData, runDuration, updatedEvaluationCost);
+    }
+
+    public LlmApiTestCase updateRunDuration(double runDuration) {
+        return copyWith(success, metricsData, runDuration, evaluationCost);
+    }
+
+    public LlmApiTestCase updateStatus(boolean success) {
+        var updatedSuccess = this.success == null ? success : this.success && success;
+        return copyWith(updatedSuccess, metricsData, runDuration, evaluationCost);
+    }
+
     public Map<String, Object> modelDump(boolean byAlias) {
         var dump = new LinkedHashMap<String, Object>();
         dump.put("name", name);
@@ -85,6 +101,51 @@ public record LlmApiTestCase(
         return values == null
                 ? null
                 : values.stream().map(value -> Collections.unmodifiableMap(new LinkedHashMap<>(value))).toList();
+    }
+
+    private static List<Object> appendMetricData(List<Object> metricsData, MetricData metricData) {
+        var updated = new ArrayList<Object>();
+        if (metricsData != null) {
+            updated.addAll(metricsData);
+        }
+        updated.add(metricData);
+        return updated;
+    }
+
+    private static Double addEvaluationCost(Double existing, Double additional) {
+        if (additional == null) {
+            return existing;
+        }
+        return existing == null ? additional : existing + additional;
+    }
+
+    private LlmApiTestCase copyWith(
+            Boolean success, List<Object> metricsData, Double runDuration, Double evaluationCost) {
+        return new LlmApiTestCase(
+                name,
+                input,
+                actualOutput,
+                expectedOutput,
+                context,
+                retrievalContext,
+                toolsCalled,
+                expectedTools,
+                tokenCost,
+                completionTime,
+                imagesMapping,
+                success,
+                metricsData,
+                runDuration,
+                evaluationCost,
+                order,
+                metadata,
+                comments,
+                tags,
+                trace,
+                mcpServers,
+                mcpToolsCalled,
+                mcpResourcesCalled,
+                mcpPromptsCalled);
     }
 
     private static List<Map<String, Object>> dumpTools(List<ToolCall> tools, boolean byAlias) {

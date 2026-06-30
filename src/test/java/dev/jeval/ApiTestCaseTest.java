@@ -289,4 +289,95 @@ class ApiTestCaseTest {
                 () -> assertFalse(dump.containsKey("expected_outcome")),
                 () -> assertFalse(turn.containsKey("user_id")));
     }
+
+    @Test
+    void llmApiTestCaseUpdateHelpersMatchDeepEvalStatusAndCostRules() {
+        var passing = new MetricData("faithfulness", 0.7, true, 0.9, "ok", false, "gpt", null, 0.25, 12, 6, "logs");
+        var failing = new MetricData("answer relevancy", 0.7, false, 0.2, "miss", false, "gpt", null, 0.5, 4, 2, null);
+        var original = llmApi(null, null, null);
+
+        var afterPassing = original.updateMetricData(passing);
+        var afterFailing = afterPassing.updateMetricData(failing).updateStatus(true).updateRunDuration(1.2);
+
+        assertAll(
+                () -> assertNull(original.metricsData()),
+                () -> assertNull(original.success()),
+                () -> assertEquals(List.of(passing), afterPassing.metricsData()),
+                () -> assertTrue(afterPassing.success()),
+                () -> assertEquals(0.25, afterPassing.evaluationCost()),
+                () -> assertEquals(List.of(passing, failing), afterFailing.metricsData()),
+                () -> assertFalse(afterFailing.success()),
+                () -> assertEquals(0.75, afterFailing.evaluationCost()),
+                () -> assertEquals(1.2, afterFailing.runDuration()));
+    }
+
+    @Test
+    void conversationalApiTestCaseUpdateHelpersAppendMetricsAndAccumulateDuration() {
+        var passing = new MetricData("conversation completeness", 0.5, true, 1.0, null, false, null, null, null, null, null, null);
+        var failing = new MetricData("knowledge retention", 0.5, false, 0.1, "forgot", false, null, null, 0.4, null, null, null);
+        var original = conversationalApi(true, null, 2.0, null);
+
+        var updated = original
+                .updateMetricData(passing)
+                .updateMetricData(failing)
+                .updateRunDuration(3.5);
+
+        assertAll(
+                () -> assertNull(original.metricsData()),
+                () -> assertTrue(original.success()),
+                () -> assertEquals(2.0, original.runDuration()),
+                () -> assertEquals(List.of(passing, failing), updated.metricsData()),
+                () -> assertFalse(updated.success()),
+                () -> assertEquals(5.5, updated.runDuration()),
+                () -> assertEquals(0.4, updated.evaluationCost()));
+    }
+
+    private static LlmApiTestCase llmApi(Boolean success, List<Object> metricsData, Double evaluationCost) {
+        return new LlmApiTestCase(
+                "case",
+                "input",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                success,
+                metricsData,
+                null,
+                evaluationCost,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    private static ConversationalApiTestCase conversationalApi(
+            Boolean success, List<Object> metricsData, Double runDuration, Double evaluationCost) {
+        return new ConversationalApiTestCase(
+                "conversation",
+                success,
+                metricsData,
+                runDuration,
+                evaluationCost,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
 }
