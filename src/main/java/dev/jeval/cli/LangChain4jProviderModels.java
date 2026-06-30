@@ -49,6 +49,9 @@ final class LangChain4jProviderModels {
         if ("YES".equals(config.get("USE_LITELLM"))) {
             return new LangChain4jEvaluationModel(liteLlm(config, modelOverride));
         }
+        if ("YES".equals(config.get("USE_PORTKEY_MODEL"))) {
+            return new LangChain4jEvaluationModel(portkey(config, modelOverride));
+        }
         if ("YES".equals(config.get("USE_LOCAL_MODEL"))) {
             if (present(config, "OLLAMA_MODEL_NAME") || (present(modelOverride) && !localModelConfigured(config))) {
                 return new LangChain4jEvaluationModel(ollama(config, modelOverride));
@@ -58,7 +61,7 @@ final class LangChain4jProviderModels {
             }
         }
         throw new IllegalArgumentException(
-                "No supported provider is configured; run set-openai, set-azure-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
+                "No supported provider is configured; run set-openai, set-azure-openai, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-portkey, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
     }
 
     private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
@@ -150,6 +153,16 @@ final class LangChain4jProviderModels {
         return builder.build();
     }
 
+    private static OpenAiChatModel portkey(Map<String, String> config, String modelOverride) {
+        var builder = OpenAiChatModel.builder()
+                .apiKey(required(config, "PORTKEY_API_KEY"))
+                .modelName(portkeyModelName(config, modelOverride))
+                .baseUrl(value(config, "PORTKEY_BASE_URL", "https://api.portkey.ai/v1"));
+        optionalDouble(config, "TEMPERATURE", builder::temperature);
+        optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
+        return builder.build();
+    }
+
     private static OllamaChatModel ollama(Map<String, String> config, String modelOverride) {
         var builder = OllamaChatModel.builder()
                 .baseUrl(value(config, "LOCAL_MODEL_BASE_URL", "http://localhost:11434"))
@@ -208,6 +221,15 @@ final class LangChain4jProviderModels {
             return value;
         }
         return modelName(config, "AZURE_MODEL_NAME", modelOverride, null);
+    }
+
+    private static String portkeyModelName(Map<String, String> config, String modelOverride) {
+        var model = modelName(config, "PORTKEY_MODEL_NAME", modelOverride, null);
+        var provider = value(config, "PORTKEY_PROVIDER_NAME", null);
+        if (provider == null || model.startsWith("@")) {
+            return model;
+        }
+        return "@" + provider.replaceFirst("^@", "") + "/" + model;
     }
 
     private static String value(Map<String, String> config, String key, String fallback) {

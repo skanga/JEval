@@ -36,7 +36,7 @@ class JEvalCliTest {
 
         assertEquals(2, exit);
         assertTrue(text(err).contains(
-                "set-openai|set-azure-openai|set-anthropic|set-gemini|set-grok|set-moonshot|set-deepseek|set-litellm|set-ollama|set-local-model|set-openrouter"));
+                "set-openai|set-azure-openai|set-anthropic|set-gemini|set-grok|set-moonshot|set-deepseek|set-litellm|set-portkey|set-ollama|set-local-model|set-openrouter"));
     }
 
     @Test
@@ -2845,6 +2845,40 @@ class JEvalCliTest {
         assertEquals(false, readDotenv(env).containsKey("USE_LITELLM"));
         assertEquals(false, readDotenv(env).containsKey("LITELLM_MODEL_NAME"));
         assertEquals(false, readDotenv(env).containsKey("LITELLM_API_BASE"));
+    }
+
+    @Test
+    void portkeyProviderRoundtripUsesExclusiveFlagsBaseUrlAndProvider() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-portkey", "--model", "gpt-4.1",
+                "--base-url", "https://api.portkey.ai/v1",
+                "--provider", "openai-prod",
+                "--save", "dotenv:" + env
+        }, out, err));
+        assertDotenv(env, "USE_PORTKEY_MODEL", "YES");
+        assertDotenv(env, "PORTKEY_MODEL_NAME", "gpt-4.1");
+        assertDotenv(env, "PORTKEY_BASE_URL", "https://api.portkey.ai/v1");
+        assertDotenv(env, "PORTKEY_PROVIDER_NAME", "openai-prod");
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENAI_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_MODEL_NAME"));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-portkey", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_PORTKEY_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("PORTKEY_MODEL_NAME"));
+        assertEquals(false, readDotenv(env).containsKey("PORTKEY_BASE_URL"));
+        assertEquals(false, readDotenv(env).containsKey("PORTKEY_PROVIDER_NAME"));
     }
 
     @Test
