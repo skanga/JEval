@@ -26,11 +26,23 @@ public final class ConversationSimulator {
     }
 
     public ConversationSimulator(ModelCallback modelCallback, EvaluationModel simulatorModel, String language) {
+        this(modelCallback, simulatorModel, language, null, null);
+    }
+
+    public ConversationSimulator(
+            ModelCallback modelCallback,
+            EvaluationModel simulatorModel,
+            String language,
+            SimulationNode simulationGraph,
+            SimulationController stoppingController) {
         this.modelCallback = Objects.requireNonNull(modelCallback, "modelCallback");
         this.simulatorModel = Objects.requireNonNull(simulatorModel, "simulatorModel");
         this.language = language == null || language.isBlank() ? "English" : language;
-        this.graphRunner = new SimulationGraphRunner(defaultSimulationNode());
-        this.stoppingController = SimulationController.expectedOutcome(simulatorModel);
+        this.graphRunner = new SimulationGraphRunner(
+                simulationGraph == null ? defaultSimulationNode() : simulationGraph);
+        this.stoppingController = stoppingController == null
+                ? SimulationController.expectedOutcome(simulatorModel)
+                : stoppingController;
     }
 
     public String language() {

@@ -163,6 +163,68 @@ class ConversationSimulatorTest {
         assertTrue(model.prompts().getFirst().contains("Conversation Completion Checker"));
     }
 
+    @Test
+    void simulateUsesCustomSimulationGraphLikeDeepEval() {
+        var model = new ScriptedModel(List.of());
+        var customGraph = SimulationNode.ofText(
+                context -> "custom user turn for " + context.golden().scenario(),
+                true,
+                null,
+                "custom");
+        var simulator = new ConversationSimulator(
+                context -> new Turn("assistant", "assistant reply"),
+                model,
+                "English",
+                customGraph,
+                SimulationController.custom(context -> SimulationController.proceed()));
+        var golden = ConversationalGolden.builder("custom flow").build();
+
+        var testCase = simulator.simulate(golden, 5);
+
+        assertEquals(List.of(
+                new Turn("user", "custom user turn for custom flow"),
+                new Turn("assistant", "assistant reply")),
+                testCase.turns());
+        assertEquals(List.of(), model.prompts());
+    }
+
+    @Test
+    void simulateUsesCustomStoppingControllerLikeDeepEval() {
+        var model = new ScriptedModel(List.of("{\"simulated_input\":\"second question\"}"));
+        var seenContexts = new ArrayList<SimulationContext>();
+        var controller = SimulationController.custom(context -> {
+            seenContexts.add(context);
+            return context.lastAssistantTurn() == null
+                    ? SimulationController.proceed()
+                    : SimulationController.end("assistant already replied");
+        });
+        var callbacks = new AtomicInteger();
+        var simulator = new ConversationSimulator(
+                context -> {
+                    callbacks.incrementAndGet();
+                    return new Turn("assistant", "first answer");
+                },
+                model,
+                "English",
+                null,
+                controller);
+        var golden = ConversationalGolden.builder("support flow")
+                .turns(List.of(new Turn("user", "first question")))
+                .build();
+
+        var testCase = simulator.simulate(golden, 5);
+
+        assertEquals(List.of(
+                new Turn("user", "first question"),
+                new Turn("assistant", "first answer")),
+                testCase.turns());
+        assertEquals(1, callbacks.get());
+        assertEquals(2, seenContexts.size());
+        assertEquals(null, seenContexts.getFirst().lastAssistantTurn());
+        assertEquals("first answer", seenContexts.get(1).lastAssistantTurn().content());
+        assertEquals(List.of(), model.prompts());
+    }
+
     private static final class ScriptedModel implements EvaluationModel {
         private final List<String> responses;
         private final List<String> prompts = new ArrayList<>();
