@@ -505,16 +505,23 @@ final class CliSettings {
             return logLevel(value);
         }
         if (normalized.equals("TEMPERATURE")) {
-            try {
-                var parsed = Double.parseDouble(value);
-                if (parsed < 0.0 || parsed > 2.0) {
-                    throw new NumberFormatException();
-                }
-            } catch (NumberFormatException error) {
-                throw new IllegalArgumentException("Invalid value for TEMPERATURE: " + value);
-            }
+            validateDoubleRange(normalized, value, 0.0, 2.0);
+        }
+        if (normalized.equals("CONFIDENT_TRACE_SAMPLE_RATE")) {
+            validateDoubleRange(normalized, value, 0.0, 1.0);
         }
         return value;
+    }
+
+    private static void validateDoubleRange(String key, String value, double min, double max) {
+        try {
+            var parsed = Double.parseDouble(value);
+            if (parsed < min || parsed > max) {
+                throw new NumberFormatException();
+            }
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException("Invalid value for " + key + ": " + value);
+        }
     }
 
     private static boolean knownSettingKey(String key) {
