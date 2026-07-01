@@ -19,6 +19,9 @@ class FiltrationConfigTest {
     void validatesThresholdAndRetryCount() {
         assertThrows(IllegalArgumentException.class, () -> new FiltrationConfig(-0.1, 3, null));
         assertThrows(IllegalArgumentException.class, () -> new FiltrationConfig(1.1, 3, null));
+        assertThrows(IllegalArgumentException.class, () -> new FiltrationConfig(Double.NaN, 3, null));
+        assertThrows(IllegalArgumentException.class, () -> new FiltrationConfig(Double.POSITIVE_INFINITY, 3, null));
+        assertThrows(IllegalArgumentException.class, () -> new FiltrationConfig(Double.NEGATIVE_INFINITY, 3, null));
         assertThrows(IllegalArgumentException.class, () -> new FiltrationConfig(0.5, -1, null));
     }
 }
