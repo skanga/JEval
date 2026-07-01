@@ -39,6 +39,11 @@ final class ArenaGEvalSchemas {
     }
 
     record ReasonScore(String reason, double score) {
+        ReasonScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("ArenaGEval ReasonScore score must be finite");
+            }
+        }
     }
 
     record Winner(String winner, String reason) {

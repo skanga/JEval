@@ -61,4 +61,13 @@ class ArenaGEvalSchemasTest {
                 () -> assertThrows(IllegalArgumentException.class,
                         () -> ArenaGEvalSchemas.parseRewrittenReason("{\"rewritten_reason\":1}")));
     }
+
+    @Test
+    void reasonScoreRejectsNonFiniteScores() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ArenaGEvalSchemas.ReasonScore("reason", Double.NaN)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ArenaGEvalSchemas.ReasonScore("reason", Double.POSITIVE_INFINITY)));
+    }
 }

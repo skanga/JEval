@@ -34,4 +34,13 @@ class GEvalSchemasTest {
         assertThrows(IllegalArgumentException.class, () -> GEvalSchemas.parseReasonScore("{\"reason\":\"ok\",\"score\":\"NaN\"}"));
         assertThrows(IllegalArgumentException.class, () -> GEvalSchemas.parseReasonScore("{\"reason\":\"ok\",\"score\":\"Infinity\"}"));
     }
+
+    @Test
+    void reasonScoreRejectsNonFiniteScores() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new GEvalSchemas.ReasonScore("reason", Double.NaN)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new GEvalSchemas.ReasonScore("reason", Double.POSITIVE_INFINITY)));
+    }
 }

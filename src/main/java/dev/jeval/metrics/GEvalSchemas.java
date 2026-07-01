@@ -73,5 +73,10 @@ public final class GEvalSchemas {
     }
 
     public record ReasonScore(String reason, double score) {
+        public ReasonScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("GEval ReasonScore score must be finite");
+            }
+        }
     }
 }
