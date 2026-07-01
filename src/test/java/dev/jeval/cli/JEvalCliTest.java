@@ -2990,6 +2990,39 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetAcceptsMediaImageTimeoutsLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "media-image-connect-timeout-seconds=3.5",
+                "--set", "media-image-read-timeout-seconds=17.25",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "MEDIA_IMAGE_CONNECT_TIMEOUT_SECONDS", "3.5");
+        assertDotenv(env, "MEDIA_IMAGE_READ_TIMEOUT_SECONDS", "17.25");
+    }
+
+    @Test
+    void settingsRejectsInvalidMediaImageTimeoutLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "media-image-read-timeout-seconds=slow", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for MEDIA_IMAGE_READ_TIMEOUT_SECONDS: slow"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

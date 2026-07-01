@@ -550,6 +550,10 @@ final class CliSettings {
         if (normalized.equals("DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS")) {
             validateDoubleRange(normalized, value, 0.0, Double.POSITIVE_INFINITY);
         }
+        if (normalized.equals("MEDIA_IMAGE_CONNECT_TIMEOUT_SECONDS")
+                || normalized.equals("MEDIA_IMAGE_READ_TIMEOUT_SECONDS")) {
+            validateDoubleRange(normalized, value, 0.0, Double.POSITIVE_INFINITY);
+        }
         if (normalized.equals("DEEPEVAL_TIMEOUT_THREAD_LIMIT")) {
             validateIntegerMin(normalized, value, 1);
         }
@@ -653,7 +657,8 @@ final class CliSettings {
                 "AZURE_OPENAI_API_KEY", "DEEPSEEK_API_KEY", "GOOGLE_API_KEY",
                 "GOOGLE_SERVICE_ACCOUNT_KEY", "GROK_API_KEY", "LITELLM_API_KEY",
                 "LITELLM_PROXY_API_KEY", "LOCAL_EMBEDDING_API_KEY", "LOCAL_MODEL_API_KEY",
-                "MAX_TOKENS", "MOONSHOT_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
+                "MAX_TOKENS", "MEDIA_IMAGE_CONNECT_TIMEOUT_SECONDS", "MEDIA_IMAGE_READ_TIMEOUT_SECONDS",
+                "MOONSHOT_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
                 "PORTKEY_API_KEY", "TEMPERATURE", "CONFIDENT_OPEN_BROWSER", "CONFIDENT_REGION",
                 "CONFIDENT_TRACE_INTERNAL",
                 "CUDA_LAUNCH_BLOCKING", "CUDA_VISIBLE_DEVICES",
