@@ -213,6 +213,10 @@ final class CliSettings {
                     err.println("Portkey model name is not set. Pass --model (or set PORTKEY_MODEL_NAME).");
                     return 2;
                 }
+                if ("set-openrouter".equals(command) && !hasValue(savePath(args), updates, "OPENROUTER_MODEL_NAME")) {
+                    err.println("OpenRouter model name is not set. Pass --model (or set OPENROUTER_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
