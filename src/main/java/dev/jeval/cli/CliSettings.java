@@ -87,7 +87,12 @@ final class CliSettings {
                 if (deprecatedComputedSettingKey(rawKey) && explicitUpdates.contains(key)) {
                     continue;
                 }
-                updates.put(key, settingValue(rawKey, update.substring(index + 1)));
+                try {
+                    updates.put(key, settingValue(rawKey, update.substring(index + 1)));
+                } catch (IllegalArgumentException error) {
+                    err.println(error.getMessage());
+                    return 2;
+                }
                 if (!deprecatedComputedSettingKey(rawKey)) {
                     explicitUpdates.add(key);
                 }
@@ -495,7 +500,21 @@ final class CliSettings {
     }
 
     private static String settingValue(String key, String value) {
-        return settingKey(key).equals("LOG_LEVEL") ? logLevel(value) : value;
+        var normalized = settingKey(key);
+        if (normalized.equals("LOG_LEVEL")) {
+            return logLevel(value);
+        }
+        if (normalized.equals("TEMPERATURE")) {
+            try {
+                var parsed = Double.parseDouble(value);
+                if (parsed < 0.0 || parsed > 2.0) {
+                    throw new NumberFormatException();
+                }
+            } catch (NumberFormatException error) {
+                throw new IllegalArgumentException("Invalid value for TEMPERATURE: " + value);
+            }
+        }
+        return value;
     }
 
     private static boolean knownSettingKey(String key) {

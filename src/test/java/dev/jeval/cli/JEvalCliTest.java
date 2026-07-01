@@ -2918,6 +2918,20 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsRejectsInvalidTemperatureLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"settings", "--set", "temperature=hot", "--save", "dotenv:" + env},
+                out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for TEMPERATURE: hot"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsAcceptsEqualsFormForDeepEvalAliases() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
