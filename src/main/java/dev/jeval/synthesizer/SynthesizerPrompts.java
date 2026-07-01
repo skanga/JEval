@@ -249,6 +249,24 @@ final class SynthesizerPrompts {
             boolean includeExpectedOutcome,
             List<String> availableSourceFiles,
             Integer targetFilesPerContext) {
+        return generateSyntheticConversationalScenarios(
+                context,
+                maxGoldensPerContext,
+                stylingConfig,
+                includeExpectedOutcome,
+                availableSourceFiles,
+                availableSourceFiles,
+                targetFilesPerContext);
+    }
+
+    static String generateSyntheticConversationalScenarios(
+            List<String> context,
+            int maxGoldensPerContext,
+            ConversationalStylingConfig stylingConfig,
+            boolean includeExpectedOutcome,
+            List<String> availableSourceFiles,
+            List<String> chunkSourceFiles,
+            Integer targetFilesPerContext) {
         var shape = includeExpectedOutcome
                 ? "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}],\"expected_outcome\":\"...\"}]}"
                 : "{\"data\":[{\"scenario\":\"...\",\"turns\":[{\"role\":\"user\",\"content\":\"...\"},{\"role\":\"assistant\",\"content\":\"...\"}]}]}";
@@ -269,7 +287,7 @@ final class SynthesizerPrompts {
                 stylingConfig == null ? "" : stylingConfig.scenarioContext(),
                 stylingConfig == null ? "" : stylingConfig.conversationalTask(),
                 stylingConfig == null ? "" : stylingConfig.participantRoles(),
-                String.join("\n", formatContextWithSources(context, availableSourceFiles)));
+                String.join("\n", formatContextWithSources(context, chunkSourceFiles)));
     }
 
     private static String sourceFilesSection(

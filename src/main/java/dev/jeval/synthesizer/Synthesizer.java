@@ -403,21 +403,39 @@ public final class Synthesizer {
                 contexts, includeExpectedOutcome, maxGoldensPerContext, sourceFiles, conversationalStylingConfig);
     }
 
+    public List<ConversationalGolden> generateConversationalGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
+            Integer targetFilesPerContext) {
+        return generateConversationalGoldensFromContexts(
+                contexts,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                sourceFiles,
+                contextChunkSourceFiles,
+                null,
+                targetFilesPerContext,
+                conversationalStylingConfig);
+    }
+
     private List<ConversationalGolden> generateConversationalGoldensFromContexts(
             List<List<String>> contexts,
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             List<?> sourceFiles,
             ConversationalStylingConfig activeStylingConfig) {
-        validateContexts(contexts);
-        validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
-        var goldens = new ArrayList<ConversationalGolden>();
-        for (var batch : generateContextBatches(contexts.size(),
-                index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
-                        maxGoldensPerContext, sourceFiles, null, null, activeStylingConfig))) {
-            goldens.addAll(batch);
-        }
-        return retainConversationalGoldens(goldens);
+        return generateConversationalGoldensFromContexts(
+                contexts,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                sourceFiles,
+                null,
+                null,
+                null,
+                activeStylingConfig);
     }
 
     public CompletableFuture<List<ConversationalGolden>> generateConversationalGoldensFromContextsAsync(
@@ -468,7 +486,7 @@ public final class Synthesizer {
             ContextConstructionConfig contextConstructionConfig) throws IOException {
         validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var documentContexts = documentContexts(documentPaths, config(contextConstructionConfig));
-        return generateConversationalGoldensFromContexts(
+        return generateConversationalGoldensFromContextsWithScores(
                 documentContexts.contexts(),
                 includeExpectedOutcome,
                 maxGoldensPerContext,
@@ -477,14 +495,32 @@ public final class Synthesizer {
                 documentContexts.targetFilesPerContext());
     }
 
-    private List<ConversationalGolden> generateConversationalGoldensFromContexts(
+    private List<ConversationalGolden> generateConversationalGoldensFromContextsWithScores(
             List<List<String>> contexts,
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             List<?> sourceFiles,
             List<Double> contextScores) {
-        return generateConversationalGoldensFromContexts(
+        return generateConversationalGoldensFromContextsWithScores(
                 contexts, includeExpectedOutcome, maxGoldensPerContext, sourceFiles, contextScores, null);
+    }
+
+    private List<ConversationalGolden> generateConversationalGoldensFromContextsWithScores(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<Double> contextScores,
+            Integer targetFilesPerContext) {
+        return generateConversationalGoldensFromContexts(
+                contexts,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                sourceFiles,
+                null,
+                contextScores,
+                targetFilesPerContext,
+                conversationalStylingConfig);
     }
 
     private List<ConversationalGolden> generateConversationalGoldensFromContexts(
@@ -492,15 +528,17 @@ public final class Synthesizer {
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
             List<Double> contextScores,
-            Integer targetFilesPerContext) {
+            Integer targetFilesPerContext,
+            ConversationalStylingConfig activeStylingConfig) {
         validateContexts(contexts);
         validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
-                        maxGoldensPerContext, sourceFiles, contextScores, targetFilesPerContext,
-                        conversationalStylingConfig))) {
+                        maxGoldensPerContext, sourceFiles, contextChunkSourceFiles, contextScores,
+                        targetFilesPerContext, activeStylingConfig))) {
             goldens.addAll(batch);
         }
         return retainConversationalGoldens(goldens);
@@ -512,12 +550,14 @@ public final class Synthesizer {
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
             List<Double> contextScores,
             Integer targetFilesPerContext,
             ConversationalStylingConfig activeStylingConfig) {
         var goldens = new ArrayList<ConversationalGolden>();
         var context = List.copyOf(contexts.get(contextIndex));
         var contextSourceFiles = contextSourceFiles(sourceFiles, contextIndex);
+        var chunkSourceFiles = contextChunkSourceFiles(contextChunkSourceFiles, contextIndex, contextSourceFiles);
         var sourceFile = contextSourceFiles.isEmpty() ? null : contextSourceFiles.getFirst();
         var contextQuality = contextScores != null && contextIndex < contextScores.size()
                 ? contextScores.get(contextIndex)
@@ -525,7 +565,7 @@ public final class Synthesizer {
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                 SynthesizerPrompts.generateSyntheticConversationalScenarios(
                         context, maxGoldensPerContext, activeStylingConfig, includeExpectedOutcome,
-                        contextSourceFiles, targetFilesPerContext)));
+                        contextSourceFiles, chunkSourceFiles, targetFilesPerContext)));
         var qualifiedData = rewriteScenarios(context, data);
         for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
             goldens.add(conversationalGolden(

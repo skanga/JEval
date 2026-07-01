@@ -1287,6 +1287,34 @@ class SynthesizerTest {
     }
 
     @Test
+    void generatesConversationalGoldensWithSeparateChunkSourceFilesLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"support agent uses policy and faq","turns":[
+                  {"role":"user","content":"Can I get a refund?"},
+                  {"role":"assistant","content":"Let me check."}
+                ]}]}
+                """));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        List<Object> sourceFiles = List.of(List.of("policy.md", "faq.md"));
+
+        var goldens = synthesizer.generateConversationalGoldensFromContexts(
+                List.of(List.of("Policy text", "FAQ text")),
+                false,
+                1,
+                sourceFiles,
+                List.of(List.of("policy.md", "faq.md")),
+                null);
+
+        assertEquals(List.of("policy.md", "faq.md"),
+                goldens.getFirst().additionalMetadata().get("context_source_files"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: policy.md] Policy text"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: faq.md] FAQ text"));
+        assertTrue(model.prompts().getFirst().contains("used_source_files"));
+    }
+
+    @Test
     void evolvesConversationalScenariosLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 """
