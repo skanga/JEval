@@ -1255,7 +1255,14 @@ public final class EvaluationDataset {
         if (!row.get(key).isNumber()) {
             throw new IllegalArgumentException("'" + key + "' must be a number");
         }
-        return row.get(key).asDouble();
+        return finiteDouble(row.get(key).asDouble(), key);
+    }
+
+    private static double finiteDouble(double value, String key) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException("'" + key + "' must be a finite number");
+        }
+        return value;
     }
 
     private static String requiredText(JsonNode row, String key) {
@@ -1739,7 +1746,7 @@ public final class EvaluationDataset {
             return null;
         }
         try {
-            return Double.valueOf(value);
+            return finiteDouble(Double.valueOf(value), key);
         } catch (NumberFormatException error) {
             throw new IllegalArgumentException("'" + key + "' must be a number", error);
         }

@@ -121,6 +121,27 @@ class EvaluationDatasetJsonImportTest {
     }
 
     @Test
+    void addTestCasesFromFilesRejectNonFiniteNumericFields() throws IOException {
+        var json = tempDir.resolve("test-cases-infinite-number.json");
+        Files.writeString(json, """
+                [{"input": "Ask", "actual_output": "Ans", "token_cost": 1e999}]
+                """);
+        var csv = tempDir.resolve("test-cases-infinity.csv");
+        Files.writeString(csv, """
+                input,actual_output,token_cost
+                Ask,Ans,Infinity
+                """);
+
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new EvaluationDataset().addTestCasesFromJsonFile(json, "input", "actual_output",
+                                "expected_output", "context", "retrieval_context")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new EvaluationDataset().addTestCasesFromCsvFile(csv, "input", "actual_output",
+                                "expected_output", "context", "retrieval_context")));
+    }
+
+    @Test
     void addTestCasesFromCsvFileImportsToolCalls() throws IOException {
         var file = tempDir.resolve("tool-cases.csv");
         Files.writeString(file, """
