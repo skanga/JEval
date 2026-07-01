@@ -405,24 +405,31 @@ final class CliSettings {
                 case "set-gemini", "unset-gemini" -> gemini();
                 case "set-litellm", "unset-litellm" -> llmWithSecrets(
                         "USE_LITELLM",
-                        Map.of("--model", "LITELLM_MODEL_NAME", "--base-url", "LITELLM_API_BASE",
-                                "--proxy-base-url", "LITELLM_PROXY_API_BASE"),
+                        Map.of("--model", "LITELLM_MODEL_NAME", "-m", "LITELLM_MODEL_NAME",
+                                "--base-url", "LITELLM_API_BASE", "-u", "LITELLM_API_BASE",
+                                "--proxy-base-url", "LITELLM_PROXY_API_BASE",
+                                "-U", "LITELLM_PROXY_API_BASE"),
                         "LITELLM_API_KEY", "LITELLM_PROXY_API_KEY");
                 case "set-portkey", "unset-portkey" -> llmWithSecrets(
                         "USE_PORTKEY_MODEL",
-                        Map.of("--model", "PORTKEY_MODEL_NAME", "--base-url", "PORTKEY_BASE_URL",
-                                "--provider", "PORTKEY_PROVIDER_NAME"),
+                        Map.of("--model", "PORTKEY_MODEL_NAME", "-m", "PORTKEY_MODEL_NAME",
+                                "--base-url", "PORTKEY_BASE_URL", "-u", "PORTKEY_BASE_URL",
+                                "--provider", "PORTKEY_PROVIDER_NAME", "-P", "PORTKEY_PROVIDER_NAME"),
                         "PORTKEY_API_KEY");
                 case "set-openrouter", "unset-openrouter" -> openRouter();
                 case "set-azure-openai-embedding", "unset-azure-openai-embedding" -> embed(
                         "USE_AZURE_OPENAI_EMBEDDING",
                         Map.of("--model", "AZURE_EMBEDDING_MODEL_NAME",
-                                "--deployment-name", "AZURE_EMBEDDING_DEPLOYMENT_NAME"));
+                                "-m", "AZURE_EMBEDDING_MODEL_NAME",
+                                "--deployment-name", "AZURE_EMBEDDING_DEPLOYMENT_NAME",
+                                "-d", "AZURE_EMBEDDING_DEPLOYMENT_NAME"));
                 case "set-local-embeddings", "unset-local-embeddings",
                         "set-ollama-embeddings", "unset-ollama-embeddings" -> embed(
                                 "USE_LOCAL_EMBEDDINGS",
                                 Map.of("--model", "LOCAL_EMBEDDING_MODEL_NAME",
-                                        "--base-url", "LOCAL_EMBEDDING_BASE_URL"),
+                                        "-m", "LOCAL_EMBEDDING_MODEL_NAME",
+                                        "--base-url", "LOCAL_EMBEDDING_BASE_URL",
+                                        "-u", "LOCAL_EMBEDDING_BASE_URL"),
                                 List.of("LOCAL_EMBEDDING_API_KEY"));
                 default -> null;
             };

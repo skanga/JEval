@@ -3069,6 +3069,46 @@ class JEvalCliTest {
     }
 
     @Test
+    void providerEmbeddingCommandsAcceptDeepEvalShortAliases() throws Exception {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var litellm = tempDir.resolve("litellm-short.env");
+        assertEquals(0, run(new String[] {
+                "set-litellm", "-m", "openai/gpt-4.1", "-u", "http://localhost:4000",
+                "-U", "http://localhost:4001", "--save", "dotenv:" + litellm
+        }, out, err), text(err));
+        assertDotenv(litellm, "LITELLM_MODEL_NAME", "openai/gpt-4.1");
+        assertDotenv(litellm, "LITELLM_API_BASE", "http://localhost:4000");
+        assertDotenv(litellm, "LITELLM_PROXY_API_BASE", "http://localhost:4001");
+
+        var portkey = tempDir.resolve("portkey-short.env");
+        assertEquals(0, run(new String[] {
+                "set-portkey", "-m", "gpt-4.1", "-u", "https://api.portkey.ai/v1",
+                "-P", "openai-prod", "--save", "dotenv:" + portkey
+        }, out, err), text(err));
+        assertDotenv(portkey, "PORTKEY_MODEL_NAME", "gpt-4.1");
+        assertDotenv(portkey, "PORTKEY_BASE_URL", "https://api.portkey.ai/v1");
+        assertDotenv(portkey, "PORTKEY_PROVIDER_NAME", "openai-prod");
+
+        var azure = tempDir.resolve("azure-embedding-short.env");
+        assertEquals(0, run(new String[] {
+                "set-azure-openai-embedding", "-m", "text-embedding-3-large",
+                "-d", "embedding-prod", "--save", "dotenv:" + azure
+        }, out, err), text(err));
+        assertDotenv(azure, "AZURE_EMBEDDING_MODEL_NAME", "text-embedding-3-large");
+        assertDotenv(azure, "AZURE_EMBEDDING_DEPLOYMENT_NAME", "embedding-prod");
+
+        var local = tempDir.resolve("local-embedding-short.env");
+        assertEquals(0, run(new String[] {
+                "set-local-embeddings", "-m", "nomic-embed-text", "-u", "http://localhost:11434",
+                "--save", "dotenv:" + local
+        }, out, err), text(err));
+        assertDotenv(local, "LOCAL_EMBEDDING_MODEL_NAME", "nomic-embed-text");
+        assertDotenv(local, "LOCAL_EMBEDDING_BASE_URL", "http://localhost:11434");
+    }
+
+    @Test
     void geminiProviderSetsVertexFlagForProjectOrLocation() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
