@@ -3081,6 +3081,24 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetAcceptsOpenAiCostValuesLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "openai-cost-per-input-token=0.00031",
+                "--set", "openai-cost-per-output-token=0.00062",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "OPENAI_COST_PER_INPUT_TOKEN", "0.00031");
+        assertDotenv(env, "OPENAI_COST_PER_OUTPUT_TOKEN", "0.00062");
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
