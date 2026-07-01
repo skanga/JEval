@@ -270,14 +270,22 @@ final class LangChain4jProviderModels {
     private static void optionalDouble(Map<String, String> config, String key, java.util.function.Consumer<Double> set) {
         var value = value(config, key, null);
         if (value != null) {
-            set.accept(Double.parseDouble(value));
+            try {
+                set.accept(Double.parseDouble(value));
+            } catch (NumberFormatException error) {
+                throw new IllegalArgumentException("Invalid value for " + key + ": " + value, error);
+            }
         }
     }
 
     private static void optionalInteger(Map<String, String> config, String key, java.util.function.Consumer<Integer> set) {
         var value = value(config, key, null);
         if (value != null) {
-            set.accept(Integer.parseInt(value));
+            try {
+                set.accept(Integer.parseInt(value));
+            } catch (NumberFormatException error) {
+                throw new IllegalArgumentException("Invalid value for " + key + ": " + value, error);
+            }
         }
     }
 }

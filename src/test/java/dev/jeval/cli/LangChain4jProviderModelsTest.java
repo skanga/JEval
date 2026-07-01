@@ -32,6 +32,22 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void rejectsInvalidProviderNumericSettingWithSettingName() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_OPENAI_MODEL=YES
+                OPENAI_MODEL_NAME=gpt-4o-mini
+                OPENAI_API_KEY=sk-test
+                TEMPERATURE=hot
+                """);
+
+        var error = assertThrows(IllegalArgumentException.class,
+                () -> LangChain4jProviderModels.from(new DotenvFile(env)));
+
+        assertEquals("Invalid value for TEMPERATURE: hot", error.getMessage());
+    }
+
+    @Test
     void createsAzureOpenAiModelFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
