@@ -319,7 +319,7 @@ public final class JEvalCli {
                 continue;
             }
             switch (arg) {
-                case "--quiet" -> quiet = true;
+                case "-q", "--quiet" -> quiet = true;
                 case "-x", "--exit-on-first-failure" -> exitOnFirstFailure = true;
                 case "-X" -> exitOnFirstFailure = false;
                 case "-i", "--ignore-errors" -> ignoreErrors = true;

@@ -1418,6 +1418,27 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunAcceptsQuietShortAliasLikeDeepEval() throws Exception {
+        var file = tempDir.resolve("quiet-alias.json");
+        Files.writeString(file, """
+                {
+                  "name": "quiet-alias",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-q"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals("", text(out));
+    }
+
+    @Test
     void generateCommandRequiresResponsesFileOrProviderSettings() {
         var env = tempDir.resolve("missing.env");
         var out = new ByteArrayOutputStream();
