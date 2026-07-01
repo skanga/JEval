@@ -212,6 +212,7 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<?> sourceFiles,
             StylingConfig activeStylingConfig) {
+        validateContexts(contexts);
         validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
@@ -240,6 +241,7 @@ public final class Synthesizer {
             List<?> sourceFiles,
             List<Double> contextScores,
             Integer targetFilesPerContext) {
+        validateContexts(contexts);
         validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
@@ -366,6 +368,7 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<?> sourceFiles,
             ConversationalStylingConfig activeStylingConfig) {
+        validateContexts(contexts);
         validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
@@ -450,6 +453,7 @@ public final class Synthesizer {
             List<?> sourceFiles,
             List<Double> contextScores,
             Integer targetFilesPerContext) {
+        validateContexts(contexts);
         validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
@@ -1106,6 +1110,12 @@ public final class Synthesizer {
     private static void validateGenerationCount(String name, int value) {
         if (value < 1) {
             throw new IllegalArgumentException(name + " must be at least 1");
+        }
+    }
+
+    private static void validateContexts(List<List<String>> contexts) {
+        if (contexts == null || contexts.isEmpty()) {
+            throw new IllegalArgumentException("contexts must not be empty");
         }
     }
 

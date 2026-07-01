@@ -54,6 +54,19 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromContextsRejectsEmptyContextsLikeDeepEval() {
+        var synthesizer = new Synthesizer(new ScriptedModel(List.of()));
+
+        var singleTurnError = assertThrows(IllegalArgumentException.class,
+                () -> synthesizer.generateGoldensFromContexts(List.of(), false, 1, null));
+        assertEquals("contexts must not be empty", singleTurnError.getMessage());
+
+        var multiTurnError = assertThrows(IllegalArgumentException.class,
+                () -> synthesizer.generateConversationalGoldensFromContexts(List.of(), false, 1, null));
+        assertEquals("contexts must not be empty", multiTurnError.getMessage());
+    }
+
+    @Test
     void generatesExpectedOutputSeparatelyForContextGoldensLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Embedded answer\"}]}",
