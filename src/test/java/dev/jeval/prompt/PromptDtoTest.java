@@ -1,5 +1,6 @@
 package dev.jeval.prompt;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -53,6 +54,23 @@ class PromptDtoTest {
         assertEquals("abc123", new PromptCreateVersion("abc123").hash());
         assertEquals("experiment", new PromptCreateBranchRequest("experiment").branch());
         assertEquals("renamed", new PromptUpdateBranchRequest("renamed").name());
+    }
+
+    @Test
+    void promptCreateRequestsRejectMissingFields() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptCreateVersion(null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptCreateVersion(" ")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptCreateBranchRequest(null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptCreateBranchRequest(" ")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptUpdateBranchRequest(null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptUpdateBranchRequest(" ")));
     }
 
     @Test
