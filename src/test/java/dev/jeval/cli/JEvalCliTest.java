@@ -2428,6 +2428,27 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsListAcceptsPositionalFilterAfterOptions() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "settings", "--set", "log-level=info", "--set", "anthropic-api-key=sk-test",
+                "--save", "dotenv:" + env
+        }, out, err), text(err));
+
+        out.reset();
+        err.reset();
+        var exit = run(new String[] {"settings", "--list", "--save", "dotenv:" + env, "anthropic"},
+                out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("ANTHROPIC_API_KEY=********"));
+        assertEquals(false, text(out).contains("LOG_LEVEL="));
+    }
+
+    @Test
     void settingsAcceptsSaveEqualsDotenvForm() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

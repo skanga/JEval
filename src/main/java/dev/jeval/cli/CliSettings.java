@@ -85,8 +85,8 @@ final class CliSettings {
             if (!updates.isEmpty() || !removals.isEmpty()) {
                 dotenv.update(updates, removals);
             }
-            if (parsed.listFilter() != null) {
-                list(dotenv, parsed.listFilter(), out);
+            if (parsed.listFilters() != null) {
+                list(dotenv, parsed.listFilters(), out);
             } else if (!parsed.quiet() && updates.isEmpty() && removals.isEmpty()) {
                 out.println("No changes to save");
             }
@@ -177,10 +177,12 @@ final class CliSettings {
         }
     }
 
-    private static void list(DotenvFile dotenv, String filter, PrintStream out) throws IOException {
-        var needle = filter.toUpperCase(Locale.ROOT).replace("-", "_");
+    private static void list(DotenvFile dotenv, List<String> filters, PrintStream out) throws IOException {
+        var needles = filters.stream()
+                .map(filter -> filter.toUpperCase(Locale.ROOT).replace("-", "_"))
+                .toList();
         dotenv.read().forEach((key, value) -> {
-            if (key.contains(needle)) {
+            if (needles.isEmpty() || needles.stream().anyMatch(key::contains)) {
                 out.println(key + "=" + (secret(key) ? "********" : value));
             }
         });
@@ -193,7 +195,7 @@ final class CliSettings {
     private static Parsed parse(String[] args, int start) {
         var updates = new java.util.ArrayList<String>();
         var unsets = new java.util.ArrayList<String>();
-        String list = null;
+        java.util.ArrayList<String> list = null;
         var quiet = quiet(args);
         var save = Path.of(".env");
         for (var i = start; i < args.length; i++) {
@@ -201,10 +203,9 @@ final class CliSettings {
                 case "-u", "--set", "--update" -> updates.add(args[++i]);
                 case "-U", "--unset" -> unsets.add(args[++i]);
                 case "-l", "--list" -> {
+                    list = new java.util.ArrayList<>();
                     if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
-                        list = args[++i];
-                    } else {
-                        list = "";
+                        list.add(args[++i]);
                     }
                 }
                 case "-q", "--quiet" -> quiet = true;
@@ -214,6 +215,8 @@ final class CliSettings {
                         save = savePath(args[i].substring("--save=".length()));
                     } else if (args[i].startsWith("-s=")) {
                         save = savePath(args[i].substring("-s=".length()));
+                    } else if (list != null && !args[i].startsWith("-")) {
+                        list.add(args[i]);
                     }
                 }
             }
@@ -328,7 +331,7 @@ final class CliSettings {
         return has(args, "--quiet") || has(args, "-q");
     }
 
-    private record Parsed(List<String> updates, List<String> unsets, String listFilter, boolean quiet, Path save) {
+    private record Parsed(List<String> updates, List<String> unsets, List<String> listFilters, boolean quiet, Path save) {
     }
 
     private record ProviderSpec(
