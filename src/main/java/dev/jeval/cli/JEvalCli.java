@@ -42,6 +42,10 @@ public final class JEvalCli {
             out.println("jeval " + version());
             return 0;
         }
+        if (args.length == 1 && ("--help".equals(args[0]) || "-h".equals(args[0]))) {
+            usage(out);
+            return 0;
+        }
         if (args.length > 0 && "settings".equals(args[0])) {
             return CliSettings.settings(args, out, err);
         }
