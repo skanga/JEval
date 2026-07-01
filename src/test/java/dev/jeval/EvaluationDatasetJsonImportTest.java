@@ -1211,6 +1211,44 @@ class EvaluationDatasetJsonImportTest {
     }
 
     @Test
+    void structuredTurnsAcceptCamelCaseAliases() throws IOException {
+        var file = tempDir.resolve("turn-camel-case-aliases.json");
+        Files.writeString(file, """
+                [
+                  {
+                    "scenario": "Book a flight",
+                    "turns": [
+                      {
+                        "role": "user",
+                        "content": "Find flights",
+                        "userId": "u1",
+                        "retrievalContext": ["r"],
+                        "toolsCalled": [{"name": "search"}],
+                        "mcpToolsCalled": [{"name": "mcp-search"}],
+                        "mcpResourcesCalled": [{"uri": "file://policy"}],
+                        "mcpPromptsCalled": [{"name": "prompt"}],
+                        "additionalMetadata": {"k": "v"}
+                      }
+                    ]
+                  }
+                ]
+                """);
+        var dataset = new EvaluationDataset();
+
+        dataset.addGoldensFromJsonFile(file);
+
+        var turn = dataset.conversationalGoldens().getFirst().turns().getFirst();
+        assertAll(
+                () -> assertEquals("u1", turn.userId()),
+                () -> assertEquals(List.of("r"), turn.retrievalContext()),
+                () -> assertEquals("search", turn.toolsCalled().getFirst().name()),
+                () -> assertEquals("mcp-search", turn.mcpToolsCalled().getFirst().get("name")),
+                () -> assertEquals("file://policy", turn.mcpResourcesCalled().getFirst().get("uri")),
+                () -> assertEquals("prompt", turn.mcpPromptsCalled().getFirst().get("name")),
+                () -> assertEquals(Map.of("k", "v"), turn.metadata()));
+    }
+
+    @Test
     void addGoldensFromJsonFileImportsCustomConversationalKeys() throws IOException {
         var file = tempDir.resolve("custom-conversational-import.json");
         Files.writeString(file, """

@@ -1510,14 +1510,23 @@ public final class EvaluationDataset {
                 || !turn.get("content").isTextual()) {
             throw new IllegalArgumentException("'" + key + "' entries must include role and content");
         }
+        var userIdKey = jsonKey(turn, "user_id", "user_id", "userId");
+        var retrievalContextKey = jsonKey(turn, "retrieval_context", "retrieval_context", "retrievalContext");
+        var toolsCalledKey = jsonKey(turn, "tools_called", "tools_called", "toolsCalled");
+        var mcpToolsCalledKey = jsonKey(turn, "mcp_tools_called", "mcp_tools_called", "mcpToolsCalled");
+        var mcpResourcesCalledKey = jsonKey(turn, "mcp_resources_called", "mcp_resources_called",
+                "mcpResourcesCalled");
+        var mcpPromptsCalledKey = jsonKey(turn, "mcp_prompts_called", "mcp_prompts_called", "mcpPromptsCalled");
+        var metadataKey = turn.has("metadata") ? "metadata" : jsonKey(turn, "additional_metadata",
+                "additional_metadata", "additionalMetadata");
         return Turn.builder(turn.get("role").asText(), turn.get("content").asText())
-                .userId(textOrNull(turn, "user_id"))
-                .retrievalContext(textListOrNull(turn, "retrieval_context"))
-                .toolsCalled(toolListOrNull(turn, "tools_called", true))
-                .mcpToolsCalled(objectListOrNull(turn, "mcp_tools_called"))
-                .mcpResourcesCalled(objectListOrNull(turn, "mcp_resources_called"))
-                .mcpPromptsCalled(objectListOrNull(turn, "mcp_prompts_called"))
-                .metadata(objectMapOrNull(turn, turn.has("metadata") ? "metadata" : "additional_metadata"))
+                .userId(textOrNull(turn, userIdKey))
+                .retrievalContext(textListOrNull(turn, retrievalContextKey))
+                .toolsCalled(toolListOrNull(turn, toolsCalledKey, true))
+                .mcpToolsCalled(objectListOrNull(turn, mcpToolsCalledKey))
+                .mcpResourcesCalled(objectListOrNull(turn, mcpResourcesCalledKey))
+                .mcpPromptsCalled(objectListOrNull(turn, mcpPromptsCalledKey))
+                .metadata(objectMapOrNull(turn, metadataKey))
                 .build();
     }
 
