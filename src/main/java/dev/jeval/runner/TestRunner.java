@@ -452,16 +452,23 @@ public final class TestRunner {
         }
         var value = node.get(key);
         if (value.isNumber()) {
-            return value.asDouble();
+            return finiteDouble(value.asDouble(), key, value.asText());
         }
         if (value.isTextual()) {
             try {
-                return Double.parseDouble(value.asText());
+                return finiteDouble(Double.parseDouble(value.asText()), key, value.asText());
             } catch (NumberFormatException error) {
                 throw new IllegalArgumentException("Invalid value for " + key + ": " + value.asText(), error);
             }
         }
         throw new IllegalArgumentException("Invalid value for " + key + ": " + value);
+    }
+
+    private static double finiteDouble(double value, String key, String raw) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException("Invalid value for " + key + ": " + raw);
+        }
+        return value;
     }
 
     private static List<String> textList(JsonNode node, String key) {

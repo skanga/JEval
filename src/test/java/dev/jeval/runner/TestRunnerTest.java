@@ -84,6 +84,26 @@ class TestRunnerTest {
     }
 
     @Test
+    void jsonlDatasetRejectsNonFiniteNumericFields() throws Exception {
+        var dataset = tempDir.resolve("cases.jsonl");
+        Files.writeString(dataset, """
+                {"input":"q","actual_output":"yes","expected_output":"yes","token_cost":"NaN"}
+                """);
+        var spec = tempDir.resolve("eval.json");
+        Files.writeString(spec, """
+                {
+                  "name": "jsonl-run",
+                  "dataset": "cases.jsonl",
+                  "metrics": [{"type": "exact_match"}]
+                }
+                """);
+
+        var error = assertThrows(IllegalArgumentException.class, () -> new TestRunner().run(spec));
+
+        assertTrue(error.getMessage().contains("Invalid value for token_cost: NaN"));
+    }
+
+    @Test
     void runsCsvDatasetFromSpec() throws Exception {
         var dataset = tempDir.resolve("cases.csv");
         Files.writeString(dataset, """
