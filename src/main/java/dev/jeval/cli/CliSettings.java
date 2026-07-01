@@ -58,7 +58,10 @@ final class CliSettings {
 
     static int settings(String[] args, PrintStream out, PrintStream err) {
         try {
-            var parsed = parse(args, 1);
+            var parsed = parse(args, 1, err);
+            if (parsed == null) {
+                return 2;
+            }
             if (parsed.listFilters() != null && (!parsed.updates().isEmpty() || !parsed.unsets().isEmpty())) {
                 err.println("Cannot use --list with --set or --unset");
                 return 2;
@@ -278,7 +281,7 @@ final class CliSettings {
         return matches.isEmpty() && existing.containsKey(settingKey(filter)) ? List.of(settingKey(filter)) : matches;
     }
 
-    private static Parsed parse(String[] args, int start) {
+    private static Parsed parse(String[] args, int start, PrintStream err) {
         var updates = new java.util.ArrayList<String>();
         var unsets = new java.util.ArrayList<String>();
         java.util.ArrayList<String> list = null;
@@ -303,8 +306,20 @@ final class CliSettings {
                 continue;
             }
             switch (arg) {
-                case "-u", "--set", "--update" -> updates.add(args[++i]);
-                case "-U", "--unset" -> unsets.add(args[++i]);
+                case "-u", "--set", "--update" -> {
+                    if (missingValue(args, i)) {
+                        err.println("Missing value for " + arg);
+                        return null;
+                    }
+                    updates.add(args[++i]);
+                }
+                case "-U", "--unset" -> {
+                    if (missingValue(args, i)) {
+                        err.println("Missing value for " + arg);
+                        return null;
+                    }
+                    unsets.add(args[++i]);
+                }
                 case "-l", "--list" -> {
                     list = new java.util.ArrayList<>();
                     if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
@@ -312,7 +327,13 @@ final class CliSettings {
                     }
                 }
                 case "-q", "--quiet" -> quiet = true;
-                case "-s", "--save" -> save = savePath(args[++i]);
+                case "-s", "--save" -> {
+                    if (missingValue(args, i)) {
+                        err.println("Missing value for " + arg);
+                        return null;
+                    }
+                    save = savePath(args[++i]);
+                }
                 default -> {
                     if (list != null && !arg.startsWith("-")) {
                         list.add(arg);
@@ -321,6 +342,10 @@ final class CliSettings {
             }
         }
         return new Parsed(updates, unsets, list, quiet, save);
+    }
+
+    private static boolean missingValue(String[] args, int index) {
+        return index + 1 == args.length || args[index + 1].startsWith("-");
     }
 
     private static String settingKey(String key) {
