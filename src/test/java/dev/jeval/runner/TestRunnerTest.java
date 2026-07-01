@@ -155,6 +155,27 @@ class TestRunnerTest {
     }
 
     @Test
+    void jsonlDatasetAcceptsCamelCaseNumericAliasesLikeInlineCases() throws Exception {
+        var dataset = tempDir.resolve("cases.jsonl");
+        Files.writeString(dataset, """
+                {"input":"q","actualOutput":"yes","expectedOutput":"yes","tokenCost":0.42,"completionTime":2.5}
+                """);
+        var spec = tempDir.resolve("eval.json");
+        Files.writeString(spec, """
+                {
+                  "name": "jsonl-run",
+                  "dataset": "cases.jsonl",
+                  "metrics": [{"type": "exact_match"}]
+                }
+                """);
+
+        var result = assertDoesNotThrow(() -> new TestRunner().run(spec));
+
+        assertEquals(0.42, result.results().getFirst().tokenCost());
+        assertEquals(2.5, result.results().getFirst().completionTime());
+    }
+
+    @Test
     void jsonlDatasetRejectsInvalidNumericFieldsLikeDeepEval() throws Exception {
         var dataset = tempDir.resolve("cases.jsonl");
         Files.writeString(dataset, """

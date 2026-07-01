@@ -451,8 +451,8 @@ public final class TestRunner {
                 .retrievalContext(textList(node, "retrieval_context", "retrievalContext"))
                 .metadata(objectMap(node, node.has("metadata") ? "metadata" : "additional_metadata"))
                 .comments(text(node, "comments"))
-                .tokenCost(doubleOrNull(node, "token_cost"))
-                .completionTime(doubleOrNull(node, "completion_time"))
+                .tokenCost(doubleOrNull(node, "token_cost", "tokenCost"))
+                .completionTime(doubleOrNull(node, "completion_time", "completionTime"))
                 .customColumnKeyValues(stringMap(node, "custom_column_key_values"))
                 .toolsCalled(toolCalls(node, "tools_called"))
                 .expectedTools(toolCalls(node, "expected_tools"))
@@ -501,6 +501,10 @@ public final class TestRunner {
             }
         }
         throw new IllegalArgumentException("Invalid value for " + key + ": " + value);
+    }
+
+    private static Double doubleOrNull(JsonNode node, String key, String alias) {
+        return doubleOrNull(node, node.has(key) ? key : alias);
     }
 
     private static double finiteDouble(double value, String key, String raw) {
