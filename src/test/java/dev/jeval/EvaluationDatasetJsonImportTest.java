@@ -1561,6 +1561,29 @@ class EvaluationDatasetJsonImportTest {
     }
 
     @Test
+    void addGoldensFromCsvFileAcceptsCamelCaseAliasesForDefaultSingleTurnColumns() throws IOException {
+        var file = tempDir.resolve("camel-case-single.csv");
+        Files.writeString(file, """
+                input,actualOutput,expectedOutput,retrievalContext,toolsCalled,expectedTools,metadata,customColumnKeyValues,sourceFile
+                Ask,Ans,Ans,rctx,search,finalize,"{""k"":""v""}","{""col"":""val""}",src.txt
+                """);
+        var dataset = new EvaluationDataset();
+
+        dataset.addGoldensFromCsvFile(file);
+
+        var golden = dataset.goldens().getFirst();
+        assertAll(
+                () -> assertEquals("Ans", golden.actualOutput()),
+                () -> assertEquals("Ans", golden.expectedOutput()),
+                () -> assertEquals(List.of("rctx"), golden.retrievalContext()),
+                () -> assertEquals(List.of(new ToolCall("search")), golden.toolsCalled()),
+                () -> assertEquals(List.of(new ToolCall("finalize")), golden.expectedTools()),
+                () -> assertEquals(Map.of("k", "v"), golden.additionalMetadata()),
+                () -> assertEquals(Map.of("col", "val"), golden.customColumnKeyValues()),
+                () -> assertEquals("src.txt", golden.sourceFile()));
+    }
+
+    @Test
     void saveAsCsvFileCanExcludeTestCases() throws IOException {
         var file = tempDir.resolve("goldens-only.csv");
         var dataset = new EvaluationDataset();

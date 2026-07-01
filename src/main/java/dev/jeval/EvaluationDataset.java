@@ -1008,6 +1008,15 @@ public final class EvaluationDataset {
                 return;
             }
             var headers = parseCsvLine(lines.getFirst());
+            var actualOutputKey = csvHeader(headers, actualOutputColName, "actual_output", "actualOutput");
+            var expectedOutputKey = csvHeader(headers, expectedOutputColName, "expected_output", "expectedOutput");
+            var retrievalContextKey = csvHeader(headers, retrievalContextColName, "retrieval_context", "retrievalContext");
+            var toolsCalledKey = csvHeader(headers, toolsCalledColName, "tools_called", "toolsCalled");
+            var expectedToolsKey = csvHeader(headers, expectedToolsColName, "expected_tools", "expectedTools");
+            var sourceFileKey = csvHeader(headers, sourceFileColName, "source_file", "sourceFile");
+            var additionalMetadataKey = csvHeader(headers, additionalMetadataColName, "additional_metadata", "metadata");
+            var customColumnKeyValuesKey = csvHeader(headers, customColumnKeyValuesColName,
+                    "custom_column_key_values", "customColumnKeyValues");
             for (var i = 1; i < lines.size(); i++) {
                 if (lines.get(i).isBlank()) {
                     continue;
@@ -1030,17 +1039,17 @@ public final class EvaluationDataset {
                     throw new IllegalArgumentException("Required fields are missing in one or more CSV rows");
                 }
                 addGolden(Golden.builder(row.get(inputColName))
-                        .actualOutput(nullIfBlank(row.get(actualOutputColName)))
-                        .expectedOutput(nullIfBlank(row.get(expectedOutputColName)))
-                        .retrievalContext(csvListOrNull(row.get(retrievalContextColName), retrievalContextDelimiter))
+                        .actualOutput(nullIfBlank(row.get(actualOutputKey)))
+                        .expectedOutput(nullIfBlank(row.get(expectedOutputKey)))
+                        .retrievalContext(csvListOrNull(row.get(retrievalContextKey), retrievalContextDelimiter))
                         .context(csvListOrNull(row.get(contextColName), contextDelimiter))
                         .name(nullIfBlank(row.get(nameColName)))
                         .comments(nullIfBlank(row.get(commentsColName)))
-                        .sourceFile(nullIfBlank(row.get(sourceFileColName)))
-                        .toolsCalled(toolListFromCsv(row.get(toolsCalledColName), "tools_called", toolsCalledDelimiter))
-                        .expectedTools(toolListFromCsv(row.get(expectedToolsColName), "expected_tools", expectedToolsDelimiter))
-                        .additionalMetadata(objectMapFromCsv(row.get(additionalMetadataColName), "additional_metadata"))
-                        .customColumnKeyValues(stringMapFromCsv(row.get(customColumnKeyValuesColName)))
+                        .sourceFile(nullIfBlank(row.get(sourceFileKey)))
+                        .toolsCalled(toolListFromCsv(row.get(toolsCalledKey), "tools_called", toolsCalledDelimiter))
+                        .expectedTools(toolListFromCsv(row.get(expectedToolsKey), "expected_tools", expectedToolsDelimiter))
+                        .additionalMetadata(objectMapFromCsv(row.get(additionalMetadataKey), "additional_metadata"))
+                        .customColumnKeyValues(stringMapFromCsv(row.get(customColumnKeyValuesKey)))
                         .build());
             }
         } catch (IOException error) {
