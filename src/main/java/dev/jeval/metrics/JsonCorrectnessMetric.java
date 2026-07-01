@@ -62,6 +62,9 @@ public final class JsonCorrectnessMetric implements Metric {
             boolean includeReason,
             boolean strictMode,
             double threshold) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Json Correctness threshold must be finite");
+        }
         this.model = model;
         this.expectedSchema = expectedSchema;
         this.includeReason = includeReason;

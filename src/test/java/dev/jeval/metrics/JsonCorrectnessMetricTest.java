@@ -131,6 +131,19 @@ class JsonCorrectnessMetricTest {
         assertTrue(result.success());
     }
 
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new JsonCorrectnessMetric(ExampleSchema.class, true, false, Double.NaN)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new JsonCorrectnessMetric(
+                                ExampleSchema.class,
+                                true,
+                                false,
+                                Double.POSITIVE_INFINITY)));
+    }
+
     private static final class ScriptedModel implements EvaluationModel {
         private final String response;
         private final List<String> prompts = new ArrayList<>();
