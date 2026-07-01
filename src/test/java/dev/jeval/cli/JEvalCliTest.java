@@ -2830,6 +2830,19 @@ class JEvalCliTest {
     }
 
     @Test
+    void setDeepSeekRequiresConfiguredModel() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-deepseek", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("DeepSeek model name is not set"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void openAiProviderPersistsTemperatureAndCostOverrides() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

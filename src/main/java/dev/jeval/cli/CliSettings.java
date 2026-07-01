@@ -201,6 +201,10 @@ final class CliSettings {
                     err.println("Moonshot model name is not set. Pass --model (or set MOONSHOT_MODEL_NAME).");
                     return 2;
                 }
+                if ("set-deepseek".equals(command) && !hasValue(savePath(args), updates, "DEEPSEEK_MODEL_NAME")) {
+                    err.println("DeepSeek model name is not set. Pass --model (or set DEEPSEEK_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
