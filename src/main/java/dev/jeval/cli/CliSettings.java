@@ -181,6 +181,10 @@ final class CliSettings {
                     err.println("OpenAI model name is not set. Pass --model (or set OPENAI_MODEL_NAME).");
                     return 2;
                 }
+                if ("set-azure-openai".equals(command) && !hasValue(savePath(args), updates, "AZURE_MODEL_NAME")) {
+                    err.println("Azure OpenAI model name is not set. Pass --model (or set AZURE_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-anthropic".equals(command) && !hasValue(savePath(args), updates, "ANTHROPIC_MODEL_NAME")) {
                     err.println("Anthropic model name is not set. Pass --model (or set ANTHROPIC_MODEL_NAME).");
                     return 2;
