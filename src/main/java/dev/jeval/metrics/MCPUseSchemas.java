@@ -15,8 +15,18 @@ public final class MCPUseSchemas {
     }
 
     public record MCPPrimitivesScore(double score, String reason) {
+        public MCPPrimitivesScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("MCPPrimitivesScore score must be finite");
+            }
+        }
     }
 
     public record MCPArgsScore(double score, String reason) {
+        public MCPArgsScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("MCPArgsScore score must be finite");
+            }
+        }
     }
 }

@@ -36,4 +36,16 @@ class MCPUseSchemasTest {
         assertThrows(IllegalArgumentException.class, () -> MCPUseSchemas.parseArgsScore("{\"score\":\"bad\",\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> MCPUseSchemas.parseArgsScore("{\"score\":0.5,\"reason\":1}"));
     }
+
+    @Test
+    void scoreRecordsRejectNonFiniteScores() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new MCPUseSchemas.MCPPrimitivesScore(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MCPUseSchemas.MCPPrimitivesScore(Double.POSITIVE_INFINITY, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MCPUseSchemas.MCPArgsScore(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MCPUseSchemas.MCPArgsScore(Double.POSITIVE_INFINITY, "bad"));
+    }
 }
