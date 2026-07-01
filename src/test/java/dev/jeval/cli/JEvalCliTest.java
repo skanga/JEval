@@ -167,6 +167,33 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunAcceptsShortEqualsFormForDeepEvalOptions() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "spec-name",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "smoke-good", "tags": ["smoke"], "input": "q", "actualOutput": "a", "expectedOutput": "a"},
+                    {"name": "regression-bad", "tags": ["regression"], "input": "q", "actualOutput": "a", "expectedOutput": "b"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "test", "run", file.toString(),
+                "-id=short-equals", "-r=2", "-d=passing", "-m=smoke"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("short-equals"));
+        assertTrue(text(out).contains("Summary: total=2 passed=2 failed=0"));
+        assertEquals(false, text(out).contains("regression-bad"));
+    }
+
+    @Test
     void testRunWritesDeepEvalLatestTestRunData() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

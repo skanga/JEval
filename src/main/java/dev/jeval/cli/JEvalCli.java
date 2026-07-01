@@ -231,16 +231,16 @@ public final class JEvalCli {
                     case "--output" -> output = Path.of(value);
                     case "--results-folder" -> resultsFolder = value;
                     case "--results-subfolder" -> resultsSubfolder = value;
-                    case "--identifier" -> identifier = value;
-                    case "--repeat" -> {
+                    case "-id", "--identifier" -> identifier = value;
+                    case "-r", "--repeat" -> {
                         repeat = Integer.parseInt(value);
                         if (repeat < 1) {
                             err.println("The repeat argument must be at least 1.");
                             return null;
                         }
                     }
-                    case "--display" -> display = value.toLowerCase(Locale.ROOT);
-                    case "--mark" -> mark = value;
+                    case "-d", "--display" -> display = value.toLowerCase(Locale.ROOT);
+                    case "-m", "--mark" -> mark = value;
                     case "--color", "--durations", "--num-processes" -> {
                     }
                     default -> {
