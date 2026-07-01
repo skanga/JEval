@@ -31,5 +31,7 @@ class GEvalSchemasTest {
         assertThrows(IllegalArgumentException.class, () -> GEvalSchemas.parseReasonScore("{\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> GEvalSchemas.parseReasonScore("{\"reason\":1,\"score\":8}"));
         assertThrows(IllegalArgumentException.class, () -> GEvalSchemas.parseReasonScore("{\"reason\":\"ok\",\"score\":\"bad\"}"));
+        assertThrows(IllegalArgumentException.class, () -> GEvalSchemas.parseReasonScore("{\"reason\":\"ok\",\"score\":\"NaN\"}"));
+        assertThrows(IllegalArgumentException.class, () -> GEvalSchemas.parseReasonScore("{\"reason\":\"ok\",\"score\":\"Infinity\"}"));
     }
 }
