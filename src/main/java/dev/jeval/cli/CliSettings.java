@@ -2,6 +2,8 @@ package dev.jeval.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -535,6 +537,9 @@ final class CliSettings {
         if (positiveCostSettingKey(normalized)) {
             validateDoubleRange(normalized, value, Double.MIN_VALUE, Double.POSITIVE_INFINITY);
         }
+        if (urlSettingKey(normalized)) {
+            validateUrl(normalized, value);
+        }
         if (normalized.equals("DEEPEVAL_RETRY_MAX_ATTEMPTS")) {
             validateIntegerMin(normalized, value, 1);
         }
@@ -605,6 +610,17 @@ final class CliSettings {
         }
     }
 
+    private static void validateUrl(String key, String value) {
+        try {
+            var uri = new URI(value);
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                throw new URISyntaxException(value, "Missing scheme or host");
+            }
+        } catch (URISyntaxException error) {
+            throw new IllegalArgumentException("Invalid value for " + key + ": " + value);
+        }
+    }
+
     private static boolean knownSettingKey(String key) {
         return KNOWN_SETTING_KEYS.contains(normalizeSettingKey(key)) || KNOWN_SETTING_KEYS.contains(settingKey(key));
     }
@@ -634,6 +650,18 @@ final class CliSettings {
                         "TOKENIZERS_PARALLELISM",
                         "TRANSFORMERS_NO_ADVISORY_WARNINGS")
                         .contains(key);
+    }
+
+    private static boolean urlSettingKey(String key) {
+        return List.of(
+                "AZURE_OPENAI_ENDPOINT",
+                "LITELLM_API_BASE",
+                "LITELLM_PROXY_API_BASE",
+                "LOCAL_EMBEDDING_BASE_URL",
+                "LOCAL_MODEL_BASE_URL",
+                "OPENROUTER_BASE_URL",
+                "PORTKEY_BASE_URL")
+                .contains(key);
     }
 
     private static boolean positiveCostSettingKey(String key) {

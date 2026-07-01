@@ -3124,6 +3124,29 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsValidatesProviderUrlsLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "litellm-api-base=https://litellm.example/v1", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "LITELLM_API_BASE", "https://litellm.example/v1");
+
+        out.reset();
+        err.reset();
+        exit = run(new String[] {
+                "settings", "--set", "openrouter-base-url=not a url", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for OPENROUTER_BASE_URL: not a url"));
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
