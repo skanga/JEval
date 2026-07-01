@@ -110,6 +110,15 @@ class TextToImageMetricTest {
                                 .measure(testCase)));
     }
 
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TextToImageMetric(Double.NaN, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TextToImageMetric(Double.POSITIVE_INFINITY, false)));
+    }
+
     private static final class StubTextToImageMetric extends TextToImageMetric {
         private final List<Double> semanticScores;
         private final String semanticReasoning;

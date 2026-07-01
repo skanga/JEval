@@ -35,6 +35,9 @@ public class TextToImageMetric implements Metric {
     }
 
     public TextToImageMetric(EvaluationModel model, double threshold, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Text to Image threshold must be finite");
+        }
         this.threshold = strictMode ? 1.0 : threshold;
         this.strictMode = strictMode;
         this.model = model;

@@ -117,6 +117,15 @@ class ImageEditingMetricTest {
                                 .measure(testCase)));
     }
 
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ImageEditingMetric(Double.NaN, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ImageEditingMetric(Double.POSITIVE_INFINITY, false)));
+    }
+
     private static final class StubImageEditingMetric extends ImageEditingMetric {
         private final List<Double> semanticScores;
         private final String semanticReasoning;

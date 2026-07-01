@@ -35,6 +35,9 @@ public class ImageEditingMetric implements Metric {
     }
 
     public ImageEditingMetric(EvaluationModel model, double threshold, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Image Editing threshold must be finite");
+        }
         this.threshold = strictMode ? 1.0 : threshold;
         this.strictMode = strictMode;
         this.model = model;

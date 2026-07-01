@@ -36,6 +36,9 @@ public class ImageReferenceMetric implements Metric {
     }
 
     public ImageReferenceMetric(EvaluationModel model, double threshold, boolean strictMode, Integer maxContextSize) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Image Reference threshold must be finite");
+        }
         this.threshold = strictMode ? 1.0 : threshold;
         this.strictMode = strictMode;
         this.maxContextSize = maxContextSize;

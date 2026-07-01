@@ -84,6 +84,19 @@ class ImageReferenceMetricTest {
         assertThrows(IllegalArgumentException.class, () -> metric.measure(testCase));
     }
 
+    @Test
+    void constructorsRejectNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ImageReferenceMetric(Double.NaN, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ImageReferenceMetric(Double.POSITIVE_INFINITY, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ImageHelpfulnessMetric(Double.NaN, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ImageCoherenceMetric(Double.NaN, false)));
+    }
+
     private static final class StubImageReferenceMetric extends ImageReferenceMetric {
         private final List<Double> scores;
         private final List<String> reasons;
