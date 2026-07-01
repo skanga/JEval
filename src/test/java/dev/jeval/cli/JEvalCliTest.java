@@ -3441,6 +3441,32 @@ class JEvalCliTest {
     }
 
     @Test
+    void setLocalEmbeddingsRequiresConfiguredModel() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-local-embeddings", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Local embedding model name is not set"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
+    void setOllamaEmbeddingsRequiresConfiguredModel() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-ollama-embeddings", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Local embedding model name is not set"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void geminiProviderSetsVertexFlagForProjectOrLocation() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

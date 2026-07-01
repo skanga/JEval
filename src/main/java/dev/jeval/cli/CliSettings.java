@@ -234,6 +234,11 @@ final class CliSettings {
                     err.println("Azure OpenAI embedding model name is not set. Pass --model (or set AZURE_EMBEDDING_MODEL_NAME).");
                     return 2;
                 }
+                if (("set-local-embeddings".equals(command) || "set-ollama-embeddings".equals(command))
+                        && !hasValue(savePath(args), updates, "LOCAL_EMBEDDING_MODEL_NAME")) {
+                    err.println("Local embedding model name is not set. Pass --model (or set LOCAL_EMBEDDING_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
