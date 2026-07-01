@@ -447,7 +447,21 @@ public final class TestRunner {
     }
 
     private static Double doubleOrNull(JsonNode node, String key) {
-        return node.has(key) && !node.get(key).isNull() ? node.get(key).asDouble() : null;
+        if (!node.has(key) || node.get(key).isNull()) {
+            return null;
+        }
+        var value = node.get(key);
+        if (value.isNumber()) {
+            return value.asDouble();
+        }
+        if (value.isTextual()) {
+            try {
+                return Double.parseDouble(value.asText());
+            } catch (NumberFormatException error) {
+                throw new IllegalArgumentException("Invalid value for " + key + ": " + value.asText(), error);
+            }
+        }
+        throw new IllegalArgumentException("Invalid value for " + key + ": " + value);
     }
 
     private static List<String> textList(JsonNode node, String key) {
