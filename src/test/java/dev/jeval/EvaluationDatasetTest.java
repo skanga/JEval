@@ -335,6 +335,27 @@ class EvaluationDatasetTest {
     }
 
     @Test
+    void datasetGeneratesGoldensFromContextsWithChunkSourceFiles() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"How do policy and FAQ connect?\"}]}")));
+        List<Object> sourceFiles = List.of(List.of("policy.md", "faq.md"));
+
+        dataset.generateGoldensFromContexts(
+                List.of(List.of("Policy text", "FAQ text")),
+                false,
+                1,
+                sourceFiles,
+                List.of(List.of("policy.md", "faq.md")),
+                null,
+                synthesizer);
+
+        assertEquals("How do policy and FAQ connect?", dataset.goldens().getFirst().input());
+        assertEquals(List.of("policy.md", "faq.md"),
+                dataset.goldens().getFirst().additionalMetadata().get("context_source_files"));
+    }
+
+    @Test
     void datasetGeneratesGoldensFromContextsWithSourceFilesAsync() {
         var dataset = new EvaluationDataset();
         var synthesizer = synthesizer(new ScriptedModel(List.of(
