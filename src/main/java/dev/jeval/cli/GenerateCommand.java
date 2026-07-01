@@ -628,8 +628,7 @@ final class GenerateCommand {
         if (next.matches("-\\d+(?:\\.\\d+)?")) {
             return false;
         }
-        var name = next.contains("=") ? next.substring(0, next.indexOf('=')) : next;
-        return valued.contains(name) || flags.contains(name) || next.startsWith("--");
+        return true;
     }
 
     private static boolean has(String[] args, String name) {
