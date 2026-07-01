@@ -197,6 +197,29 @@ class SynthesizerTest {
     }
 
     @Test
+    void generatesGoldensWithSeparateChunkSourceFilesLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"How do policy and FAQ connect?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        List<Object> sourceFiles = List.of(List.of("policy.md", "faq.md"));
+
+        var goldens = synthesizer.generateGoldensFromContexts(
+                List.of(List.of("Policy text", "FAQ text")),
+                false,
+                1,
+                sourceFiles,
+                List.of(List.of("policy.md", "faq.md")),
+                null);
+
+        assertEquals(List.of("policy.md", "faq.md"),
+                goldens.getFirst().additionalMetadata().get("context_source_files"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: policy.md] Policy text"));
+        assertTrue(model.prompts().getFirst().contains("[SOURCE: faq.md] FAQ text"));
+        assertTrue(model.prompts().getFirst().contains("used_source_files"));
+    }
+
+    @Test
     void keepsSingleFileContextChunksUnlabeledLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What does the document say?\"}]}"));

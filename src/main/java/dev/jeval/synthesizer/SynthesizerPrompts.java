@@ -30,6 +30,22 @@ final class SynthesizerPrompts {
             boolean includeExpectedOutput,
             List<String> availableSourceFiles,
             Integer targetFilesPerContext) {
+        return generateSyntheticInputs(
+                context,
+                maxGoldensPerContext,
+                includeExpectedOutput,
+                availableSourceFiles,
+                availableSourceFiles,
+                targetFilesPerContext);
+    }
+
+    static String generateSyntheticInputs(
+            List<String> context,
+            int maxGoldensPerContext,
+            boolean includeExpectedOutput,
+            List<String> availableSourceFiles,
+            List<String> chunkSourceFiles,
+            Integer targetFilesPerContext) {
         var shape = includeExpectedOutput
                 ? "{\"data\":[{\"input\":\"...\",\"expected_output\":\"...\"}]}"
                 : "{\"data\":[{\"input\":\"...\"}]}";
@@ -45,7 +61,7 @@ final class SynthesizerPrompts {
                 maxGoldensPerContext,
                 shape,
                 sourceFilesSection,
-                String.join("\n", formatContextWithSources(context, availableSourceFiles)));
+                String.join("\n", formatContextWithSources(context, chunkSourceFiles)));
     }
 
     static String generateSyntheticInputsFromScratch(String scenario, String task, String inputFormat, int numGoldens) {

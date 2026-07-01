@@ -188,7 +188,7 @@ public final class Synthesizer {
             ContextConstructionConfig contextConstructionConfig) throws IOException {
         validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var documentContexts = documentContexts(documentPaths, config(contextConstructionConfig));
-        return generateGoldensFromContexts(
+        return generateGoldensFromContextsWithScores(
                 documentContexts.contexts(),
                 includeExpectedOutput,
                 maxGoldensPerContext,
@@ -206,48 +206,86 @@ public final class Synthesizer {
                 contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, stylingConfig);
     }
 
+    public List<Golden> generateGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
+            Integer targetFilesPerContext) {
+        return generateGoldensFromContexts(
+                contexts,
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                sourceFiles,
+                contextChunkSourceFiles,
+                null,
+                targetFilesPerContext,
+                stylingConfig);
+    }
+
     private List<Golden> generateGoldensFromContexts(
             List<List<String>> contexts,
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             List<?> sourceFiles,
             StylingConfig activeStylingConfig) {
-        validateContexts(contexts);
-        validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
-        var goldens = new ArrayList<Golden>();
-        for (var batch : generateContextBatches(contexts.size(),
-                index -> generateGoldensForContext(
-                        index, contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, null, null,
-                        activeStylingConfig))) {
-            goldens.addAll(batch);
-        }
-        return retainGoldens(goldens);
+        return generateGoldensFromContexts(
+                contexts,
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                sourceFiles,
+                null,
+                null,
+                null,
+                activeStylingConfig);
     }
 
-    private List<Golden> generateGoldensFromContexts(
+    private List<Golden> generateGoldensFromContextsWithScores(
             List<List<String>> contexts,
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             List<?> sourceFiles,
             List<Double> contextScores) {
-        return generateGoldensFromContexts(
+        return generateGoldensFromContextsWithScores(
                 contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles, contextScores, null);
     }
 
-    private List<Golden> generateGoldensFromContexts(
+    private List<Golden> generateGoldensFromContextsWithScores(
             List<List<String>> contexts,
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             List<?> sourceFiles,
             List<Double> contextScores,
             Integer targetFilesPerContext) {
+        return generateGoldensFromContexts(
+                contexts,
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                sourceFiles,
+                null,
+                contextScores,
+                targetFilesPerContext,
+                stylingConfig);
+    }
+
+    private List<Golden> generateGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
+            List<Double> contextScores,
+            Integer targetFilesPerContext,
+            StylingConfig activeStylingConfig) {
         validateContexts(contexts);
         validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateGoldensForContext(
                         index, contexts, includeExpectedOutput, maxGoldensPerContext,
-                        sourceFiles, contextScores, targetFilesPerContext, stylingConfig))) {
+                        sourceFiles, contextChunkSourceFiles, contextScores, targetFilesPerContext,
+                        activeStylingConfig))) {
             goldens.addAll(batch);
         }
         return retainGoldens(goldens);
@@ -259,12 +297,14 @@ public final class Synthesizer {
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
             List<Double> contextScores,
             Integer targetFilesPerContext,
             StylingConfig activeStylingConfig) {
         var goldens = new ArrayList<Golden>();
         var context = List.copyOf(contexts.get(contextIndex));
         var contextSourceFiles = contextSourceFiles(sourceFiles, contextIndex);
+        var chunkSourceFiles = contextChunkSourceFiles(contextChunkSourceFiles, contextIndex, contextSourceFiles);
         var sourceFile = contextSourceFiles.isEmpty() ? null : contextSourceFiles.getFirst();
         var contextQuality = contextScores != null && contextIndex < contextScores.size()
                 ? contextScores.get(contextIndex)
@@ -275,6 +315,7 @@ public final class Synthesizer {
                         maxGoldensPerContext,
                         includeExpectedOutput,
                         contextSourceFiles,
+                        chunkSourceFiles,
                         targetFilesPerContext)));
         var qualifiedData = rewriteInputs(context, data);
         for (var item : qualifiedData.stream().limit(maxGoldensPerContext).toList()) {
@@ -847,6 +888,17 @@ public final class Synthesizer {
                     .toList();
         }
         return List.of();
+    }
+
+    private static List<String> contextChunkSourceFiles(
+            List<List<String>> contextChunkSourceFiles,
+            int contextIndex,
+            List<String> defaultSourceFiles) {
+        if (contextChunkSourceFiles == null || contextIndex >= contextChunkSourceFiles.size()) {
+            return defaultSourceFiles;
+        }
+        var sourceFiles = contextChunkSourceFiles.get(contextIndex);
+        return sourceFiles == null ? List.of() : sourceFiles;
     }
 
     private static void addDocumentContexts(
