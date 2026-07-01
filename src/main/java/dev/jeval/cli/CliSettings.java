@@ -537,6 +537,9 @@ final class CliSettings {
         if (normalized.equals("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE")) {
             validateDoubleRange(normalized, value, 0.0, Double.POSITIVE_INFINITY);
         }
+        if (normalized.equals("DEEPEVAL_TASK_GATHER_BUFFER_SECONDS_OVERRIDE")) {
+            validateDoubleRange(normalized, value, 0.0, Double.POSITIVE_INFINITY);
+        }
         return value;
     }
 
