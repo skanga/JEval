@@ -87,6 +87,19 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void metricScoreRecordsRejectMissingMetricNames() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScoreType(null, 0.5)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScoreType(" ", 0.5)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScores(null, List.of(), 0, 0, 0)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScores(" ", List.of(), 0, 0, 0)));
+    }
+
+    @Test
     void metricScoresRejectsNonFiniteScoreValues() {
         assertAll(
                 () -> assertThrows(IllegalArgumentException.class,
