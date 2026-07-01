@@ -3153,6 +3153,25 @@ class JEvalCliTest {
     }
 
     @Test
+    void setDebugPersistsCriticalAndNotsetLogLevelsLikePythonLogging() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "set-debug",
+                "--log-level", "CRITICAL",
+                "--retry-before-level", "NOTSET",
+                "--save", "dotenv:" + env,
+                "--quiet"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "LOG_LEVEL", "50");
+        assertDotenv(env, "DEEPEVAL_RETRY_BEFORE_LOG_LEVEL", "0");
+    }
+
+    @Test
     void setDebugRejectsUnknownOptionsLikeDeepEvalTyper() {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

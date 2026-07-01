@@ -527,6 +527,8 @@ final class CliSettings {
             case "INFO" -> "20";
             case "WARNING", "WARN" -> "30";
             case "ERROR" -> "40";
+            case "CRITICAL" -> "50";
+            case "NOTSET" -> "0";
             default -> value;
         };
     }
