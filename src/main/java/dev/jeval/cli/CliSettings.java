@@ -193,6 +193,10 @@ final class CliSettings {
                     err.println("Gemini model name is not set. Pass --model (or set GEMINI_MODEL_NAME).");
                     return 2;
                 }
+                if ("set-grok".equals(command) && !hasValue(savePath(args), updates, "GROK_MODEL_NAME")) {
+                    err.println("Grok model name is not set. Pass --model (or set GROK_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
