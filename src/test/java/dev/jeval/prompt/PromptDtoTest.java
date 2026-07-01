@@ -150,4 +150,25 @@ class PromptDtoTest {
         assertEquals("prompt-1", prompt.id());
         assertEquals(PromptType.TEXT, prompt.type());
     }
+
+    @Test
+    void promptResponseRecordsRejectMissingFields() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptVersion(null, "v1")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptVersion("version-1", " ")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptCommit(null, "abc123", "Initial prompt")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptCommit("commit-1", " ", "Initial prompt")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptBranch(null, "main")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptBranch("branch-1", " ")),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptApi(null, PromptType.TEXT)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptApi("prompt-1", null)));
+    }
 }
