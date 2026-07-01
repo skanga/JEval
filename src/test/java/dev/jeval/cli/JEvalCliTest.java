@@ -2685,6 +2685,28 @@ class JEvalCliTest {
     }
 
     @Test
+    void unsetProviderAcceptsClearSecretsShortAlias() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "settings", "-u", "openai-api-key=sk-test", "--save", "dotenv:" + env
+        }, out, err), text(err));
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err), text(err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-openai", "-x", "--save", "dotenv:" + env}, out, err),
+                text(err));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_API_KEY"));
+    }
+
+    @Test
     void providerUnsetClearSecretsRemovesProviderSecrets() throws Exception {
         assertProviderSecretClearing(
                 "anthropic-api-key",

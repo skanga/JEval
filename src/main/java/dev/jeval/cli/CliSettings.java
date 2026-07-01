@@ -153,7 +153,7 @@ final class CliSettings {
             removals.addAll(spec.unsetKeys());
             if (command.startsWith("unset-")) {
                 removals.add(spec.useKey());
-                if (has(args, "--clear-secrets")) {
+                if (has(args, "--clear-secrets") || has(args, "-x")) {
                     removals.addAll(spec.secretKeys());
                 }
             } else {
