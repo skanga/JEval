@@ -14,6 +14,15 @@ public final class Tool {
     }
 
     public Tool(String id, String name, String description, ToolMode mode, OutputSchema structuredSchema) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("Tool id is required");
+        }
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Tool name is required");
+        }
+        if (mode == null) {
+            throw new IllegalArgumentException("Tool mode is required");
+        }
         this.id = id;
         this.name = name;
         this.description = description;

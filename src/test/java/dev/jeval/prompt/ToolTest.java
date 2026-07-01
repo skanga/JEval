@@ -1,7 +1,9 @@
 package dev.jeval.prompt;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -30,5 +32,20 @@ class ToolTest {
 
         assertFalse(tool.id().isBlank());
         assertEquals("search", tool.name());
+    }
+
+    @Test
+    void rejectsMissingRequiredFields() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new Tool(null, "search", "Search documents", ToolMode.STRICT, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new Tool(" ", "search", "Search documents", ToolMode.STRICT, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new Tool("tool-1", null, "Search documents", ToolMode.STRICT, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new Tool("tool-1", " ", "Search documents", ToolMode.STRICT, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new Tool("tool-1", "search", "Search documents", null, null)));
     }
 }
