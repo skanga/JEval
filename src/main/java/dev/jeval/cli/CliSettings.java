@@ -217,6 +217,10 @@ final class CliSettings {
                     err.println("OpenRouter model name is not set. Pass --model (or set OPENROUTER_MODEL_NAME).");
                     return 2;
                 }
+                if ("set-ollama".equals(command) && !hasValue(savePath(args), updates, "OLLAMA_MODEL_NAME")) {
+                    err.println("Ollama model name is not set. Pass --model (or set OLLAMA_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
