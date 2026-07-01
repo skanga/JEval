@@ -204,6 +204,14 @@ final class CliSettings {
             if (!arg.contains("=") && valued.contains(name) && missingValue(args, i)) {
                 return "Missing value for " + name;
             }
+            if ("--trace-sample-rate".equals(name)) {
+                var value = arg.contains("=") ? arg.substring(arg.indexOf('=') + 1) : args[i + 1];
+                try {
+                    Double.parseDouble(value);
+                } catch (NumberFormatException error) {
+                    return "Invalid value for " + name + ": " + value;
+                }
+            }
         }
         return null;
     }

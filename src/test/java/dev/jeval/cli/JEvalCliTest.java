@@ -3177,6 +3177,20 @@ class JEvalCliTest {
     }
 
     @Test
+    void setDebugRejectsInvalidTraceSampleRateLikeDeepEvalTyper() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-debug", "--trace-sample-rate", "often", "--save", "dotenv:" + env},
+                out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for --trace-sample-rate: often"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void unsetDebugRemovesDebugSettingsFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
