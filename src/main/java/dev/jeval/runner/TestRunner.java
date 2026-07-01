@@ -453,13 +453,13 @@ public final class TestRunner {
                 .comments(text(node, "comments"))
                 .tokenCost(doubleOrNull(node, "token_cost", "tokenCost"))
                 .completionTime(doubleOrNull(node, "completion_time", "completionTime"))
-                .customColumnKeyValues(stringMap(node, "custom_column_key_values"))
-                .toolsCalled(toolCalls(node, "tools_called"))
-                .expectedTools(toolCalls(node, "expected_tools"))
-                .mcpServers(objectList(node, "mcp_servers"))
-                .mcpToolsCalled(objectList(node, "mcp_tools_called"))
-                .mcpResourcesCalled(objectList(node, "mcp_resources_called"))
-                .mcpPromptsCalled(objectList(node, "mcp_prompts_called"))
+                .customColumnKeyValues(stringMap(node, "custom_column_key_values", "customColumnKeyValues"))
+                .toolsCalled(toolCalls(node, "tools_called", "toolsCalled"))
+                .expectedTools(toolCalls(node, "expected_tools", "expectedTools"))
+                .mcpServers(objectList(node, "mcp_servers", "mcpServers"))
+                .mcpToolsCalled(objectList(node, "mcp_tools_called", "mcpToolsCalled"))
+                .mcpResourcesCalled(objectList(node, "mcp_resources_called", "mcpResourcesCalled"))
+                .mcpPromptsCalled(objectList(node, "mcp_prompts_called", "mcpPromptsCalled"))
                 .trace(objectMap(node, "trace"))
                 .name(text(node, "name"))
                 .tags(textList(node, "tags"))
@@ -526,8 +526,16 @@ public final class TestRunner {
         return convertOrNull(node, key, new TypeReference<>() {});
     }
 
+    private static List<ToolCall> toolCalls(JsonNode node, String key, String alias) {
+        return toolCalls(node, node.has(key) ? key : alias);
+    }
+
     private static List<Map<String, Object>> objectList(JsonNode node, String key) {
         return convertOrNull(node, key, new TypeReference<>() {});
+    }
+
+    private static List<Map<String, Object>> objectList(JsonNode node, String key, String alias) {
+        return objectList(node, node.has(key) ? key : alias);
     }
 
     private static Map<String, Object> objectMap(JsonNode node, String key) {
@@ -536,6 +544,10 @@ public final class TestRunner {
 
     private static Map<String, String> stringMap(JsonNode node, String key) {
         return convertOrNull(node, key, new TypeReference<>() {});
+    }
+
+    private static Map<String, String> stringMap(JsonNode node, String key, String alias) {
+        return stringMap(node, node.has(key) ? key : alias);
     }
 
     private static <T> T convertOrNull(JsonNode node, String key, TypeReference<T> type) {

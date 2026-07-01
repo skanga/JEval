@@ -176,6 +176,33 @@ class TestRunnerTest {
     }
 
     @Test
+    void jsonlDatasetAcceptsCamelCaseComplexAliasesLikeInlineCases() throws Exception {
+        var dataset = tempDir.resolve("cases.jsonl");
+        Files.writeString(dataset, """
+                {"input":"q","actualOutput":"yes","expectedOutput":"yes","customColumnKeyValues":{"risk":"high"},"toolsCalled":[{"name":"Search"}],"expectedTools":[{"name":"Search"}],"mcpServers":[{"server_name":"policy"}],"mcpToolsCalled":[{"name":"mcp-search"}],"mcpResourcesCalled":[{"uri":"file://policy"}],"mcpPromptsCalled":[{"name":"policy-prompt"}]}
+                """);
+        var spec = tempDir.resolve("eval.json");
+        Files.writeString(spec, """
+                {
+                  "name": "jsonl-run",
+                  "dataset": "cases.jsonl",
+                  "metrics": [{"type": "exact_match"}]
+                }
+                """);
+
+        var result = assertDoesNotThrow(() -> new TestRunner().run(spec));
+        var testCase = result.results().getFirst();
+
+        assertEquals(java.util.Map.of("risk", "high"), testCase.customColumnKeyValues());
+        assertEquals("Search", testCase.toolsCalled().getFirst().name());
+        assertEquals("Search", testCase.expectedTools().getFirst().name());
+        assertEquals(List.of(java.util.Map.of("server_name", "policy")), testCase.mcpServers());
+        assertEquals(List.of(java.util.Map.of("name", "mcp-search")), testCase.mcpToolsCalled());
+        assertEquals(List.of(java.util.Map.of("uri", "file://policy")), testCase.mcpResourcesCalled());
+        assertEquals(List.of(java.util.Map.of("name", "policy-prompt")), testCase.mcpPromptsCalled());
+    }
+
+    @Test
     void jsonlDatasetRejectsInvalidNumericFieldsLikeDeepEval() throws Exception {
         var dataset = tempDir.resolve("cases.jsonl");
         Files.writeString(dataset, """
