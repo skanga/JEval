@@ -474,4 +474,20 @@ class LangChain4jProviderModelsTest {
         assertEquals("No supported provider is configured; run set-openai, set-azure-openai, set-bedrock, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-portkey, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.",
                 error.getMessage());
     }
+
+    @Test
+    void rejectsNonFiniteProviderDoubleSettingsLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_OPENAI_MODEL=YES
+                OPENAI_API_KEY=sk-test
+                OPENAI_MODEL_NAME=gpt-4.1
+                TEMPERATURE=NaN
+                """);
+
+        var error = assertThrows(IllegalArgumentException.class,
+                () -> LangChain4jProviderModels.from(new DotenvFile(env)));
+
+        assertEquals("Invalid value for TEMPERATURE: NaN", error.getMessage());
+    }
 }

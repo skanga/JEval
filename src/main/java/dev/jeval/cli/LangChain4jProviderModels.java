@@ -271,7 +271,11 @@ final class LangChain4jProviderModels {
         var value = value(config, key, null);
         if (value != null) {
             try {
-                set.accept(Double.parseDouble(value));
+                var parsed = Double.parseDouble(value);
+                if (!Double.isFinite(parsed)) {
+                    throw new NumberFormatException();
+                }
+                set.accept(parsed);
             } catch (NumberFormatException error) {
                 throw new IllegalArgumentException("Invalid value for " + key + ": " + value, error);
             }
