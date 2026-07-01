@@ -50,6 +50,9 @@ public class TopicAdherenceMetric implements ConversationalMetric {
             double threshold,
             boolean includeReason,
             boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("TopicAdherence threshold must be finite");
+        }
         this.relevantTopics = List.copyOf(relevantTopics);
         this.model = model;
         this.includeReason = includeReason;

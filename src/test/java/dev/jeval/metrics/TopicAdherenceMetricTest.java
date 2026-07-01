@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.ConversationalTestCase;
@@ -100,6 +101,15 @@ class TopicAdherenceMetricTest {
                 () -> assertEquals(0.0, result.score()),
                 () -> assertFalse(result.success()),
                 () -> assertEquals(1.0, result.threshold()));
+    }
+
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TopicAdherenceMetric(List.of("nutrition"), Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TopicAdherenceMetric(List.of("nutrition"), Double.POSITIVE_INFINITY, true, false)));
     }
 
     @Test
