@@ -205,6 +205,10 @@ final class CliSettings {
                     err.println("DeepSeek model name is not set. Pass --model (or set DEEPSEEK_MODEL_NAME).");
                     return 2;
                 }
+                if ("set-litellm".equals(command) && !hasValue(savePath(args), updates, "LITELLM_MODEL_NAME")) {
+                    err.println("LiteLLM model name is not set. Pass --model (or set LITELLM_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
