@@ -3099,6 +3099,31 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsRejectsInvalidPositiveCostValuesLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "anthropic-cost-per-input-token=0", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for ANTHROPIC_COST_PER_INPUT_TOKEN: 0"));
+        assertEquals(false, Files.exists(env));
+
+        out.reset();
+        err.reset();
+        exit = run(new String[] {
+                "settings", "--set", "aws-bedrock-cost-per-output-token=-0.1", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for AWS_BEDROCK_COST_PER_OUTPUT_TOKEN: -0.1"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

@@ -532,6 +532,9 @@ final class CliSettings {
         if (displayLengthSettingKey(normalized)) {
             validateInteger(normalized, value);
         }
+        if (positiveCostSettingKey(normalized)) {
+            validateDoubleRange(normalized, value, Double.MIN_VALUE, Double.POSITIVE_INFINITY);
+        }
         if (normalized.equals("DEEPEVAL_RETRY_MAX_ATTEMPTS")) {
             validateIntegerMin(normalized, value, 1);
         }
@@ -631,6 +634,15 @@ final class CliSettings {
                         "TOKENIZERS_PARALLELISM",
                         "TRANSFORMERS_NO_ADVISORY_WARNINGS")
                         .contains(key);
+    }
+
+    private static boolean positiveCostSettingKey(String key) {
+        return List.of(
+                "ANTHROPIC_COST_PER_INPUT_TOKEN",
+                "ANTHROPIC_COST_PER_OUTPUT_TOKEN",
+                "AWS_BEDROCK_COST_PER_INPUT_TOKEN",
+                "AWS_BEDROCK_COST_PER_OUTPUT_TOKEN")
+                .contains(key);
     }
 
     private static boolean displayLengthSettingKey(String key) {
