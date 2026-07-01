@@ -761,6 +761,31 @@ class SynthesizerTest {
     }
 
     @Test
+    void rejectsNonPositiveGenerationCountsLikeDeepEval() {
+        var synthesizer = new Synthesizer(
+                new ScriptedModel(List.of(
+                        "{\"data\":[{\"input\":\"unused\"}]}",
+                        "{\"input\":\"unused\"}")),
+                new StylingConfig("students learning geography", "ask study questions", "one question", null),
+                new ConversationalStylingConfig("travel support", "book flights", "traveler and agent", null),
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                SynthesizerOptions.DEFAULT);
+
+        var scratchError = assertThrows(IllegalArgumentException.class,
+                () -> synthesizer.generateGoldensFromScratch(0));
+        assertEquals("num_goldens must be at least 1", scratchError.getMessage());
+
+        var contextError = assertThrows(IllegalArgumentException.class,
+                () -> synthesizer.generateGoldensFromContexts(List.of(List.of("context")), false, 0, null));
+        assertEquals("max_goldens_per_context must be at least 1", contextError.getMessage());
+
+        var conversationalError = assertThrows(IllegalArgumentException.class,
+                () -> synthesizer.generateConversationalGoldensFromScratch(0));
+        assertEquals("num_goldens must be at least 1", conversationalError.getMessage());
+    }
+
+    @Test
     void rewritesEvolvedInputsToStylingFormatLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"raw question\"}]}",

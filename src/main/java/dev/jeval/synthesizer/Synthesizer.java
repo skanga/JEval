@@ -133,6 +133,7 @@ public final class Synthesizer {
             List<String> context,
             boolean includeExpectedOutput,
             int maxGoldensPerContext) {
+        validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var data = SynthesizerSchemas.parseSyntheticData(
                 model.generate(SynthesizerPrompts.generateTextToSqlInputs(context, maxGoldensPerContext)));
         var goldens = new ArrayList<Golden>();
@@ -185,6 +186,7 @@ public final class Synthesizer {
             boolean includeExpectedOutput,
             int maxGoldensPerContext,
             ContextConstructionConfig contextConstructionConfig) throws IOException {
+        validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var documentContexts = documentContexts(documentPaths, config(contextConstructionConfig));
         return generateGoldensFromContexts(
                 documentContexts.contexts(),
@@ -210,6 +212,7 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<?> sourceFiles,
             StylingConfig activeStylingConfig) {
+        validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateGoldensForContext(
@@ -237,6 +240,7 @@ public final class Synthesizer {
             List<?> sourceFiles,
             List<Double> contextScores,
             Integer targetFilesPerContext) {
+        validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<Golden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateGoldensForContext(
@@ -292,6 +296,7 @@ public final class Synthesizer {
     }
 
     private List<Golden> generateGoldensFromScratch(int numGoldens, StylingConfig activeStylingConfig) {
+        validateGenerationCount("num_goldens", numGoldens);
         var data = SynthesizerSchemas.parseSyntheticData(model.generate(
                 SynthesizerPrompts.generateSyntheticInputsFromScratch(
                         activeStylingConfig.scenario(), activeStylingConfig.task(),
@@ -310,6 +315,7 @@ public final class Synthesizer {
             List<Golden> goldens,
             int maxGoldensPerGolden,
             boolean includeExpectedOutput) {
+        validateGenerationCount("max_goldens_per_golden", maxGoldensPerGolden);
         var contexts = new ArrayList<List<String>>();
         var sourceFiles = new ArrayList<String>();
         var inputs = new ArrayList<String>();
@@ -360,6 +366,7 @@ public final class Synthesizer {
             int maxGoldensPerContext,
             List<?> sourceFiles,
             ConversationalStylingConfig activeStylingConfig) {
+        validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
@@ -415,6 +422,7 @@ public final class Synthesizer {
             boolean includeExpectedOutcome,
             int maxGoldensPerContext,
             ContextConstructionConfig contextConstructionConfig) throws IOException {
+        validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var documentContexts = documentContexts(documentPaths, config(contextConstructionConfig));
         return generateConversationalGoldensFromContexts(
                 documentContexts.contexts(),
@@ -442,6 +450,7 @@ public final class Synthesizer {
             List<?> sourceFiles,
             List<Double> contextScores,
             Integer targetFilesPerContext) {
+        validateGenerationCount("max_goldens_per_context", maxGoldensPerContext);
         var goldens = new ArrayList<ConversationalGolden>();
         for (var batch : generateContextBatches(contexts.size(),
                 index -> generateConversationalGoldensForContext(index, contexts, includeExpectedOutcome,
@@ -490,6 +499,7 @@ public final class Synthesizer {
     private List<ConversationalGolden> generateConversationalGoldensFromScratch(
             int numGoldens,
             ConversationalStylingConfig activeStylingConfig) {
+        validateGenerationCount("num_goldens", numGoldens);
         validateConversationalScratchStylingConfig(activeStylingConfig);
         var data = SynthesizerSchemas.parseConversationalData(model.generate(
                         SynthesizerPrompts.generateSyntheticConversationalScenariosFromScratch(
@@ -511,6 +521,7 @@ public final class Synthesizer {
             List<ConversationalGolden> goldens,
             int maxGoldensPerGolden,
             boolean includeExpectedOutcome) {
+        validateGenerationCount("max_goldens_per_golden", maxGoldensPerGolden);
         var contexts = new ArrayList<List<String>>();
         var scenarios = new ArrayList<String>();
         for (var golden : goldens) {
@@ -1083,6 +1094,12 @@ public final class Synthesizer {
                 || config.participantRoles() == null) {
             throw new IllegalStateException(
                     "`scenario_context`, `conversational_task`, and `participant_roles` in `conversational_styling_config` must not be None when generating conversational goldens from scratch.");
+        }
+    }
+
+    private static void validateGenerationCount(String name, int value) {
+        if (value < 1) {
+            throw new IllegalArgumentException(name + " must be at least 1");
         }
     }
 
