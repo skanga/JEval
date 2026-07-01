@@ -1,6 +1,7 @@
 package dev.jeval.cli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1117,6 +1118,35 @@ class JEvalCliTest {
 
         assertEquals(0, exit, text(err));
         assertTrue(text(out).contains("folder-inspect"));
+    }
+
+    @Test
+    void inspectAcceptsEqualsFormOptionsLikeOtherCliCommands() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "equals-inspect",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+        assertEquals(0, run(new String[] {"test", "run", file.toString(), "--quiet"}, out, err));
+
+        out.reset();
+        err.reset();
+        var exit = assertDoesNotThrow(() -> run(new String[] {
+                    "inspect",
+                    "--folder=" + tempDir.resolve(".deepeval"),
+                    "--format=html"
+            }, out, err));
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).startsWith("<!doctype html>"));
+        assertTrue(text(out).contains("equals-inspect"));
     }
 
     @Test

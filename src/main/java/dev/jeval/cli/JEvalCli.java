@@ -137,7 +137,20 @@ public final class JEvalCli {
         Path path = null;
         Path folder = null;
         for (var i = 1; i < args.length; i++) {
-            switch (args[i]) {
+            var arg = args[i];
+            if (arg.startsWith("--format=")) {
+                format = arg.substring("--format=".length()).toLowerCase(Locale.ROOT);
+                continue;
+            }
+            if (arg.startsWith("--folder=")) {
+                folder = Path.of(arg.substring("--folder=".length()));
+                continue;
+            }
+            if (arg.startsWith("-f=")) {
+                folder = Path.of(arg.substring("-f=".length()));
+                continue;
+            }
+            switch (arg) {
                 case "--format" -> {
                     if (++i == args.length) {
                         usage(err);
