@@ -23,5 +23,10 @@ public final class PlanQualitySchemas {
     }
 
     public record PlanQualityScore(double score, String reason) {
+        public PlanQualityScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("PlanQualityScore score must be finite");
+            }
+        }
     }
 }

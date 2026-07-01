@@ -32,4 +32,12 @@ class PlanQualitySchemasTest {
         assertThrows(IllegalArgumentException.class, () -> PlanQualitySchemas.parseScore("{\"score\":\"bad\",\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> PlanQualitySchemas.parseScore("{\"score\":0.75,\"reason\":1}"));
     }
+
+    @Test
+    void scoreRecordRejectsNonFiniteScores() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new PlanQualitySchemas.PlanQualityScore(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new PlanQualitySchemas.PlanQualityScore(Double.POSITIVE_INFINITY, "bad"));
+    }
 }
