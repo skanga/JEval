@@ -230,11 +230,11 @@ public final class MetricUtils {
     public static double requiredDouble(JsonNode node, String field) {
         var value = required(node, field);
         if (value.isNumber()) {
-            return value.asDouble();
+            return finiteDouble(value.asDouble(), field);
         }
         if (value.isTextual()) {
             try {
-                return Double.parseDouble(value.asText());
+                return finiteDouble(Double.parseDouble(value.asText()), field);
             } catch (NumberFormatException error) {
                 throw new IllegalArgumentException("Schema field must be a number: " + field, error);
             }
@@ -250,10 +250,10 @@ public final class MetricUtils {
         var values = new ArrayList<Double>();
         for (var item : value) {
             if (item.isNumber()) {
-                values.add(item.asDouble());
+                values.add(finiteDouble(item.asDouble(), field));
             } else if (item.isTextual()) {
                 try {
-                    values.add(Double.parseDouble(item.asText()));
+                    values.add(finiteDouble(Double.parseDouble(item.asText()), field));
                 } catch (NumberFormatException error) {
                     throw new IllegalArgumentException("Schema list values must be numbers: " + field, error);
                 }
@@ -262,6 +262,13 @@ public final class MetricUtils {
             }
         }
         return List.copyOf(values);
+    }
+
+    private static double finiteDouble(double value, String field) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException("Schema field must be a finite number: " + field);
+        }
+        return value;
     }
 
     public static List<String> requiredStringList(JsonNode node, String field) {

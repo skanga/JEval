@@ -250,4 +250,13 @@ class MetricUtilsTest {
         assertThrows(IllegalArgumentException.class, () -> MetricUtils.trimAndLoadJson(null));
         assertThrows(IllegalArgumentException.class, () -> MetricUtils.trimAndLoadJson("no json here"));
     }
+
+    @Test
+    void numericSchemaHelpersRejectNonFiniteValuesLikeDeepEval() {
+        var score = MetricUtils.trimAndLoadJson("{\"score\":\"NaN\"}");
+        var scores = MetricUtils.trimAndLoadJson("{\"scores\":[\"Infinity\"]}");
+
+        assertThrows(IllegalArgumentException.class, () -> MetricUtils.requiredDouble(score, "score"));
+        assertThrows(IllegalArgumentException.class, () -> MetricUtils.requiredDoubleList(scores, "scores"));
+    }
 }
