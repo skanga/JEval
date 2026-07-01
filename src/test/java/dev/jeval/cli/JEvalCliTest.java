@@ -2905,6 +2905,19 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsRejectsSetWithoutEqualsLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"settings", "--set", "temperature", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("--set must be KEY=VALUE (got 'temperature')"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsAcceptsEqualsFormForDeepEvalAliases() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

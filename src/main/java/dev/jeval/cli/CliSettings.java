@@ -75,7 +75,7 @@ final class CliSettings {
             for (var update : parsed.updates()) {
                 var index = update.indexOf('=');
                 if (index < 1) {
-                    err.println("Expected key=value: " + update);
+                    err.println("--set must be KEY=VALUE (got '" + update + "')");
                     return 2;
                 }
                 var rawKey = update.substring(0, index);
