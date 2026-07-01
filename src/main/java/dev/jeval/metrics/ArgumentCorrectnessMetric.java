@@ -32,6 +32,9 @@ public class ArgumentCorrectnessMetric implements Metric {
     }
 
     public ArgumentCorrectnessMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Argument Correctness threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

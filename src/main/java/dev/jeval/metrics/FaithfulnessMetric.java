@@ -43,6 +43,9 @@ public class FaithfulnessMetric implements Metric {
             boolean strictMode,
             boolean penalizeAmbiguousClaims,
             Integer truthsExtractionLimit) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Faithfulness threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

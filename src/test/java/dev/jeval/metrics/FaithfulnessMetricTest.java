@@ -70,6 +70,15 @@ class FaithfulnessMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new FaithfulnessMetric(Double.NaN, true, false, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new FaithfulnessMetric(Double.POSITIVE_INFINITY, true, false, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var result = new StubFaithfulnessMetric(List.of())
                 .measure(LlmTestCase.builder("").actualOutput("output").retrievalContext(List.of("ctx")).build());

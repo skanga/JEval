@@ -32,6 +32,9 @@ public class AnswerRelevancyMetric implements Metric {
     }
 
     public AnswerRelevancyMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Answer Relevancy threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

@@ -56,6 +56,15 @@ class AnswerRelevancyMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new AnswerRelevancyMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new AnswerRelevancyMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var result = new StubAnswerRelevancyMetric(List.of())
                 .measure(new LlmTestCase("", "Answer.", null));
