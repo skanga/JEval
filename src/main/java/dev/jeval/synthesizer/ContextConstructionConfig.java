@@ -120,6 +120,9 @@ public record ContextConstructionConfig(
         if (maxFilesPerContext < 2) {
             throw new IllegalArgumentException("max_files_per_context must be at least 2.");
         }
+        if (targetFilesPerContext != null && targetFilesPerContext > maxFilesPerContext) {
+            throw new IllegalArgumentException("target_files_per_context must not exceed max_files_per_context.");
+        }
         if (encoding != null && !encoding.isBlank()) {
             try {
                 Charset.forName(encoding);

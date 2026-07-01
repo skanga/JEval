@@ -61,6 +61,8 @@ class ContextConstructionConfigTest {
                 () -> new ContextConstructionConfig(3, 1, 1024, 0, 0.5, 0.0, 3, true, 1, 3));
         assertThrows(IllegalArgumentException.class,
                 () -> new ContextConstructionConfig(3, 1, 1024, 0, 0.5, 0.0, 3, true, 2, 1));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 1024, 0, 0.5, 0.0, 3, true, 4, 3));
     }
 
     @Test
