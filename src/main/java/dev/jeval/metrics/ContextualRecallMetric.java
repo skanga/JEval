@@ -33,6 +33,9 @@ public class ContextualRecallMetric implements Metric {
     }
 
     public ContextualRecallMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Contextual Recall threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

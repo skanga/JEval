@@ -60,6 +60,15 @@ class ContextualRecallMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ContextualRecallMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ContextualRecallMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputAndExpectedOutputLikeDeepEval() {
         var metric = new StubContextualRecallMetric(List.of());
 

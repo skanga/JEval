@@ -59,6 +59,15 @@ class ContextualPrecisionMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ContextualPrecisionMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ContextualPrecisionMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputAndExpectedOutputLikeDeepEval() {
         var metric = new StubContextualPrecisionMetric(List.of());
 

@@ -59,6 +59,15 @@ class ContextualRelevancyMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ContextualRelevancyMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ContextualRelevancyMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var result = new StubContextualRelevancyMetric(List.of())
                 .measure(LlmTestCase.builder("").retrievalContext(List.of("ctx")).build());

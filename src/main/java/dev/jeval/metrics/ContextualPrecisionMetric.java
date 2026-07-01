@@ -35,6 +35,9 @@ public class ContextualPrecisionMetric implements Metric {
     }
 
     public ContextualPrecisionMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Contextual Precision threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;
