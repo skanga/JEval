@@ -31,9 +31,9 @@ final class GenerateCommand {
     }
 
     static int run(String[] args, PrintStream out, PrintStream err) {
-        var unknownOption = unknownOption(args);
-        if (unknownOption != null) {
-            err.println("No such option: " + unknownOption);
+        var optionError = optionError(args);
+        if (optionError != null) {
+            err.println(optionError);
             return 2;
         }
         var method = lowerOption(args, "--method", null);
@@ -565,7 +565,7 @@ final class GenerateCommand {
         return "json".equals(fileType) || "jsonl".equals(fileType) || "csv".equals(fileType);
     }
 
-    private static String unknownOption(String[] args) {
+    private static String optionError(String[] args) {
         var valued = Set.of(
                 "--method", "--variation", "--output-dir", "--file-type", "--file-name", "--model",
                 "--max-concurrent", "--documents", "--contexts-file", "--goldens-file", "--num-goldens",
@@ -587,14 +587,29 @@ final class GenerateCommand {
             }
             var name = arg.contains("=") ? arg.substring(0, arg.indexOf('=')) : arg;
             if (valued.contains(name)) {
+                if (!arg.contains("=") && missingOptionValue(args, i, valued, flags)) {
+                    return "Missing value for " + name;
+                }
                 if (!arg.contains("=")) {
                     i++;
                 }
             } else if (!flags.contains(name)) {
-                return name;
+                return "No such option: " + name;
             }
         }
         return null;
+    }
+
+    private static boolean missingOptionValue(String[] args, int index, Set<String> valued, Set<String> flags) {
+        if (index + 1 == args.length) {
+            return true;
+        }
+        var next = args[index + 1];
+        if (!next.startsWith("-")) {
+            return false;
+        }
+        var name = next.contains("=") ? next.substring(0, next.indexOf('=')) : next;
+        return valued.contains(name) || flags.contains(name);
     }
 
     private static boolean has(String[] args, String name) {

@@ -2068,6 +2068,22 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRejectsMissingOptionValuesLikeDeepEvalTyper() throws Exception {
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Refund?\",\"expected_output\":\"Yes\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Missing value for --contexts-file"));
+    }
+
+    @Test
     void generateRequiresVariationLikeDeepEval() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");
