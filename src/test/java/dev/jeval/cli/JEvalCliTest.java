@@ -627,6 +627,27 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunRepeatAliasAcceptsNegativeValueForValidation() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "repeat-spec",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "-r", "-1"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("repeat argument must be at least 1"));
+    }
+
+    @Test
     void testRunRejectsMissingRepeatValueBeforeConsumingNextOption() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

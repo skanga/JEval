@@ -211,6 +211,10 @@ public final class JEvalCli {
         return index + 1 == args.length || args[index + 1].startsWith("-");
     }
 
+    private static boolean missingRepeatValue(String[] args, int index) {
+        return index + 1 == args.length || (args[index + 1].startsWith("-") && !args[index + 1].matches("-\\d+"));
+    }
+
     private static Path inspectTarget(InspectOptions options, Path storeRoot, Map<String, String> env) throws IOException {
         if (options.path() != null) {
             if (Files.isRegularFile(options.path())) {
@@ -362,7 +366,7 @@ public final class JEvalCli {
                     identifier = args[i];
                 }
                 case "-r", "--repeat" -> {
-                    if (missingOptionValue(args, i)) {
+                    if (missingRepeatValue(args, i)) {
                         err.println("Missing value for " + arg);
                         return null;
                     }
