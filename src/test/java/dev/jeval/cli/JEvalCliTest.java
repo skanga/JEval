@@ -2791,6 +2791,19 @@ class JEvalCliTest {
     }
 
     @Test
+    void setGeminiRequiresConfiguredModel() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-gemini", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Gemini model name is not set"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void openAiProviderPersistsTemperatureAndCostOverrides() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

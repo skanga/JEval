@@ -189,6 +189,10 @@ final class CliSettings {
                     err.println("AWS Bedrock model name is not set. Pass --model (or set AWS_BEDROCK_MODEL_NAME).");
                     return 2;
                 }
+                if ("set-gemini".equals(command) && !hasValue(savePath(args), updates, "GEMINI_MODEL_NAME")) {
+                    err.println("Gemini model name is not set. Pass --model (or set GEMINI_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
