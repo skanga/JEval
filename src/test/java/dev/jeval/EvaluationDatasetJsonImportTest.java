@@ -51,6 +51,49 @@ class EvaluationDatasetJsonImportTest {
     }
 
     @Test
+    void addTestCasesFromJsonFileAcceptsCamelCaseAliasesForDefaultKeys() throws IOException {
+        var file = tempDir.resolve("camel-case-test-cases.json");
+        Files.writeString(file, """
+                [
+                  {
+                    "input": "Can I get a refund?",
+                    "actualOutput": "I searched the policy.",
+                    "expectedOutput": "I searched the policy.",
+                    "retrievalContext": ["Customers get a 30-day refund"],
+                    "tokenCost": 0.42,
+                    "completionTime": 2.5,
+                    "customColumnKeyValues": {"risk": "high"},
+                    "toolsCalled": [{"name": "PolicySearch"}],
+                    "expectedTools": [{"name": "PolicySearch"}],
+                    "mcpServers": [{"server_name": "policy"}],
+                    "mcpToolsCalled": [{"name": "mcp-search"}],
+                    "mcpResourcesCalled": [{"uri": "file://policy"}],
+                    "mcpPromptsCalled": [{"name": "policy-prompt"}]
+                  }
+                ]
+                """);
+        var dataset = new EvaluationDataset();
+
+        dataset.addTestCasesFromJsonFile(file, "input", "actual_output", "expected_output",
+                "context", "retrieval_context", "tools_called", "expected_tools", "metadata");
+
+        var testCase = dataset.testCases().getFirst();
+        assertAll(
+                () -> assertEquals("I searched the policy.", testCase.actualOutput()),
+                () -> assertEquals("I searched the policy.", testCase.expectedOutput()),
+                () -> assertEquals(List.of("Customers get a 30-day refund"), testCase.retrievalContext()),
+                () -> assertEquals(0.42, testCase.tokenCost()),
+                () -> assertEquals(2.5, testCase.completionTime()),
+                () -> assertEquals(Map.of("risk", "high"), testCase.customColumnKeyValues()),
+                () -> assertEquals(List.of(new ToolCall("PolicySearch")), testCase.toolsCalled()),
+                () -> assertEquals(List.of(new ToolCall("PolicySearch")), testCase.expectedTools()),
+                () -> assertEquals(List.of(Map.of("server_name", "policy")), testCase.mcpServers()),
+                () -> assertEquals(List.of(Map.of("name", "mcp-search")), testCase.mcpToolsCalled()),
+                () -> assertEquals(List.of(Map.of("uri", "file://policy")), testCase.mcpResourcesCalled()),
+                () -> assertEquals(List.of(Map.of("name", "policy-prompt")), testCase.mcpPromptsCalled()));
+    }
+
+    @Test
     void addTestCasesFromJsonFileDefaultsMissingToolListsToEmptyLikeDeepEval() throws IOException {
         var file = tempDir.resolve("test-cases-no-tools.json");
         Files.writeString(file, """

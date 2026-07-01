@@ -525,25 +525,39 @@ public final class EvaluationDataset {
             String additionalMetadataKeyName) {
         var rows = readJsonArray(file);
         for (var row : rows) {
-            if (!row.has(inputKeyName) || !row.has(actualOutputKeyName)) {
+            var actualOutputKey = jsonKey(row, actualOutputKeyName, "actual_output", "actualOutput");
+            var expectedOutputKey = jsonKey(row, expectedOutputKeyName, "expected_output", "expectedOutput");
+            var retrievalContextKey = jsonKey(row, retrievalContextKeyName, "retrieval_context", "retrievalContext");
+            var toolsCalledKey = jsonKey(row, toolsCalledKeyName, "tools_called", "toolsCalled");
+            var expectedToolsKey = jsonKey(row, expectedToolsKeyName, "expected_tools", "expectedTools");
+            var tokenCostKey = jsonKey(row, "token_cost", "token_cost", "tokenCost");
+            var completionTimeKey = jsonKey(row, "completion_time", "completion_time", "completionTime");
+            var customColumnKeyValuesKey = jsonKey(row, "custom_column_key_values", "custom_column_key_values",
+                    "customColumnKeyValues");
+            var mcpServersKey = jsonKey(row, "mcp_servers", "mcp_servers", "mcpServers");
+            var mcpToolsCalledKey = jsonKey(row, "mcp_tools_called", "mcp_tools_called", "mcpToolsCalled");
+            var mcpResourcesCalledKey = jsonKey(row, "mcp_resources_called", "mcp_resources_called",
+                    "mcpResourcesCalled");
+            var mcpPromptsCalledKey = jsonKey(row, "mcp_prompts_called", "mcp_prompts_called", "mcpPromptsCalled");
+            if (!row.has(inputKeyName) || !row.has(actualOutputKey)) {
                 throw new IllegalArgumentException("Required fields are missing in one or more JSON objects");
             }
             addTestCase(LlmTestCase.builder(requiredText(row, inputKeyName))
-                    .actualOutput(requiredText(row, actualOutputKeyName))
-                    .expectedOutput(textOrNull(row, expectedOutputKeyName))
+                    .actualOutput(requiredText(row, actualOutputKey))
+                    .expectedOutput(textOrNull(row, expectedOutputKey))
                     .context(textListOrNull(row, contextKeyName))
-                    .retrievalContext(textListOrNull(row, retrievalContextKeyName))
-                    .toolsCalled(toolListOrEmptyIfMissing(row, toolsCalledKeyName, false))
-                    .expectedTools(toolListOrEmptyIfMissing(row, expectedToolsKeyName, false))
+                    .retrievalContext(textListOrNull(row, retrievalContextKey))
+                    .toolsCalled(toolListOrEmptyIfMissing(row, toolsCalledKey, false))
+                    .expectedTools(toolListOrEmptyIfMissing(row, expectedToolsKey, false))
                     .additionalMetadata(metadataMapOrNull(row, additionalMetadataKeyName))
                     .comments(textOrNull(row, "comments"))
-                    .tokenCost(doubleOrNull(row, "token_cost"))
-                    .completionTime(doubleOrNull(row, "completion_time"))
-                    .customColumnKeyValues(stringMapOrNull(row, "custom_column_key_values"))
-                    .mcpServers(objectListOrNull(row, "mcp_servers"))
-                    .mcpToolsCalled(objectListOrNull(row, "mcp_tools_called"))
-                    .mcpResourcesCalled(objectListOrNull(row, "mcp_resources_called"))
-                    .mcpPromptsCalled(objectListOrNull(row, "mcp_prompts_called"))
+                    .tokenCost(doubleOrNull(row, tokenCostKey))
+                    .completionTime(doubleOrNull(row, completionTimeKey))
+                    .customColumnKeyValues(stringMapOrNull(row, customColumnKeyValuesKey))
+                    .mcpServers(objectListOrNull(row, mcpServersKey))
+                    .mcpToolsCalled(objectListOrNull(row, mcpToolsCalledKey))
+                    .mcpResourcesCalled(objectListOrNull(row, mcpResourcesCalledKey))
+                    .mcpPromptsCalled(objectListOrNull(row, mcpPromptsCalledKey))
                     .trace(objectMapOrNull(row, "trace"))
                     .name(textOrNull(row, "name"))
                     .tags(textListOrNull(row, "tags"))
@@ -662,6 +676,10 @@ public final class EvaluationDataset {
         return defaultName.equals(requested) && headers.contains(alias) && !headers.contains(requested)
                 ? alias
                 : requested;
+    }
+
+    private static String jsonKey(JsonNode row, String requested, String defaultName, String alias) {
+        return defaultName.equals(requested) && row.has(alias) && !row.has(requested) ? alias : requested;
     }
 
     public void addGoldensFromJsonFile(Path file) {
