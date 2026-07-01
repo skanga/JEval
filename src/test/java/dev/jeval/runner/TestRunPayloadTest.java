@@ -87,6 +87,15 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void metricScoresRejectsNonFiniteScoreValues() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScores("faithfulness", List.of(Double.NaN), 0, 0, 1)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScores("faithfulness", List.of(Double.POSITIVE_INFINITY), 0, 0, 1)));
+    }
+
+    @Test
     void testRunResultRecordsRejectNonFiniteScores() {
         assertAll(
                 () -> assertThrows(IllegalArgumentException.class,
