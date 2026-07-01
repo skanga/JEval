@@ -2811,6 +2811,22 @@ class JEvalCliTest {
     }
 
     @Test
+    void providerAcceptsEqualsFormForDeepEvalOptions() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "set-ollama", "--model=llama3", "--base-url=http://localhost:11434", "--save=dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "USE_LOCAL_MODEL", "YES");
+        assertDotenv(env, "OLLAMA_MODEL_NAME", "llama3");
+        assertDotenv(env, "LOCAL_MODEL_BASE_URL", "http://localhost:11434");
+    }
+
+    @Test
     void providerSetUnsetRoundtripUsesExclusiveFlags() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

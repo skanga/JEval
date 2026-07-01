@@ -408,6 +408,12 @@ final class CliSettings {
                 return args[i + 1];
             }
         }
+        var prefix = name + "=";
+        for (var arg : args) {
+            if (arg.startsWith(prefix)) {
+                return arg.substring(prefix.length());
+            }
+        }
         return null;
     }
 
