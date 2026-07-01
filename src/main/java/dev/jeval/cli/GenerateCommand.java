@@ -498,11 +498,15 @@ final class GenerateCommand {
     private static boolean includeExpected(String[] args) {
         var value = true;
         for (var arg : args) {
-            if ("--include-expected".equals(arg) || "--include-expected-output".equals(arg)) {
+            if ("--include-expected".equals(arg)
+                    || "--include-expected-output".equals(arg)
+                    || "--include-expected-outcome".equals(arg)) {
                 value = true;
             } else if ("--no-include-expected".equals(arg)
                     || "--no-include-expected-output".equals(arg)
-                    || "--no-expected-output".equals(arg)) {
+                    || "--no-expected-output".equals(arg)
+                    || "--no-include-expected-outcome".equals(arg)
+                    || "--no-expected-outcome".equals(arg)) {
                 value = false;
             }
         }
@@ -599,6 +603,7 @@ final class GenerateCommand {
         var flags = Set.of(
                 "--async-mode", "--sync-mode", "--include-expected", "--no-include-expected",
                 "--include-expected-output", "--no-include-expected-output", "--no-expected-output",
+                "--include-expected-outcome", "--no-include-expected-outcome", "--no-expected-outcome",
                 "--cost-tracking", "--allow-cross-file-contexts");
         for (var i = 1; i < args.length; i++) {
             var arg = args[i];

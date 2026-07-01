@@ -2788,6 +2788,54 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateSupportsDeepEvalNoIncludeExpectedOutcomeAlias() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Refunds are available within 30 days.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"scenario\":\"refund support\",\"turns\":[{\"role\":\"user\",\"content\":\"Need a refund\"}],\"expected_outcome\":\"Refund path explained\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "multi-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--no-include-expected-outcome", "--output-dir", output.toString(),
+                "--file-name", "without-expected-outcome"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("without-expected-outcome.json"));
+        assertTrue(generated.contains("\"scenario\" : \"refund support\""));
+        assertTrue(generated.contains("\"expected_outcome\" : null"));
+    }
+
+    @Test
+    void generateSupportsDeepEvalIncludeExpectedOutcomeAliasAfterNegativeFlag() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Refunds are available within 30 days.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"scenario\":\"refund support\",\"turns\":[{\"role\":\"user\",\"content\":\"Need a refund\"}],\"expected_outcome\":\"Refund path explained\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "multi-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--no-include-expected", "--include-expected-outcome",
+                "--output-dir", output.toString(), "--file-name", "with-expected-outcome"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("with-expected-outcome.json"));
+        assertTrue(generated.contains("\"scenario\" : \"refund support\""));
+        assertTrue(generated.contains("\"expected_outcome\" : \"Generated conversational expected outcome\""));
+    }
+
+    @Test
     void generateCreatesConversationalStylingFromExpectedOutcomeFormatOnlyLikeDeepEval() throws Exception {
         var responses = tempDir.resolve("responses.txt");
         Files.writeString(responses, "{\"data\":[]}");
