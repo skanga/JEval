@@ -1117,6 +1117,9 @@ public final class Synthesizer {
         if (contexts == null || contexts.isEmpty()) {
             throw new IllegalArgumentException("contexts must not be empty");
         }
+        if (contexts.stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("contexts must not contain null context entries");
+        }
     }
 
     private static boolean shouldStyle(StylingConfig config) {

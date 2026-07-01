@@ -67,6 +67,18 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromContextsRejectsNullContextEntriesLikeDeepEval() {
+        var contexts = new ArrayList<List<String>>();
+        contexts.add(null);
+        var synthesizer = new Synthesizer(new ScriptedModel(List.of()));
+
+        var error = assertThrows(IllegalArgumentException.class,
+                () -> synthesizer.generateGoldensFromContexts(contexts, false, 1, null));
+
+        assertEquals("contexts must not contain null context entries", error.getMessage());
+    }
+
+    @Test
     void generatesExpectedOutputSeparatelyForContextGoldensLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What is France's capital?\",\"expected_output\":\"Embedded answer\"}]}",
