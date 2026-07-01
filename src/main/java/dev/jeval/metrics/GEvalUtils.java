@@ -74,6 +74,13 @@ public final class GEvalUtils {
                     || scoreRange.stream().anyMatch(value -> value == null || !Double.isFinite(value))) {
                 throw new IllegalArgumentException("ApiRubric scoreRange must contain two finite values.");
             }
+            if (scoreRange.get(0) < 0 || scoreRange.get(0) > 10 || scoreRange.get(1) < 0 || scoreRange.get(1) > 10) {
+                throw new IllegalArgumentException(
+                        "Both ApiRubric scoreRange values must be between 0 and 10 inclusive.");
+            }
+            if (scoreRange.get(0) > scoreRange.get(1)) {
+                throw new IllegalArgumentException("ApiRubric scoreRange start must be less than or equal to end.");
+            }
             scoreRange = List.copyOf(scoreRange);
         }
     }

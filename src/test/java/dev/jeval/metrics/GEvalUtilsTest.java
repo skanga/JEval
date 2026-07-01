@@ -197,5 +197,7 @@ class GEvalUtilsTest {
         assertThrows(IllegalArgumentException.class, () -> new GEvalUtils.ApiRubric(List.of(0.0), "bad"));
         assertThrows(IllegalArgumentException.class,
                 () -> new GEvalUtils.ApiRubric(List.of(Double.NaN, 1.0), "bad"));
+        assertThrows(IllegalArgumentException.class, () -> new GEvalUtils.ApiRubric(List.of(-1.0, 1.0), "bad"));
+        assertThrows(IllegalArgumentException.class, () -> new GEvalUtils.ApiRubric(List.of(8.0, 2.0), "bad"));
     }
 }
