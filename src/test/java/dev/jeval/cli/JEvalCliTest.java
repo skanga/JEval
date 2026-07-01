@@ -1213,6 +1213,17 @@ class JEvalCliTest {
     }
 
     @Test
+    void inspectRejectsUnknownOptionsLikeDeepEvalTyper() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"inspect", "--missing-option"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("No such option: --missing-option"));
+    }
+
+    @Test
     void testRunWritesDeepEvalResultsFolderAndSubfolder() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

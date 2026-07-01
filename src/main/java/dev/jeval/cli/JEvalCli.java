@@ -171,6 +171,10 @@ public final class JEvalCli {
                     folder = Path.of(args[i]);
                 }
                 default -> {
+                    if (arg.startsWith("-")) {
+                        err.println("No such option: " + arg);
+                        return null;
+                    }
                     if (path != null) {
                         usage(err);
                         return null;
