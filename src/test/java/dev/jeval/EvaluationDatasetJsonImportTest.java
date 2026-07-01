@@ -1801,6 +1801,25 @@ class EvaluationDatasetJsonImportTest {
     }
 
     @Test
+    void addGoldensFromCsvFileAcceptsCamelCaseAliasesForDefaultConversationalColumns() throws IOException {
+        var file = tempDir.resolve("camel-case-conversational-golden.csv");
+        Files.writeString(file, """
+                scenario,turns,expectedOutcome,userDescription,metadata,customColumnKeyValues
+                Book a flight,"[{""role"":""user"",""content"":""Find flights""}]",User gets options,Traveler,"{""gk"":""gv""}","{""col"":""val""}"
+                """);
+        var dataset = new EvaluationDataset();
+
+        dataset.addGoldensFromCsvFile(file);
+
+        var golden = dataset.conversationalGoldens().getFirst();
+        assertAll(
+                () -> assertEquals("User gets options", golden.expectedOutcome()),
+                () -> assertEquals("Traveler", golden.userDescription()),
+                () -> assertEquals(Map.of("gk", "gv"), golden.additionalMetadata()),
+                () -> assertEquals(Map.of("col", "val"), golden.customColumnKeyValues()));
+    }
+
+    @Test
     void addGoldensFromJsonlFileRejectsMixedVariations() throws IOException {
         var file = tempDir.resolve("mixed.jsonl");
         Files.writeString(file, """

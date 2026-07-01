@@ -1017,6 +1017,8 @@ public final class EvaluationDataset {
             var additionalMetadataKey = csvHeader(headers, additionalMetadataColName, "additional_metadata", "metadata");
             var customColumnKeyValuesKey = csvHeader(headers, customColumnKeyValuesColName,
                     "custom_column_key_values", "customColumnKeyValues");
+            var expectedOutcomeKey = csvHeader(headers, expectedOutcomeColName, "expected_outcome", "expectedOutcome");
+            var userDescriptionKey = csvHeader(headers, userDescriptionColName, "user_description", "userDescription");
             for (var i = 1; i < lines.size(); i++) {
                 if (lines.get(i).isBlank()) {
                     continue;
@@ -1025,13 +1027,13 @@ public final class EvaluationDataset {
                 if (!blank(row.get(scenarioColName))) {
                     addGolden(ConversationalGolden.builder(row.get(scenarioColName))
                             .turns(turnListFromCsv(row.get(turnsColName)))
-                            .expectedOutcome(nullIfBlank(row.get(expectedOutcomeColName)))
-                            .userDescription(nullIfBlank(row.get(userDescriptionColName)))
+                            .expectedOutcome(nullIfBlank(row.get(expectedOutcomeKey)))
+                            .userDescription(nullIfBlank(row.get(userDescriptionKey)))
                             .context(csvListOrNull(row.get(contextColName), contextDelimiter))
                             .name(nullIfBlank(row.get(nameColName)))
                             .comments(nullIfBlank(row.get(commentsColName)))
-                            .additionalMetadata(objectMapFromCsv(row.get(additionalMetadataColName), "additional_metadata"))
-                            .customColumnKeyValues(stringMapFromCsv(row.get(customColumnKeyValuesColName)))
+                            .additionalMetadata(objectMapFromCsv(row.get(additionalMetadataKey), "additional_metadata"))
+                            .customColumnKeyValues(stringMapFromCsv(row.get(customColumnKeyValuesKey)))
                             .build());
                     continue;
                 }
