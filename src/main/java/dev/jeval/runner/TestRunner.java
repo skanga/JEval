@@ -1,6 +1,7 @@
 package dev.jeval.runner;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -390,12 +391,18 @@ public final class TestRunner {
             data.addTestCasesFromCsvFile(file, "input", "actual_output", "expected_output",
                     "context", "retrieval_context", "tools_called", "expected_tools", "metadata");
         } else if (name.endsWith(".json")) {
-            data.addTestCasesFromJsonFile(file, "input", "actual_output", "expected_output",
-                    "context", "retrieval_context", "tools_called", "expected_tools", "metadata");
+            return jsonTestCases(file);
         } else {
             throw new IllegalArgumentException("Unsupported dataset file type: " + file);
         }
         return data.testCases();
+    }
+
+    private static List<LlmTestCase> jsonTestCases(Path file) {
+        var rows = readJsonArray(file);
+        var cases = new ArrayList<LlmTestCase>();
+        rows.forEach(row -> cases.add(jsonTestCase(row)));
+        return List.copyOf(cases);
     }
 
     private static List<LlmTestCase> jsonlTestCases(Path file) {
@@ -410,6 +417,30 @@ public final class TestRunner {
         } catch (IOException error) {
             throw new IllegalArgumentException("The file " + file + " could not be read.", error);
         }
+    }
+
+    private static JsonNode readJsonArray(Path file) {
+        try {
+            return readJsonArray(file, Files.readString(file));
+        } catch (JsonProcessingException error) {
+            try {
+                return readJsonArray(file, Files.readString(file).replaceAll(",\\s*([\\]}])", "$1"));
+            } catch (JsonProcessingException retryError) {
+                throw new IllegalArgumentException("The file " + file + " is not a valid JSON file.", retryError);
+            } catch (IOException retryError) {
+                throw new IllegalArgumentException("The file " + file + " could not be read.", retryError);
+            }
+        } catch (IOException error) {
+            throw new IllegalArgumentException("The file " + file + " could not be read.", error);
+        }
+    }
+
+    private static JsonNode readJsonArray(Path file, String content) throws JsonProcessingException {
+        var node = JSON.readTree(content);
+        if (!node.isArray()) {
+            throw new IllegalArgumentException("The file " + file + " must contain a JSON array.");
+        }
+        return node;
     }
 
     private static LlmTestCase jsonTestCase(JsonNode node) {
