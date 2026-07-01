@@ -129,6 +129,22 @@ public final class Synthesizer {
                 () -> generateGoldensFromContexts(contexts, includeExpectedOutput, maxGoldensPerContext, sourceFiles));
     }
 
+    public CompletableFuture<List<Golden>> generateGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
+            Integer targetFilesPerContext) {
+        return CompletableFuture.supplyAsync(() -> generateGoldensFromContexts(
+                contexts,
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                sourceFiles,
+                contextChunkSourceFiles,
+                targetFilesPerContext));
+    }
+
     public List<Golden> generateTextToSqlGoldensFromContext(
             List<String> context,
             boolean includeExpectedOutput,
