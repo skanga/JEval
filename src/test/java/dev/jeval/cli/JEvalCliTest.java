@@ -3037,6 +3037,21 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsRejectsInvalidTimeoutThreadLimitLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "deepeval-timeout-thread-limit=0", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for DEEPEVAL_TIMEOUT_THREAD_LIMIT: 0"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsAcceptsEqualsFormForDeepEvalAliases() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

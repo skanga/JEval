@@ -528,6 +528,9 @@ final class CliSettings {
         if (normalized.equals("DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS")) {
             validateDoubleRange(normalized, value, 0.0, Double.POSITIVE_INFINITY);
         }
+        if (normalized.equals("DEEPEVAL_TIMEOUT_THREAD_LIMIT")) {
+            validateIntegerMin(normalized, value, 1);
+        }
         return value;
     }
 
