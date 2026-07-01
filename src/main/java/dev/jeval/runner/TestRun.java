@@ -55,6 +55,15 @@ public record TestRun(
                 ? null
                 : Collections.unmodifiableMap(new LinkedHashMap<>(hyperparameters));
         prompts = prompts == null ? null : List.copyOf(prompts);
+        if ((testPassed != null && testPassed < 0) || (testFailed != null && testFailed < 0)) {
+            throw new IllegalArgumentException("TestRun pass/fail counts must be non-negative");
+        }
+        if (!Double.isFinite(runDuration) || runDuration < 0.0) {
+            throw new IllegalArgumentException("TestRun runDuration must be finite and non-negative");
+        }
+        if (evaluationCost != null && (!Double.isFinite(evaluationCost) || evaluationCost < 0.0)) {
+            throw new IllegalArgumentException("TestRun evaluationCost must be finite and non-negative");
+        }
     }
 
     public TestRun addTestCase(LlmApiTestCase apiTestCase) {

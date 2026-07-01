@@ -148,6 +148,23 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void testRunRejectsInvalidLifecycleValues() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> testRunWithCountsAndCosts(-1, 0, 0.0, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> testRunWithCountsAndCosts(0, -1, 0.0, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> testRunWithCountsAndCosts(0, 0, -1.0, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> testRunWithCountsAndCosts(0, 0, Double.NaN, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> testRunWithCountsAndCosts(0, 0, 0.0, -1.0)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> testRunWithCountsAndCosts(0, 0, 0.0, Double.POSITIVE_INFINITY)));
+    }
+
+    @Test
     void testRunModelDumpUsesDeepEvalAliasesAndCanExcludeNulls() {
         var testCase = llmApiWithActualOutput("case", "actual");
         var traceScores = new TraceMetricScores(
@@ -617,5 +634,25 @@ class TestRunPayloadTest {
 
     private static MetricData metricData(String name, Double score, boolean success) {
         return new MetricData(name, 0.5, success, score, null, false, null, null, null, null, null, null);
+    }
+
+    private static TestRun testRunWithCountsAndCosts(
+            Integer testPassed, Integer testFailed, double runDuration, Double evaluationCost) {
+        return new TestRun(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                testPassed,
+                testFailed,
+                runDuration,
+                evaluationCost,
+                null,
+                null,
+                false);
     }
 }
