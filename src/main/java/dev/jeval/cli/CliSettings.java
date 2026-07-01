@@ -504,6 +504,10 @@ final class CliSettings {
         if (normalized.equals("LOG_LEVEL")) {
             return logLevel(value);
         }
+        if (normalized.equals("DEEPEVAL_RETRY_BEFORE_LOG_LEVEL")
+                || normalized.equals("DEEPEVAL_RETRY_AFTER_LOG_LEVEL")) {
+            return logLevel(value);
+        }
         if (normalized.equals("TEMPERATURE")) {
             validateDoubleRange(normalized, value, 0.0, 2.0);
         }

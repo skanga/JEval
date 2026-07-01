@@ -2867,6 +2867,24 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetCoercesRetryLogLevelsLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "deepeval-retry-before-log-level=debug",
+                "--set", "deepeval-retry-after-log-level=error",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_RETRY_BEFORE_LOG_LEVEL", "10");
+        assertDotenv(env, "DEEPEVAL_RETRY_AFTER_LOG_LEVEL", "40");
+    }
+
+    @Test
     void settingsRejectsMissingSetValueBeforeConsumingNextOption() {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
