@@ -285,7 +285,24 @@ final class CliSettings {
         var quiet = quiet(args);
         var save = Path.of(".env");
         for (var i = start; i < args.length; i++) {
-            switch (args[i]) {
+            var arg = args[i];
+            var equals = arg.indexOf('=');
+            if (equals > 0) {
+                var value = arg.substring(equals + 1);
+                switch (arg.substring(0, equals)) {
+                    case "-u", "--set", "--update" -> updates.add(value);
+                    case "-U", "--unset" -> unsets.add(value);
+                    case "-l", "--list" -> {
+                        list = new java.util.ArrayList<>();
+                        list.add(value);
+                    }
+                    case "-s", "--save" -> save = savePath(value);
+                    default -> {
+                    }
+                }
+                continue;
+            }
+            switch (arg) {
                 case "-u", "--set", "--update" -> updates.add(args[++i]);
                 case "-U", "--unset" -> unsets.add(args[++i]);
                 case "-l", "--list" -> {
@@ -297,12 +314,8 @@ final class CliSettings {
                 case "-q", "--quiet" -> quiet = true;
                 case "-s", "--save" -> save = savePath(args[++i]);
                 default -> {
-                    if (args[i].startsWith("--save=")) {
-                        save = savePath(args[i].substring("--save=".length()));
-                    } else if (args[i].startsWith("-s=")) {
-                        save = savePath(args[i].substring("-s=".length()));
-                    } else if (list != null && !args[i].startsWith("-")) {
-                        list.add(args[i]);
+                    if (list != null && !arg.startsWith("-")) {
+                        list.add(arg);
                     }
                 }
             }

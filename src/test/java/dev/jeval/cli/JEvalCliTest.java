@@ -2509,6 +2509,37 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsAcceptsEqualsFormForDeepEvalAliases() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var setExit = run(new String[] {
+                "settings", "--set=log-level=info", "--set=anthropic-api-key=sk-test", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, setExit, text(err));
+        assertDotenv(env, "LOG_LEVEL", "20");
+        assertDotenv(env, "ANTHROPIC_API_KEY", "sk-test");
+
+        out.reset();
+        err.reset();
+        var listExit = run(new String[] {"settings", "--list=anthropic", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(0, listExit, text(err));
+        assertTrue(text(out).contains("ANTHROPIC_API_KEY=********"));
+        assertEquals(false, text(out).contains("LOG_LEVEL="));
+
+        out.reset();
+        err.reset();
+        var unsetExit = run(new String[] {"settings", "--unset=anthropic", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(0, unsetExit, text(err));
+        assertDotenv(env, "LOG_LEVEL", "20");
+        assertEquals(false, readDotenv(env).containsKey("ANTHROPIC_API_KEY"));
+    }
+
+    @Test
     void settingsListWithoutFilterPrintsAllSavedSettings() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
