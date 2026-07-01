@@ -101,10 +101,14 @@ public record ContextConstructionConfig(
         if (chunkOverlap < 0) {
             throw new IllegalArgumentException("chunk_overlap must be non-negative");
         }
-        if (contextQualityThreshold < 0 || contextQualityThreshold > 1) {
+        if (!Double.isFinite(contextQualityThreshold)
+                || contextQualityThreshold < 0
+                || contextQualityThreshold > 1) {
             throw new IllegalArgumentException("context_quality_threshold must be between 0 and 1.");
         }
-        if (contextSimilarityThreshold < 0 || contextSimilarityThreshold > 1) {
+        if (!Double.isFinite(contextSimilarityThreshold)
+                || contextSimilarityThreshold < 0
+                || contextSimilarityThreshold > 1) {
             throw new IllegalArgumentException("context_similarity_threshold must be between 0 and 1.");
         }
         if (maxRetries < 0) {

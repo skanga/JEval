@@ -62,4 +62,16 @@ class ContextConstructionConfigTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new ContextConstructionConfig(3, 1, 1024, 0, 0.5, 0.0, 3, true, 2, 1));
     }
+
+    @Test
+    void validatesFiniteThresholdsLikeDeepEval() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 3, 1, 1024, 0, Double.NaN, 0.0, 3));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 3, 1, 1024, 0, Double.POSITIVE_INFINITY, 0.0, 3));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 3, 1, 1024, 0, 0.5, Double.NaN, 3));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 3, 1, 1024, 0, 0.5, Double.NEGATIVE_INFINITY, 3));
+    }
 }
