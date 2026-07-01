@@ -85,7 +85,12 @@ final class CliSettings {
                 }
             }
             for (var unset : parsed.unsets()) {
-                removals.addAll(unsetKeys(existing, unset));
+                var keys = unsetKeys(existing, unset);
+                if (keys.isEmpty()) {
+                    err.println("No settings matched");
+                    return 2;
+                }
+                removals.addAll(keys);
             }
             if (!updates.isEmpty() || !removals.isEmpty()) {
                 dotenv.update(updates, removals);
@@ -208,7 +213,7 @@ final class CliSettings {
         var matches = existing.keySet().stream()
                 .filter(key -> key.contains(needle))
                 .toList();
-        return matches.isEmpty() ? List.of(settingKey(filter)) : matches;
+        return matches.isEmpty() && existing.containsKey(settingKey(filter)) ? List.of(settingKey(filter)) : matches;
     }
 
     private static Parsed parse(String[] args, int start) {
