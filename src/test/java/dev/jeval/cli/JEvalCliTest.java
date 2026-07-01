@@ -40,6 +40,18 @@ class JEvalCliTest {
     }
 
     @Test
+    void usageListsEmbeddingProviderCommands() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains(
+                "set-azure-openai-embedding|set-local-embeddings|set-ollama-embeddings"));
+    }
+
+    @Test
     void exitsNonZeroWhenEvaluationFails() throws Exception {
         var file = tempDir.resolve("judgment_eval.json");
         Files.writeString(file, """
