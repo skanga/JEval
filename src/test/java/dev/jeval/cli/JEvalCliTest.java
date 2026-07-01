@@ -3045,6 +3045,42 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetAcceptsAdditionalProviderValuesLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "confident-api-key=confident-secret",
+                "--set", "confident-base-url=https://confident.example",
+                "--set", "aws-session-token=session-secret",
+                "--set", "azure-openai-ad-token=ad-secret",
+                "--set", "gemini-cost-per-input-token=0.0001",
+                "--set", "gemini-cost-per-output-token=0.0002",
+                "--set", "lm-studio-api-key=lm-secret",
+                "--set", "lm-studio-model-name=local-model",
+                "--set", "vertex-ai-model-name=gemini-vertex",
+                "--set", "vllm-api-key=vllm-secret",
+                "--set", "vllm-model-name=llama-3",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "CONFIDENT_API_KEY", "confident-secret");
+        assertDotenv(env, "CONFIDENT_BASE_URL", "https://confident.example");
+        assertDotenv(env, "AWS_SESSION_TOKEN", "session-secret");
+        assertDotenv(env, "AZURE_OPENAI_AD_TOKEN", "ad-secret");
+        assertDotenv(env, "GEMINI_COST_PER_INPUT_TOKEN", "0.0001");
+        assertDotenv(env, "GEMINI_COST_PER_OUTPUT_TOKEN", "0.0002");
+        assertDotenv(env, "LM_STUDIO_API_KEY", "lm-secret");
+        assertDotenv(env, "LM_STUDIO_MODEL_NAME", "local-model");
+        assertDotenv(env, "VERTEX_AI_MODEL_NAME", "gemini-vertex");
+        assertDotenv(env, "VLLM_API_KEY", "vllm-secret");
+        assertDotenv(env, "VLLM_MODEL_NAME", "llama-3");
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
