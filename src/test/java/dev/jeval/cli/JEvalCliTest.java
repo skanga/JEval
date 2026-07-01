@@ -2394,6 +2394,20 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsAcceptsDeepEvalSetAlias() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "temperature=0.42", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "TEMPERATURE", "0.42");
+    }
+
+    @Test
     void settingsListWithoutFilterPrintsAllSavedSettings() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

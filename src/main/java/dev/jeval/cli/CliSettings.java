@@ -198,7 +198,7 @@ final class CliSettings {
         var save = Path.of(".env");
         for (var i = start; i < args.length; i++) {
             switch (args[i]) {
-                case "-u", "--update" -> updates.add(args[++i]);
+                case "-u", "--set", "--update" -> updates.add(args[++i]);
                 case "-U", "--unset" -> unsets.add(args[++i]);
                 case "-l", "--list" -> {
                     if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
