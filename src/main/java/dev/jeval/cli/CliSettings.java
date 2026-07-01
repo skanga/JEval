@@ -514,6 +514,9 @@ final class CliSettings {
         if (normalized.equals("DEEPEVAL_FILE_SYSTEM")) {
             return fileSystem(value);
         }
+        if (normalized.equals("DEEPEVAL_DEFAULT_SAVE")) {
+            return defaultSave(value);
+        }
         if (normalized.equals("CONFIDENT_REGION")) {
             return value.strip().toUpperCase(Locale.ROOT);
         }
@@ -619,6 +622,7 @@ final class CliSettings {
                 "LITELLM_PROXY_API_KEY", "LOCAL_EMBEDDING_API_KEY", "LOCAL_MODEL_API_KEY",
                 "MAX_TOKENS", "MOONSHOT_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
                 "PORTKEY_API_KEY", "TEMPERATURE", "CONFIDENT_REGION",
+                "DEEPEVAL_DEFAULT_SAVE",
                 "DEEPEVAL_DISABLE_DOTENV", "DEEPEVAL_DISABLE_TIMEOUTS", "DEEPEVAL_FILE_SYSTEM",
                 "DEEPEVAL_RESULTS_FOLDER",
                 "DEEPEVAL_RETRY_CAP_SECONDS", "DEEPEVAL_RETRY_EXP_BASE",
@@ -675,6 +679,17 @@ final class CliSettings {
             case "0", "false", "f", "no", "n", "off", "disable", "disabled" -> "false";
             default -> "false";
         };
+    }
+
+    private static String defaultSave(String value) {
+        var trimmed = value.strip();
+        if (trimmed.equals("dotenv") || trimmed.equals("dotenv:")) {
+            return "dotenv";
+        }
+        if (trimmed.startsWith("dotenv:")) {
+            return trimmed;
+        }
+        throw new IllegalArgumentException("Invalid value for DEEPEVAL_DEFAULT_SAVE: " + value);
     }
 
     private static String fileSystem(String value) {
