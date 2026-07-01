@@ -1789,6 +1789,28 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRepeatedValuedOptionsUseLastValueLikeDeepEvalTyper() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\",\"expected_output\":\"Paris\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "scratch", "--method", "contexts",
+                "--variation", "multi-turn", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "first", "--file-name", "second"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals(false, Files.exists(output.resolve("first.json")));
+        assertTrue(Files.readString(output.resolve("second.json")).contains("\"input\" : \"Capital?\""));
+    }
+
+    @Test
     void generateUsesDeepEvalDefaultOutputDirectoryAndTimestampedFileName() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");

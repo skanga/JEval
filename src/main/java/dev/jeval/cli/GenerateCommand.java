@@ -425,18 +425,16 @@ final class GenerateCommand {
     }
 
     private static String option(String[] args, String name, String fallback) {
-        for (var i = 0; i < args.length - 1; i++) {
-            if (name.equals(args[i])) {
-                return args[i + 1];
-            }
-        }
+        var value = fallback;
         var prefix = name + "=";
-        for (var arg : args) {
-            if (arg.startsWith(prefix)) {
-                return arg.substring(prefix.length());
+        for (var i = 0; i < args.length; i++) {
+            if (name.equals(args[i]) && i + 1 < args.length) {
+                value = args[++i];
+            } else if (args[i].startsWith(prefix)) {
+                value = args[i].substring(prefix.length());
             }
         }
-        return fallback;
+        return value;
     }
 
     private static String lowerOption(String[] args, String name, String fallback) {
