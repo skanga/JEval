@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.Map;
 
 public final class JEvalCli {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -33,6 +34,10 @@ public final class JEvalCli {
     }
 
     static int run(String[] args, PrintStream out, PrintStream err, Path storeRoot) {
+        return run(args, out, err, storeRoot, System.getenv());
+    }
+
+    static int run(String[] args, PrintStream out, PrintStream err, Path storeRoot, Map<String, String> env) {
         if (args.length == 1 && ("--version".equals(args[0]) || "-V".equals(args[0]))) {
             out.println("jeval " + version());
             return 0;
@@ -56,7 +61,7 @@ public final class JEvalCli {
             return GenerateCommand.run(args, out, err);
         }
         if (args.length > 0 && "inspect".equals(args[0])) {
-            return inspect(args, out, err, storeRoot);
+            return inspect(args, out, err, storeRoot, env);
         }
         if (args.length < 2 || !"test".equals(args[0])) {
             usage(err);
@@ -112,13 +117,13 @@ public final class JEvalCli {
         }
     }
 
-    private static int inspect(String[] args, PrintStream out, PrintStream err, Path storeRoot) {
+    private static int inspect(String[] args, PrintStream out, PrintStream err, Path storeRoot, Map<String, String> env) {
         var options = inspectOptions(args, err);
         if (options == null) {
             return 2;
         }
         try {
-            var target = inspectTarget(options, storeRoot);
+            var target = inspectTarget(options, storeRoot, env);
             if (target == null) {
                 err.println("No test_run_*.json file found. Run an eval first, or pass a path or folder.");
                 return 2;
@@ -181,7 +186,7 @@ public final class JEvalCli {
         return new InspectOptions(path, folder, format);
     }
 
-    private static Path inspectTarget(InspectOptions options, Path storeRoot) throws IOException {
+    private static Path inspectTarget(InspectOptions options, Path storeRoot, Map<String, String> env) throws IOException {
         if (options.path() != null) {
             if (Files.isRegularFile(options.path())) {
                 return options.path();
@@ -193,6 +198,11 @@ public final class JEvalCli {
         }
         if (options.folder() != null) {
             return Files.isDirectory(options.folder()) ? latestTimestampedRun(options.folder()) : null;
+        }
+        var envFolder = env.get("DEEPEVAL_RESULTS_FOLDER");
+        if (envFolder != null && !envFolder.isBlank()) {
+            var folder = Path.of(envFolder);
+            return Files.isDirectory(folder) ? latestTimestampedRun(folder) : null;
         }
         var rolling = storeRoot.resolve(".deepeval").resolve(".latest_run_full.json");
         if (Files.isRegularFile(rolling)) {

@@ -10,6 +10,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -1175,6 +1176,40 @@ class JEvalCliTest {
 
         assertEquals(0, exit, text(err));
         assertTrue(text(out).contains("experiments-inspect"));
+    }
+
+    @Test
+    void inspectUsesDeepEvalResultsFolderEnvironmentFallback() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "env-folder-inspect",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var envFolder = tempDir.resolve("env-results");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+        assertEquals(0, run(new String[] {
+                "test", "run", file.toString(), "--quiet",
+                "--results-folder", envFolder.toString()
+        }, out, err));
+        Files.delete(tempDir.resolve(".deepeval").resolve(".latest_run_full.json"));
+
+        out.reset();
+        err.reset();
+        var exit = JEvalCli.run(
+                new String[] {"inspect"},
+                print(out),
+                print(err),
+                tempDir,
+                Map.of("DEEPEVAL_RESULTS_FOLDER", envFolder.toString()));
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("env-folder-inspect"));
     }
 
     @Test
