@@ -24,7 +24,9 @@ public final class Hyperparameters {
             if (value == null) {
                 continue;
             }
-            if (value instanceof String || value instanceof Integer || value instanceof Long
+            if (value instanceof Boolean bool) {
+                processed.put(key, bool ? "True" : "False");
+            } else if (value instanceof String || value instanceof Integer || value instanceof Long
                     || value instanceof Float || value instanceof Double) {
                 processed.put(key, String.valueOf(value));
             } else if (!(value instanceof Prompt)) {

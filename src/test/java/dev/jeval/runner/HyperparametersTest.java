@@ -31,6 +31,13 @@ class HyperparametersTest {
     }
 
     @Test
+    void processAcceptsBooleanValuesLikeDeepEvalPythonInts() {
+        var processed = Hyperparameters.process(Map.of("strict", true));
+
+        assertEquals(Map.of("strict", "True"), processed);
+    }
+
+    @Test
     void processRejectsNonStringKeysAndUnsupportedValuesLikeDeepEval() {
         var badKey = new LinkedHashMap<Object, Object>();
         badKey.put(1, "value");
