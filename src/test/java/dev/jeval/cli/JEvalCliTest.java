@@ -2899,6 +2899,20 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "deepeval-disable-dotenv=yes", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_DISABLE_DOTENV", "true");
+    }
+
+    @Test
     void settingsRejectsMissingSetValueBeforeConsumingNextOption() {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
