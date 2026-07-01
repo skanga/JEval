@@ -120,6 +120,22 @@ class TestRunnerTest {
     }
 
     @Test
+    void rejectsMetricSpecsWithoutType() throws Exception {
+        var spec = tempDir.resolve("eval.json");
+        Files.writeString(spec, """
+                {
+                  "name": "bad-metric",
+                  "metrics": [{"threshold": 0.5}],
+                  "cases": [{"input": "q", "actualOutput": "yes", "expectedOutput": "yes"}]
+                }
+                """);
+
+        var error = assertThrows(IllegalArgumentException.class, () -> new TestRunner().run(spec));
+
+        assertTrue(error.getMessage().contains("Metric spec must define type"));
+    }
+
+    @Test
     void runsCsvDatasetFromSpec() throws Exception {
         var dataset = tempDir.resolve("cases.csv");
         Files.writeString(dataset, """

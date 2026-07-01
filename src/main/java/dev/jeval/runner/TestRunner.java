@@ -496,6 +496,9 @@ public final class TestRunner {
     }
 
     private static Metric metric(MetricSpec spec) {
+        if (spec.type() == null || spec.type().isBlank()) {
+            throw new IllegalArgumentException("Metric spec must define type");
+        }
         var type = spec.type().toLowerCase(Locale.ROOT).replace("-", "_");
         var threshold = spec.threshold() == null ? 1.0 : spec.threshold();
         if (!Double.isFinite(threshold)) {
