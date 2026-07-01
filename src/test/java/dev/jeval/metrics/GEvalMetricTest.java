@@ -118,6 +118,31 @@ class GEvalMetricTest {
                 () -> metric.measure(LlmTestCase.builder("input").actualOutput("").build()));
     }
 
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new GEvalMetric(
+                                null,
+                                "Correctness",
+                                List.of(SingleTurnParam.INPUT),
+                                null,
+                                List.of("Check input."),
+                                null,
+                                Double.NaN,
+                                false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new GEvalMetric(
+                                null,
+                                "Correctness",
+                                List.of(SingleTurnParam.INPUT),
+                                null,
+                                List.of("Check input."),
+                                null,
+                                Double.POSITIVE_INFINITY,
+                                false)));
+    }
+
     private static LlmTestCase testCase() {
         return testCase(false);
     }

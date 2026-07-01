@@ -109,6 +109,31 @@ class ConversationalGEvalMetricTest {
                 () -> metric.measure(ConversationalTestCase.builder(List.of(new Turn("user", "Hi"))).build()));
     }
 
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ConversationalGEvalMetric(
+                                null,
+                                "Resolution",
+                                List.of(MultiTurnParam.CONTENT),
+                                null,
+                                List.of("Check content."),
+                                null,
+                                Double.NaN,
+                                false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ConversationalGEvalMetric(
+                                null,
+                                "Resolution",
+                                List.of(MultiTurnParam.CONTENT),
+                                null,
+                                List.of("Check content."),
+                                null,
+                                Double.POSITIVE_INFINITY,
+                                false)));
+    }
+
     private static ConversationalTestCase testCase() {
         return ConversationalTestCase.builder(List.of(
                         new Turn("user", "I need a refund."),

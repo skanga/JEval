@@ -46,6 +46,9 @@ public class GEvalMetric implements Metric {
         if (evaluationParams == null || evaluationParams.isEmpty()) {
             throw new IllegalArgumentException("evaluation_params cannot be an empty list.");
         }
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("GEval threshold must be finite");
+        }
         GEvalUtils.validateCriteriaAndEvaluationSteps(criteria, evaluationSteps);
         this.model = model;
         this.name = name;
