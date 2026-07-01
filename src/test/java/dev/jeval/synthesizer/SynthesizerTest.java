@@ -181,6 +181,22 @@ class SynthesizerTest {
     }
 
     @Test
+    void generatesCrossFileInstructionsForUnalignedAvailableSourceFilesLikeDeepEval() {
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"How do policy and FAQ connect?\"}]}"));
+        var synthesizer = new Synthesizer(
+                model, null, null, noEvolutionConfig(), noFiltrationConfig(), SynthesizerOptions.DEFAULT);
+        List<Object> sourceFiles = List.of(List.of("policy.md", "faq.md"));
+
+        synthesizer.generateGoldensFromContexts(
+                List.of(List.of("Combined policy and FAQ text")), false, 1, sourceFiles);
+
+        assertTrue(model.prompts().getFirst().contains("policy.md"));
+        assertTrue(model.prompts().getFirst().contains("faq.md"));
+        assertTrue(model.prompts().getFirst().contains("used_source_files"));
+    }
+
+    @Test
     void keepsSingleFileContextChunksUnlabeledLikeDeepEval() {
         var model = new ScriptedModel(List.of(
                 "{\"data\":[{\"input\":\"What does the document say?\"}]}"));

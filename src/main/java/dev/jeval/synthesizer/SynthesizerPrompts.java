@@ -261,7 +261,7 @@ final class SynthesizerPrompts {
             List<String> availableSourceFiles,
             String itemKey,
             Integer targetFilesPerContext) {
-        var sourceFiles = distinctAlignedSourceFiles(context, availableSourceFiles);
+        var sourceFiles = distinctSourceFiles(availableSourceFiles);
         if (sourceFiles.size() < 2) {
             return "";
         }
@@ -333,6 +333,13 @@ final class SynthesizerPrompts {
             formatted.add("[SOURCE: " + sourceFiles.get(i) + "] " + context.get(i));
         }
         return List.copyOf(formatted);
+    }
+
+    private static List<String> distinctSourceFiles(List<String> sourceFiles) {
+        if (sourceFiles == null || sourceFiles.isEmpty()) {
+            return List.of();
+        }
+        return List.copyOf(new LinkedHashSet<>(sourceFiles));
     }
 
     private static List<String> distinctAlignedSourceFiles(List<String> context, List<String> sourceFiles) {
