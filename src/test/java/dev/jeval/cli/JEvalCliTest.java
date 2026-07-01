@@ -1902,6 +1902,23 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateScratchRejectsNonnumericNumGoldensWithoutRawJavaError() throws Exception {
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Study question?\"}]}");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "scratch", "--variation", "single-turn",
+                "--scenario", "students", "--task", "study", "--input-format", "question",
+                "--num-goldens", "abc", "--responses-file", responses.toString()
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for --num-goldens: abc"));
+    }
+
+    @Test
     void generateScratchRequiresSingleTurnStylingLikeDeepEval() throws Exception {
         var responses = tempDir.resolve("responses.txt");
         Files.writeString(responses, "{\"data\":[{\"input\":\"Study question?\"}]}");

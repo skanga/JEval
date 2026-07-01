@@ -466,16 +466,33 @@ final class GenerateCommand {
     }
 
     private static int integer(String[] args, String name, int fallback) {
-        return Integer.parseInt(option(args, name, Integer.toString(fallback)));
+        var value = option(args, name, Integer.toString(fallback));
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException("Invalid value for " + name + ": " + value, error);
+        }
     }
 
     private static Integer optionalInteger(String[] args, String name) {
         var value = option(args, name, null);
-        return value == null ? null : Integer.parseInt(value);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException("Invalid value for " + name + ": " + value, error);
+        }
     }
 
     private static double decimal(String[] args, String name, double fallback) {
-        return Double.parseDouble(option(args, name, Double.toString(fallback)));
+        var value = option(args, name, Double.toString(fallback));
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException("Invalid value for " + name + ": " + value, error);
+        }
     }
 
     private static boolean includeExpected(String[] args) {
