@@ -507,6 +507,14 @@ class ConversationalTestCaseTest {
     }
 
     @Test
+    void conversationalTestCaseRejectsNegativeDatasetRank() {
+        assertThrows(IllegalArgumentException.class,
+                () -> ConversationalTestCase.builder(List.of(new Turn("user", "hello")))
+                        .datasetRank(-1)
+                        .build());
+    }
+
+    @Test
     void conversationalTestCaseCopiesMcpServers() {
         var mcpServers = new ArrayList<>(List.of(Map.<String, Object>of("server_name", "policy")));
 

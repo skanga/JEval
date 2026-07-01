@@ -58,6 +58,15 @@ public record LlmTestCase(
         mcpPromptsCalled = copyMaps(mcpPromptsCalled);
         trace = copyObjectMap(trace);
         identifier = identifier == null ? UUID.randomUUID().toString() : identifier;
+        if (tokenCost != null && (!Double.isFinite(tokenCost) || tokenCost < 0.0)) {
+            throw new IllegalArgumentException("LlmTestCase tokenCost must be finite and non-negative");
+        }
+        if (completionTime != null && (!Double.isFinite(completionTime) || completionTime < 0.0)) {
+            throw new IllegalArgumentException("LlmTestCase completionTime must be finite and non-negative");
+        }
+        if (datasetRank != null && datasetRank < 0) {
+            throw new IllegalArgumentException("LlmTestCase datasetRank must be non-negative");
+        }
         multimodal = multimodal
                 || containsPlaceholder(input)
                 || containsPlaceholder(actualOutput)

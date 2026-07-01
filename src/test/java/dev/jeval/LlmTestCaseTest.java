@@ -216,6 +216,21 @@ class LlmTestCaseTest {
     }
 
     @Test
+    void rejectsInvalidNumericMetadata() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> LlmTestCase.builder("input").tokenCost(-0.01).build()),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> LlmTestCase.builder("input").tokenCost(Double.NaN).build()),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> LlmTestCase.builder("input").completionTime(-0.01).build()),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> LlmTestCase.builder("input").completionTime(Double.POSITIVE_INFINITY).build()),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> LlmTestCase.builder("input").datasetRank(-1).build()));
+    }
+
+    @Test
     void autoDetectsMultimodalPlaceholdersInTextFields() {
         var testCase = LlmTestCase.builder("What is shown? [DEEPEVAL:IMAGE:image-id]")
                 .actualOutput("A car")

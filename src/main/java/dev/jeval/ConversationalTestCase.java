@@ -34,6 +34,9 @@ public record ConversationalTestCase(
         mcpServers = copyMaps(mcpServers);
         metadata = copyObjectMap(metadata);
         tags = copyStringList("'tags' must be a list of strings", tags);
+        if (datasetRank != null && datasetRank < 0) {
+            throw new IllegalArgumentException("ConversationalTestCase datasetRank must be non-negative");
+        }
         multimodal = multimodal
                 || containsPlaceholder(scenario)
                 || containsPlaceholder(expectedOutcome)
