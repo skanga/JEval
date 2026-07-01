@@ -177,6 +177,10 @@ final class CliSettings {
                         updates.put(entry.getValue(), value);
                     }
                 }
+                if ("set-openai".equals(command) && !hasValue(savePath(args), updates, "OPENAI_MODEL_NAME")) {
+                    err.println("OpenAI model name is not set. Pass --model (or set OPENAI_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
@@ -353,6 +357,15 @@ final class CliSettings {
 
     private static boolean quiet(String[] args) {
         return has(args, "--quiet") || has(args, "-q");
+    }
+
+    private static boolean hasValue(Path save, Map<String, String> updates, String key) throws IOException {
+        var value = updates.get(key);
+        if (value != null && !value.isBlank()) {
+            return true;
+        }
+        value = new DotenvFile(save).read().get(key);
+        return value != null && !value.isBlank();
     }
 
     private record Parsed(List<String> updates, List<String> unsets, List<String> listFilters, boolean quiet, Path save) {
