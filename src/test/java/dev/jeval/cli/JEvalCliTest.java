@@ -108,12 +108,14 @@ class JEvalCliTest {
 
         assertEquals(0, run(new String[] {"test", "run", "--help"}, out, err));
         assertTrue(text(out).contains("Usage: jeval"));
+        assertTrue(text(out).contains("[--results-subfolder name] [-q|--quiet] [pytest args...]"));
         assertEquals("", text(err));
 
         out.reset();
         err.reset();
         assertEquals(0, run(new String[] {"test", "run", "-h"}, out, err));
         assertTrue(text(out).contains("Usage: jeval"));
+        assertTrue(text(out).contains("[--results-subfolder name] [-q|--quiet] [pytest args...]"));
         assertEquals("", text(err));
     }
 

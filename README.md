@@ -38,7 +38,7 @@ Package the jar, then run JSON evaluations with the `test` command:
 mvn -q -DskipTests package
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test path\to\eval.json --format markdown --output reports
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -id release-smoke --format markdown --output reports
-java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -r 3 --quiet
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -r 3 -q
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -x
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -d failing
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -i
@@ -50,7 +50,7 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -o
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --color no --durations 5 -w -n 2
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --tb short --maxfail=1
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json -X -W
-java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json::case-name --quiet
+java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json::case-name -q
 java -jar target/jeval-0.1.0-SNAPSHOT.jar test run path\to\eval.json --results-folder evals --results-subfolder prompt-v3
 ```
 
