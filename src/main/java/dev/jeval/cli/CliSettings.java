@@ -263,16 +263,35 @@ final class CliSettings {
     private static String providerOptionError(ProviderSpec spec, String[] args) {
         for (var i = 1; i < args.length; i++) {
             var arg = args[i];
-            if (!arg.startsWith("-") || arg.contains("=")) {
+            if (!arg.startsWith("-")) {
                 continue;
             }
-            if ((spec.setKeys().containsKey(arg) || "--save".equals(arg) || "-s".equals(arg)
-                    || ("USE_GEMINI_MODEL".equals(spec.useKey()) && "--service-account-file".equals(arg)))
-                    && missingValue(args, i)) {
-                return "Missing value for " + arg;
+            var name = arg.contains("=") ? arg.substring(0, arg.indexOf('=')) : arg;
+            if (!providerOptions(spec).contains(name)) {
+                return "No such option: " + name;
+            }
+            if (!arg.contains("=") && providerValuedOptions(spec).contains(name) && missingValue(args, i)) {
+                return "Missing value for " + name;
             }
         }
         return null;
+    }
+
+    private static List<String> providerOptions(ProviderSpec spec) {
+        var options = new java.util.ArrayList<>(providerValuedOptions(spec));
+        options.add("--clear-secrets");
+        options.add("-x");
+        return options;
+    }
+
+    private static List<String> providerValuedOptions(ProviderSpec spec) {
+        var options = new java.util.ArrayList<>(spec.setKeys().keySet());
+        options.add("--save");
+        options.add("-s");
+        if ("USE_GEMINI_MODEL".equals(spec.useKey())) {
+            options.add("--service-account-file");
+        }
+        return options;
     }
 
     private static int list(DotenvFile dotenv, List<String> filters, PrintStream out) throws IOException {
