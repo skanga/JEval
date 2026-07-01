@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import dev.jeval.Golden;
+import dev.jeval.MetricResult;
 import dev.jeval.prompt.Prompt;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -92,6 +93,20 @@ class OptimizerTypesTest {
         assertEquals("actual answer", trace.output());
         assertEquals(0.75, trace.score());
         assertEquals("- ExactMatchMetric (0.75): close", trace.feedback());
+    }
+
+    @Test
+    void optimizerScoreRecordsRejectNonFiniteScores() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new SimbaTraceRecord("actual answer", Double.NaN, "feedback"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SimbaTraceRecord("actual answer", Double.POSITIVE_INFINITY, "feedback"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ScorerEvaluationResult("actual", List.of(new MetricResult("metric", 0.5, 0.5, true, null)),
+                        Double.NaN, false));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ScorerEvaluationResult("actual", List.of(new MetricResult("metric", 0.5, 0.5, true, null)),
+                        Double.POSITIVE_INFINITY, false));
     }
 
     @Test

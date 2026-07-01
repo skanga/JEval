@@ -11,6 +11,9 @@ public record ScorerEvaluationResult(
         boolean success) {
 
     public ScorerEvaluationResult {
+        if (!Double.isFinite(score)) {
+            throw new IllegalArgumentException("ScorerEvaluationResult score must be finite");
+        }
         metricResults = List.copyOf(Objects.requireNonNull(metricResults, "metricResults"));
     }
 }
