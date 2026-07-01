@@ -102,6 +102,22 @@ class JEvalCliTest {
     }
 
     @Test
+    void providerCommandHelpOptionsPrintUsageAndExitZero() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {"set-openai", "--help"}, out, err));
+        assertTrue(text(out).contains("Usage: jeval"));
+        assertEquals("", text(err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-openai", "-h"}, out, err));
+        assertTrue(text(out).contains("Usage: jeval"));
+        assertEquals("", text(err));
+    }
+
+    @Test
     void exitsNonZeroWhenEvaluationFails() throws Exception {
         var file = tempDir.resolve("judgment_eval.json");
         Files.writeString(file, """

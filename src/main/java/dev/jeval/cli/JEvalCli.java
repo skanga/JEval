@@ -46,7 +46,9 @@ public final class JEvalCli {
             usage(out);
             return 0;
         }
-        if (args.length == 2 && knownCommand(args[0]) && ("--help".equals(args[1]) || "-h".equals(args[1]))) {
+        if (args.length == 2
+                && (knownCommand(args[0]) || CliSettings.isProviderCommand(args[0]))
+                && ("--help".equals(args[1]) || "-h".equals(args[1]))) {
             usage(out);
             return 0;
         }

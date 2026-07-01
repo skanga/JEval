@@ -311,6 +311,10 @@ final class CliSettings {
         }
     }
 
+    static boolean isProviderCommand(String command) {
+        return ProviderSpec.forCommand(command) != null;
+    }
+
     private static String providerOptionError(String command, ProviderSpec spec, String[] args) {
         for (var i = 1; i < args.length; i++) {
             var arg = args[i];
