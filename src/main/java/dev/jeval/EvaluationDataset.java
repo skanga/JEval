@@ -438,6 +438,24 @@ public final class EvaluationDataset {
                 .thenAccept(generated -> generated.forEach(this::addGolden));
     }
 
+    public CompletableFuture<Void> generateConversationalGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
+            Integer targetFilesPerContext,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateConversationalGoldensFromContextsAsync(
+                contexts,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                sourceFiles,
+                contextChunkSourceFiles,
+                targetFilesPerContext)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
     public void generateConversationalGoldensFromScratch(int numGoldens, Synthesizer synthesizer) {
         requireSynthesizer(synthesizer).generateConversationalGoldensFromScratch(numGoldens).forEach(this::addGolden);
     }
