@@ -17,6 +17,9 @@ abstract class AbstractRagasMetric implements Metric {
     private boolean success;
 
     AbstractRagasMetric(double threshold, RagasScorer scorer, List<SingleTurnParam> requiredParams) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("RAGAS threshold must be finite");
+        }
         this.threshold = threshold;
         this.scorer = Objects.requireNonNull(scorer, "scorer");
         this.requiredParams = List.copyOf(requiredParams);

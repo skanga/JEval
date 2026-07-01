@@ -22,6 +22,9 @@ public final class RagasMetric implements Metric {
     }
 
     public RagasMetric(double threshold, RagasScorer scorer) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("RAGAS threshold must be finite");
+        }
         this.threshold = threshold;
         this.scorer = Objects.requireNonNull(scorer, "scorer");
     }

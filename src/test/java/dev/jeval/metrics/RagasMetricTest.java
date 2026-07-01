@@ -129,6 +129,25 @@ class RagasMetricTest {
         assertTrue(error.getMessage().contains("RAGAS"));
     }
 
+    @Test
+    void constructorsRejectNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RagasMetric(Double.NaN, fixedScorer())),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RagasMetric(Double.POSITIVE_INFINITY, fixedScorer())),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RAGASContextualPrecisionMetric(Double.NaN, fixedScorer())),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RAGASContextualRecallMetric(Double.NaN, fixedScorer())),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RAGASContextualEntitiesRecall(Double.NaN, fixedScorer())),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RAGASAnswerRelevancyMetric(Double.NaN, fixedScorer())),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RAGASFaithfulnessMetric(Double.NaN, fixedScorer())));
+    }
+
     private static LlmTestCase testCase() {
         return LlmTestCase.builder("question")
                 .actualOutput("answer")
