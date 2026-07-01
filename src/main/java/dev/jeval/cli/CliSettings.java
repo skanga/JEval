@@ -328,8 +328,21 @@ final class CliSettings {
             if (!arg.contains("=") && providerValuedOptions(command, spec).contains(name) && missingValue(args, i)) {
                 return "Missing value for " + name;
             }
+            if (costOption(name)) {
+                var value = arg.contains("=") ? arg.substring(arg.indexOf('=') + 1) : args[i + 1];
+                try {
+                    Double.parseDouble(value);
+                } catch (NumberFormatException error) {
+                    return "Invalid value for " + name + ": " + value;
+                }
+            }
         }
         return null;
+    }
+
+    private static boolean costOption(String name) {
+        return "--cost-per-input-token".equals(name) || "--cost-per-output-token".equals(name)
+                || "-i".equals(name) || "-o".equals(name);
     }
 
     private static List<String> providerOptions(String command, ProviderSpec spec) {
