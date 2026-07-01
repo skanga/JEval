@@ -59,6 +59,10 @@ final class CliSettings {
     static int settings(String[] args, PrintStream out, PrintStream err) {
         try {
             var parsed = parse(args, 1);
+            if (parsed.listFilters() != null && (!parsed.updates().isEmpty() || !parsed.unsets().isEmpty())) {
+                err.println("Cannot use --list with --set or --unset");
+                return 2;
+            }
             var dotenv = new DotenvFile(parsed.save());
             var updates = new LinkedHashMap<String, String>();
             var explicitUpdates = new java.util.HashSet<String>();

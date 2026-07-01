@@ -2449,6 +2449,21 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsListRejectsSetOrUnsetInSameCommand() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--list", "--set", "temperature=0.42", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Cannot use --list with --set or --unset"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsAcceptsSaveEqualsDotenvForm() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
