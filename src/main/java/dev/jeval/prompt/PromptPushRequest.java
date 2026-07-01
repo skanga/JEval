@@ -14,6 +14,12 @@ public record PromptPushRequest(
         String branch) {
 
     public PromptPushRequest {
+        if (alias == null || alias.isBlank()) {
+            throw new IllegalArgumentException("PromptPushRequest alias is required");
+        }
+        if (text != null && messages != null) {
+            throw new IllegalArgumentException("PromptPushRequest cannot include both text and messages");
+        }
         messages = messages == null ? null : List.copyOf(messages);
         tools = tools == null ? null : List.copyOf(tools);
     }

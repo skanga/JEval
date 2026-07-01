@@ -144,6 +144,26 @@ class PromptDtoTest {
     }
 
     @Test
+    void promptPushRequestRejectsInvalidPayloadShape() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptPushRequest(null, "text", null, null, null, null, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptPushRequest(" ", "text", null, null, null, null, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptPushRequest(
+                                "support-agent",
+                                "text",
+                                List.of(new PromptMessage("user", "Hello")),
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null)));
+    }
+
+    @Test
     void promptApiKeepsDeepEvalFields() {
         var prompt = new PromptApi("prompt-1", PromptType.TEXT);
 
