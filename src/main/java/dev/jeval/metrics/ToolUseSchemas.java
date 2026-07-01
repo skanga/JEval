@@ -28,9 +28,19 @@ public final class ToolUseSchemas {
     }
 
     public record ToolSelectionScore(double score, String reason) {
+        public ToolSelectionScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("ToolSelectionScore score must be finite");
+            }
+        }
     }
 
     public record ArgumentCorrectnessScore(double score, String reason) {
+        public ArgumentCorrectnessScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("ArgumentCorrectnessScore score must be finite");
+            }
+        }
     }
 
     public record Reason(String reason) {

@@ -41,4 +41,16 @@ class ToolUseSchemasTest {
         assertThrows(IllegalArgumentException.class, () -> ToolUseSchemas.parseReason("{}"));
         assertThrows(IllegalArgumentException.class, () -> ToolUseSchemas.parseReason("{\"reason\":1}"));
     }
+
+    @Test
+    void scoreRecordsRejectNonFiniteScores() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new ToolUseSchemas.ToolSelectionScore(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ToolUseSchemas.ToolSelectionScore(Double.POSITIVE_INFINITY, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ToolUseSchemas.ArgumentCorrectnessScore(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ToolUseSchemas.ArgumentCorrectnessScore(Double.POSITIVE_INFINITY, "bad"));
+    }
 }
