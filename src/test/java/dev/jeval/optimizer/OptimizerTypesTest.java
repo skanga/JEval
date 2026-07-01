@@ -107,6 +107,10 @@ class OptimizerTypesTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new ScorerEvaluationResult("actual", List.of(new MetricResult("metric", 0.5, 0.5, true, null)),
                         Double.POSITIVE_INFINITY, false));
+        assertThrows(IllegalArgumentException.class,
+                () -> new AcceptedIteration("root", "child", "generator", Double.NaN, 0.7));
+        assertThrows(IllegalArgumentException.class,
+                () -> new AcceptedIteration("root", "child", "generator", 0.4, Double.POSITIVE_INFINITY));
     }
 
     @Test
