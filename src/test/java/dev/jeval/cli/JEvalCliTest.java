@@ -1576,6 +1576,29 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRejectsNonFiniteDecimalOptionsLikeDeepEval() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(),
+                "--responses-file", responses.toString(),
+                "--synthetic-input-quality-threshold", "NaN",
+                "--output-dir", output.toString(), "--file-name", "bad-threshold"
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for --synthetic-input-quality-threshold: NaN"));
+        assertEquals(false, Files.exists(output.resolve("bad-threshold.json")));
+    }
+
+    @Test
     void generateParsesDocsContextConstructionOptionsLikeDeepEval() throws Exception {
         var method = GenerateCommand.class.getDeclaredMethod("contextConstructionConfig", String[].class);
         method.setAccessible(true);

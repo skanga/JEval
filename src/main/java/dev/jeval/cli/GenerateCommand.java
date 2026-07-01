@@ -489,7 +489,11 @@ final class GenerateCommand {
     private static double decimal(String[] args, String name, double fallback) {
         var value = option(args, name, Double.toString(fallback));
         try {
-            return Double.parseDouble(value);
+            var parsed = Double.parseDouble(value);
+            if (!Double.isFinite(parsed)) {
+                throw new NumberFormatException();
+            }
+            return parsed;
         } catch (NumberFormatException error) {
             throw new IllegalArgumentException("Invalid value for " + name + ": " + value, error);
         }
