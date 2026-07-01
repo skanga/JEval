@@ -341,6 +341,37 @@ class TestRunnerTest {
     }
 
     @Test
+    void csvDatasetAcceptsCamelCaseFieldAliasesLikeInlineCases() throws Exception {
+        var dataset = tempDir.resolve("cases.csv");
+        Files.writeString(dataset, """
+                input,actualOutput,expectedOutput,retrievalContext,tokenCost,completionTime,customColumnKeyValues,toolsCalled,expectedTools,mcpServers,mcpToolsCalled,mcpResourcesCalled,mcpPromptsCalled
+                q,yes,yes,retrieved fact,0.42,2.5,"{""risk"":""high""}","[{""name"":""Search""}]","[{""name"":""Search""}]","[{""server_name"":""policy""}]","[{""name"":""mcp-search""}]","[{""uri"":""file://policy""}]","[{""name"":""policy-prompt""}]"
+                """);
+        var spec = tempDir.resolve("eval.json");
+        Files.writeString(spec, """
+                {
+                  "name": "csv-run",
+                  "dataset": "cases.csv",
+                  "metrics": [{"type": "exact_match"}]
+                }
+                """);
+
+        var result = assertDoesNotThrow(() -> new TestRunner().run(spec));
+        var testCase = result.results().getFirst();
+
+        assertEquals(List.of("retrieved fact"), testCase.retrievalContext());
+        assertEquals(0.42, testCase.tokenCost());
+        assertEquals(2.5, testCase.completionTime());
+        assertEquals(java.util.Map.of("risk", "high"), testCase.customColumnKeyValues());
+        assertEquals("Search", testCase.toolsCalled().getFirst().name());
+        assertEquals("Search", testCase.expectedTools().getFirst().name());
+        assertEquals(List.of(java.util.Map.of("server_name", "policy")), testCase.mcpServers());
+        assertEquals(List.of(java.util.Map.of("name", "mcp-search")), testCase.mcpToolsCalled());
+        assertEquals(List.of(java.util.Map.of("uri", "file://policy")), testCase.mcpResourcesCalled());
+        assertEquals(List.of(java.util.Map.of("name", "policy-prompt")), testCase.mcpPromptsCalled());
+    }
+
+    @Test
     void rejectsSpecWithoutCasesOrDataset() throws Exception {
         var spec = tempDir.resolve("eval.json");
         Files.writeString(spec, """

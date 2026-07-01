@@ -610,6 +610,20 @@ public final class EvaluationDataset {
             var headers = parseCsvLine(lines.getFirst());
             var actualOutputKey = csvHeader(headers, actualOutputColName, "actual_output", "actualOutput");
             var expectedOutputKey = csvHeader(headers, expectedOutputColName, "expected_output", "expectedOutput");
+            var retrievalContextKey = csvHeader(headers, retrievalContextColName, "retrieval_context", "retrievalContext");
+            var toolsCalledKey = csvHeader(headers, toolsCalledColName, "tools_called", "toolsCalled");
+            var expectedToolsKey = csvHeader(headers, expectedToolsColName, "expected_tools", "expectedTools");
+            var additionalMetadataKey = csvHeader(headers, additionalMetadataColName, "additional_metadata", "metadata");
+            var tokenCostKey = csvHeader(headers, "token_cost", "token_cost", "tokenCost");
+            var completionTimeKey = csvHeader(headers, "completion_time", "completion_time", "completionTime");
+            var customColumnKeyValuesKey = csvHeader(headers, "custom_column_key_values",
+                    "custom_column_key_values", "customColumnKeyValues");
+            var mcpServersKey = csvHeader(headers, "mcp_servers", "mcp_servers", "mcpServers");
+            var mcpToolsCalledKey = csvHeader(headers, "mcp_tools_called", "mcp_tools_called", "mcpToolsCalled");
+            var mcpResourcesCalledKey = csvHeader(headers, "mcp_resources_called", "mcp_resources_called",
+                    "mcpResourcesCalled");
+            var mcpPromptsCalledKey = csvHeader(headers, "mcp_prompts_called", "mcp_prompts_called",
+                    "mcpPromptsCalled");
             for (var i = 1; i < lines.size(); i++) {
                 if (lines.get(i).isBlank()) {
                     continue;
@@ -622,19 +636,19 @@ public final class EvaluationDataset {
                         .actualOutput(row.get(actualOutputKey))
                         .expectedOutput(nullIfBlank(row.get(expectedOutputKey)))
                         .context(csvListOrNull(row.get(contextColName), contextDelimiter))
-                        .retrievalContext(csvListOrNull(row.get(retrievalContextColName), retrievalContextDelimiter))
-                        .toolsCalled(toolListFromCsv(row.get(toolsCalledColName), "tools_called", ";"))
-                        .expectedTools(toolListFromCsv(row.get(expectedToolsColName), "expected_tools", ";"))
-                        .additionalMetadata(metadataMapFromCsv(row, additionalMetadataColName))
+                        .retrievalContext(csvListOrNull(row.get(retrievalContextKey), retrievalContextDelimiter))
+                        .toolsCalled(toolListFromCsv(row.get(toolsCalledKey), "tools_called", ";"))
+                        .expectedTools(toolListFromCsv(row.get(expectedToolsKey), "expected_tools", ";"))
+                        .additionalMetadata(metadataMapFromCsv(row, additionalMetadataKey))
                         .comments(nullIfBlank(row.get("comments")))
-                        .tokenCost(doubleFromCsv(row.get("token_cost"), "token_cost"))
-                        .completionTime(doubleFromCsv(row.get("completion_time"), "completion_time"))
-                        .customColumnKeyValues(stringMapFromCsv(row.get("custom_column_key_values")))
+                        .tokenCost(doubleFromCsv(row.get(tokenCostKey), "token_cost"))
+                        .completionTime(doubleFromCsv(row.get(completionTimeKey), "completion_time"))
+                        .customColumnKeyValues(stringMapFromCsv(row.get(customColumnKeyValuesKey)))
                         .trace(objectMapFromCsv(row.get("trace"), "trace"))
-                        .mcpServers(objectListFromCsv(row.get("mcp_servers"), "mcp_servers"))
-                        .mcpToolsCalled(objectListFromCsv(row.get("mcp_tools_called"), "mcp_tools_called"))
-                        .mcpResourcesCalled(objectListFromCsv(row.get("mcp_resources_called"), "mcp_resources_called"))
-                        .mcpPromptsCalled(objectListFromCsv(row.get("mcp_prompts_called"), "mcp_prompts_called"))
+                        .mcpServers(objectListFromCsv(row.get(mcpServersKey), "mcp_servers"))
+                        .mcpToolsCalled(objectListFromCsv(row.get(mcpToolsCalledKey), "mcp_tools_called"))
+                        .mcpResourcesCalled(objectListFromCsv(row.get(mcpResourcesCalledKey), "mcp_resources_called"))
+                        .mcpPromptsCalled(objectListFromCsv(row.get(mcpPromptsCalledKey), "mcp_prompts_called"))
                         .name(nullIfBlank(row.get("name")))
                         .tags(csvListOrNull(row.get("tags"), ";"))
                         .build());
