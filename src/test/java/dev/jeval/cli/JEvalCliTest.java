@@ -1224,6 +1224,17 @@ class JEvalCliTest {
     }
 
     @Test
+    void inspectRejectsMissingFolderValueBeforeConsumingNextOption() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"inspect", "--folder", "--format", "html"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Missing value for --folder"));
+    }
+
+    @Test
     void testRunWritesDeepEvalResultsFolderAndSubfolder() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

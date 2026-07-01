@@ -157,17 +157,19 @@ public final class JEvalCli {
             }
             switch (arg) {
                 case "--format" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for --format");
                         return null;
                     }
+                    i++;
                     format = args[i].toLowerCase(Locale.ROOT);
                 }
                 case "-f", "--folder" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for " + arg);
                         return null;
                     }
+                    i++;
                     folder = Path.of(args[i]);
                 }
                 default -> {
@@ -188,6 +190,10 @@ public final class JEvalCli {
             return null;
         }
         return new InspectOptions(path, folder, format);
+    }
+
+    private static boolean missingOptionValue(String[] args, int index) {
+        return index + 1 == args.length || args[index + 1].startsWith("-");
     }
 
     private static Path inspectTarget(InspectOptions options, Path storeRoot, Map<String, String> env) throws IOException {
