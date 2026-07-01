@@ -46,6 +46,10 @@ public final class JEvalCli {
             usage(out);
             return 0;
         }
+        if (args.length == 2 && knownCommand(args[0]) && ("--help".equals(args[1]) || "-h".equals(args[1]))) {
+            usage(out);
+            return 0;
+        }
         if (args.length > 0 && "settings".equals(args[0])) {
             return CliSettings.settings(args, out, err);
         }
@@ -445,6 +449,13 @@ public final class JEvalCli {
     private static String version() {
         var version = JEvalCli.class.getPackage().getImplementationVersion();
         return version == null ? FALLBACK_VERSION : version;
+    }
+
+    private static boolean knownCommand(String command) {
+        return switch (command) {
+            case "test", "settings", "set-debug", "unset-debug", "generate", "inspect" -> true;
+            default -> false;
+        };
     }
 
     private static void usage(PrintStream err) {
