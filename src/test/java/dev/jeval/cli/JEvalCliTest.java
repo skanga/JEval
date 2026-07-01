@@ -3927,6 +3927,20 @@ class JEvalCliTest {
     }
 
     @Test
+    void setDebugRejectsNonFiniteTraceSampleRateLikeDeepEvalTyper() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-debug", "--trace-sample-rate", "NaN", "--save", "dotenv:" + env},
+                out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for --trace-sample-rate: NaN"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void unsetDebugRemovesDebugSettingsFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
@@ -4516,6 +4530,24 @@ class JEvalCliTest {
 
         assertEquals(2, exit);
         assertTrue(text(err).contains("Invalid value for --cost-per-input-token: expensive"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
+    void providerRejectsNonFiniteCostOverrideValuesLikeDeepEvalTyper() throws Exception {
+        var env = tempDir.resolve("invalid-cost.env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "set-openai",
+                "--model", "gpt-4o-mini",
+                "--cost-per-input-token", "Infinity",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for --cost-per-input-token: Infinity"));
         assertEquals(false, Files.exists(env));
     }
 

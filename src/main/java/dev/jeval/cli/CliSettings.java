@@ -219,7 +219,9 @@ final class CliSettings {
             if ("--trace-sample-rate".equals(name)) {
                 var value = arg.contains("=") ? arg.substring(arg.indexOf('=') + 1) : args[i + 1];
                 try {
-                    Double.parseDouble(value);
+                    if (!Double.isFinite(Double.parseDouble(value))) {
+                        throw new NumberFormatException();
+                    }
                 } catch (NumberFormatException error) {
                     return "Invalid value for " + name + ": " + value;
                 }
@@ -351,7 +353,9 @@ final class CliSettings {
             if (numericProviderOption(name)) {
                 var value = arg.contains("=") ? arg.substring(arg.indexOf('=') + 1) : args[i + 1];
                 try {
-                    Double.parseDouble(value);
+                    if (!Double.isFinite(Double.parseDouble(value))) {
+                        throw new NumberFormatException();
+                    }
                 } catch (NumberFormatException error) {
                     return "Invalid value for " + name + ": " + value;
                 }
