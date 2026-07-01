@@ -1941,6 +1941,27 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRejectsUnknownOptionsLikeDeepEvalTyper() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"refund policy\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Refund?\",\"expected_output\":\"Yes\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--output-dir", output.toString(), "--file-name", "unknown-option",
+                "--max-golden-per-context", "1"
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("No such option: --max-golden-per-context"));
+    }
+
+    @Test
     void generateRequiresVariationLikeDeepEval() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");

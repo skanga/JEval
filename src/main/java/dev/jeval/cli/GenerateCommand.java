@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 final class GenerateCommand {
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -30,6 +31,11 @@ final class GenerateCommand {
     }
 
     static int run(String[] args, PrintStream out, PrintStream err) {
+        var unknownOption = unknownOption(args);
+        if (unknownOption != null) {
+            err.println("No such option: " + unknownOption);
+            return 2;
+        }
         var method = lowerOption(args, "--method", null);
         var variation = lowerOption(args, "--variation", null);
         if (method == null) {
@@ -557,6 +563,38 @@ final class GenerateCommand {
 
     private static boolean supportedFileType(String fileType) {
         return "json".equals(fileType) || "jsonl".equals(fileType) || "csv".equals(fileType);
+    }
+
+    private static String unknownOption(String[] args) {
+        var valued = Set.of(
+                "--method", "--variation", "--output-dir", "--file-type", "--file-name", "--model",
+                "--max-concurrent", "--documents", "--contexts-file", "--goldens-file", "--num-goldens",
+                "--max-goldens-per-context", "--max-goldens-per-golden", "--max-contexts-per-document",
+                "--min-contexts-per-document", "--max-context-length", "--min-context-length", "--chunk-size",
+                "--chunk-overlap", "--context-quality-threshold", "--context-similarity-threshold", "--max-retries",
+                "--scenario", "--task", "--input-format", "--expected-output-format", "--scenario-context",
+                "--conversational-task", "--participant-roles", "--scenario-format", "--expected-outcome-format",
+                "--responses-file", "--save", "-s", "--num-evolutions", "--evolutions",
+                "--synthetic-input-quality-threshold", "--max-quality-retries", "--target-files-per-context",
+                "--max-files-per-context", "--encoding", "--document-path");
+        var flags = Set.of(
+                "--async-mode", "--sync-mode", "--include-expected", "--no-include-expected",
+                "--no-expected-output", "--cost-tracking", "--allow-cross-file-contexts");
+        for (var i = 1; i < args.length; i++) {
+            var arg = args[i];
+            if (!arg.startsWith("-")) {
+                continue;
+            }
+            var name = arg.contains("=") ? arg.substring(0, arg.indexOf('=')) : arg;
+            if (valued.contains(name)) {
+                if (!arg.contains("=")) {
+                    i++;
+                }
+            } else if (!flags.contains(name)) {
+                return name;
+            }
+        }
+        return null;
     }
 
     private static boolean has(String[] args, String name) {
