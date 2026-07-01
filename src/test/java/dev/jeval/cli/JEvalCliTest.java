@@ -1151,6 +1151,21 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateSaveEqualsDotenvReadsDefaultDotenvLocalLikeDeepEval() throws Exception {
+        withDefaultDotenvLocal("USE_OPENAI_MODEL=YES\nOPENAI_MODEL_NAME=gpt-4o-mini\n", () -> {
+            var out = new ByteArrayOutputStream();
+            var err = new ByteArrayOutputStream();
+
+            var exit = run(new String[] {"generate", "--method", "scratch", "--variation", "single-turn",
+                    "--scenario", "users", "--task", "answer", "--input-format", "question",
+                    "--num-goldens", "1", "--save=dotenv"}, out, err);
+
+            assertEquals(2, exit);
+            assertTrue(text(err).contains("OPENAI_API_KEY is required"));
+        });
+    }
+
+    @Test
     void generateAcceptsShortSaveAliasForProviderSettings() throws Exception {
         withDefaultDotenv("USE_OPENAI_MODEL=YES\n", () -> {
             var env = tempDir.resolve("missing.env");
@@ -2556,6 +2571,22 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSaveEqualsDotenvWritesDefaultDotenvLocalLikeDeepEval() throws Exception {
+        withDefaultDotenvLocal("", () -> {
+            Files.deleteIfExists(Path.of(".env.local"));
+            Files.deleteIfExists(Path.of("dotenv"));
+            var out = new ByteArrayOutputStream();
+            var err = new ByteArrayOutputStream();
+
+            var exit = run(new String[] {"settings", "-u", "log-level=info", "--save=dotenv"}, out, err);
+
+            assertEquals(0, exit, text(err));
+            assertDotenv(Path.of(".env.local"), "LOG_LEVEL", "20");
+            assertEquals(false, Files.exists(Path.of("dotenv")));
+        });
+    }
+
+    @Test
     void settingsCanonicalizesDeepEvalDeprecatedComputedTimeoutAliases() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
@@ -3665,6 +3696,30 @@ class JEvalCliTest {
                 Files.writeString(path, original);
             } else {
                 Files.deleteIfExists(path);
+            }
+        }
+    }
+
+    private static void withDefaultDotenvLocal(String content, CheckedRunnable action) throws Exception {
+        var path = Path.of(".env.local");
+        var literalDotenv = Path.of("dotenv");
+        var existed = Files.exists(path);
+        var original = existed ? Files.readString(path) : null;
+        var literalExisted = Files.exists(literalDotenv);
+        var literalOriginal = literalExisted ? Files.readString(literalDotenv) : null;
+        Files.writeString(path, content);
+        try {
+            action.run();
+        } finally {
+            if (existed) {
+                Files.writeString(path, original);
+            } else {
+                Files.deleteIfExists(path);
+            }
+            if (literalExisted) {
+                Files.writeString(literalDotenv, literalOriginal);
+            } else {
+                Files.deleteIfExists(literalDotenv);
             }
         }
     }

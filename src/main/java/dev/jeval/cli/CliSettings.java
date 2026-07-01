@@ -383,6 +383,9 @@ final class CliSettings {
     }
 
     private static Path savePath(String value) {
+        if ("dotenv".equals(value) || "dotenv:".equals(value)) {
+            return Path.of(".env.local");
+        }
         return value.startsWith("dotenv:") ? Path.of(value.substring("dotenv:".length())) : Path.of(value);
     }
 

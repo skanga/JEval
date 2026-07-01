@@ -374,12 +374,12 @@ public final class JEvalCli {
     private static void usage(PrintStream err) {
         err.println("Usage: jeval test [run] <file-or-directory> [-id|--identifier name] [-r|--repeat count] [-x|-X|--exit-on-first-failure] [-i|--ignore-errors] [-s|--skip-on-missing-params] [-c|--use-cache] [-v|--verbose] [-d|--display all|passing|failing] [-m|--mark tag] [-o|--official] [--color yes|no|auto] [--durations count] [--pdb] [-w|-W|--show-warnings] [-n|--num-processes count] [--format markdown|html] [--output dir] [--results-folder dir] [--results-subfolder name] [--quiet] [pytest args...]");
         err.println("       jeval inspect [test-run-file-or-directory] [--folder dir] [--format markdown|html]");
-        err.println("       jeval settings -u key=value|-U key|-l [filter] [-s|--save dotenv:.env] [-q|--quiet]");
-        err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv:.env] [-q|--quiet]");
-        err.println("       jeval unset-debug [-s|--save dotenv:.env] [-q|--quiet]");
-        err.println("       jeval set-openai|set-azure-openai|set-bedrock|set-anthropic|set-gemini|set-grok|set-moonshot|set-deepseek|set-litellm|set-portkey|set-ollama|set-local-model|set-openrouter ... [-s|--save dotenv:.env]");
-        err.println("       jeval set-azure-openai-embedding|set-local-embeddings|set-ollama-embeddings ... [-s|--save dotenv:.env]");
-        err.println("       jeval generate --method contexts|text-to-sql|docs|scratch|goldens --variation single-turn|multi-turn [-s|--save dotenv:.env] ...");
+        err.println("       jeval settings -u key=value|-U key|-l [filter] [-s|--save dotenv[:path]] [-q|--quiet]");
+        err.println("       jeval set-debug [--log-level level] [--verbose|--no-verbose] [-s|--save dotenv[:path]] [-q|--quiet]");
+        err.println("       jeval unset-debug [-s|--save dotenv[:path]] [-q|--quiet]");
+        err.println("       jeval set-openai|set-azure-openai|set-bedrock|set-anthropic|set-gemini|set-grok|set-moonshot|set-deepseek|set-litellm|set-portkey|set-ollama|set-local-model|set-openrouter ... [-s|--save dotenv[:path]]");
+        err.println("       jeval set-azure-openai-embedding|set-local-embeddings|set-ollama-embeddings ... [-s|--save dotenv[:path]]");
+        err.println("       jeval generate --method contexts|text-to-sql|docs|scratch|goldens --variation single-turn|multi-turn [-s|--save dotenv[:path]] ...");
         err.println("       jeval generate --method docs --documents file [--allow-cross-file-contexts] [--target-files-per-context n] [--max-files-per-context n] ...");
     }
 

@@ -453,6 +453,9 @@ final class GenerateCommand {
                 save = arg.substring("-s=".length());
             }
         }
+        if ("dotenv".equals(save) || "dotenv:".equals(save)) {
+            return Path.of(".env.local");
+        }
         return save.startsWith("dotenv:") ? Path.of(save.substring("dotenv:".length())) : Path.of(save);
     }
 

@@ -98,6 +98,8 @@ Specs can also point at JSON, JSONL, or CSV datasets:
 ## CLI settings and providers
 
 Settings and provider commands persist DeepEval-style environment keys to dotenv files:
+`--save dotenv` uses DeepEval's default `.env.local`; use `--save dotenv:<path>`
+to choose another file.
 
 ```powershell
 java -jar target/jeval-0.1.0-SNAPSHOT.jar settings -u log-level=error --save dotenv:.env
