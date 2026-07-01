@@ -2983,6 +2983,18 @@ class JEvalCliTest {
     }
 
     @Test
+    void setDebugRejectsUnknownOptionsLikeDeepEvalTyper() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-debug", "--missing-option", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("No such option: --missing-option"));
+    }
+
+    @Test
     void unsetDebugRemovesDebugSettingsFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
@@ -3005,6 +3017,18 @@ class JEvalCliTest {
         assertEquals(false, readDotenv(env).containsKey("LOG_LEVEL"));
         assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_VERBOSE_MODE"));
         assertEquals(false, readDotenv(env).containsKey("DEEPEVAL_DEBUG_ASYNC"));
+    }
+
+    @Test
+    void unsetDebugRejectsUnknownOptionsLikeDeepEvalTyper() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"unset-debug", "--missing-option", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("No such option: --missing-option"));
     }
 
     @Test

@@ -114,6 +114,11 @@ final class CliSettings {
     }
 
     static int setDebug(String[] args, PrintStream out, PrintStream err) {
+        var optionError = optionError(args, DEBUG_SET_OPTIONS);
+        if (optionError != null) {
+            err.println(optionError);
+            return 2;
+        }
         var save = savePath(args);
         var quiet = quiet(args);
         var updates = new LinkedHashMap<String, String>();
@@ -143,6 +148,11 @@ final class CliSettings {
     }
 
     static int unsetDebug(String[] args, PrintStream out, PrintStream err) {
+        var optionError = optionError(args, DEBUG_UNSET_OPTIONS);
+        if (optionError != null) {
+            err.println(optionError);
+            return 2;
+        }
         var save = savePath(args);
         var quiet = quiet(args);
         try {
@@ -155,6 +165,36 @@ final class CliSettings {
             err.println(error.getMessage());
             return 2;
         }
+    }
+
+    private static final List<String> DEBUG_SET_OPTIONS = List.of(
+            "--log-level",
+            "--verbose", "--no-verbose",
+            "--debug-async", "--no-debug-async",
+            "--log-stack-traces", "--no-log-stack-traces",
+            "--retry-before-level", "--retry-after-level",
+            "--grpc", "--no-grpc",
+            "--grpc-verbosity", "--grpc-trace",
+            "--trace-verbose", "--no-trace-verbose",
+            "--trace-env",
+            "--trace-flush", "--no-trace-flush",
+            "--trace-sample-rate",
+            "--save", "-s",
+            "--quiet", "-q");
+    private static final List<String> DEBUG_UNSET_OPTIONS = List.of("--save", "-s", "--quiet", "-q");
+
+    private static String optionError(String[] args, List<String> allowed) {
+        for (var i = 1; i < args.length; i++) {
+            var arg = args[i];
+            if (!arg.startsWith("-")) {
+                continue;
+            }
+            var name = arg.contains("=") ? arg.substring(0, arg.indexOf('=')) : arg;
+            if (!allowed.contains(name)) {
+                return "No such option: " + name;
+            }
+        }
+        return null;
     }
 
     static int provider(String command, String[] args, PrintStream err) {
