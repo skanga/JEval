@@ -213,7 +213,7 @@ final class CliSettings {
         if (spec == null) {
             return -1;
         }
-        var optionError = providerOptionError(spec, args);
+        var optionError = providerOptionError(command, spec, args);
         if (optionError != null) {
             err.println(optionError);
             return 2;
@@ -311,14 +311,14 @@ final class CliSettings {
         }
     }
 
-    private static String providerOptionError(ProviderSpec spec, String[] args) {
+    private static String providerOptionError(String command, ProviderSpec spec, String[] args) {
         for (var i = 1; i < args.length; i++) {
             var arg = args[i];
             if (!arg.startsWith("-")) {
                 continue;
             }
             var name = arg.contains("=") ? arg.substring(0, arg.indexOf('=')) : arg;
-            if (!providerOptions(spec).contains(name)) {
+            if (!providerOptions(command, spec).contains(name)) {
                 return "No such option: " + name;
             }
             if (!arg.contains("=") && providerValuedOptions(spec).contains(name) && missingValue(args, i)) {
@@ -328,10 +328,12 @@ final class CliSettings {
         return null;
     }
 
-    private static List<String> providerOptions(ProviderSpec spec) {
+    private static List<String> providerOptions(String command, ProviderSpec spec) {
         var options = new java.util.ArrayList<>(providerValuedOptions(spec));
-        options.add("--clear-secrets");
-        options.add("-x");
+        if (command.startsWith("unset-")) {
+            options.add("--clear-secrets");
+            options.add("-x");
+        }
         return options;
     }
 
