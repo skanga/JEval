@@ -2921,6 +2921,34 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetCoercesTelemetryBooleanValuesLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "deepeval-telemetry-opt-out=on",
+                "--set", "deepeval-update-warning-opt-in=no",
+                "--set", "error-reporting=enabled",
+                "--set", "ignore-deepeval-errors=0",
+                "--set", "skip-deepeval-missing-params=t",
+                "--set", "enable-deepeval-cache=disable",
+                "--set", "confident-trace-internal=yes",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_TELEMETRY_OPT_OUT", "true");
+        assertDotenv(env, "DEEPEVAL_UPDATE_WARNING_OPT_IN", "false");
+        assertDotenv(env, "ERROR_REPORTING", "true");
+        assertDotenv(env, "IGNORE_DEEPEVAL_ERRORS", "false");
+        assertDotenv(env, "SKIP_DEEPEVAL_MISSING_PARAMS", "true");
+        assertDotenv(env, "ENABLE_DEEPEVAL_CACHE", "false");
+        assertDotenv(env, "CONFIDENT_TRACE_INTERNAL", "true");
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
