@@ -1120,6 +1120,9 @@ public final class Synthesizer {
         if (contexts.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("contexts must not contain null context entries");
         }
+        if (contexts.stream().anyMatch(context -> context.stream().anyMatch(Objects::isNull))) {
+            throw new IllegalArgumentException("contexts must not contain null chunks");
+        }
     }
 
     private static boolean shouldStyle(StylingConfig config) {
