@@ -1956,6 +1956,29 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateSupportsDeepEvalExpectedOutputAliasAfterNegativeFlag() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Paris is in France.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses, "{\"data\":[{\"input\":\"Capital?\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "single-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--no-expected-output", "--expected-output",
+                "--output-dir", output.toString(), "--file-name", "with-expected-output-shorthand"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("with-expected-output-shorthand.json"));
+        assertTrue(generated.contains("Capital?"));
+        assertTrue(generated.contains("\"expected_output\" : \"Generated expected output\""));
+    }
+
+    @Test
     void generateSupportsDeepEvalNoIncludeExpectedOutputAliasAfterPositiveFlag() throws Exception {
         var contexts = tempDir.resolve("contexts.json");
         Files.writeString(contexts, "[[\"Paris is in France.\"]]");
@@ -2831,6 +2854,30 @@ class JEvalCliTest {
 
         assertEquals(0, exit, text(err));
         var generated = Files.readString(output.resolve("with-expected-outcome.json"));
+        assertTrue(generated.contains("\"scenario\" : \"refund support\""));
+        assertTrue(generated.contains("\"expected_outcome\" : \"Generated conversational expected outcome\""));
+    }
+
+    @Test
+    void generateSupportsDeepEvalExpectedOutcomeAliasAfterNegativeFlag() throws Exception {
+        var contexts = tempDir.resolve("contexts.json");
+        Files.writeString(contexts, "[[\"Refunds are available within 30 days.\"]]");
+        var responses = tempDir.resolve("responses.txt");
+        Files.writeString(responses,
+                "{\"data\":[{\"scenario\":\"refund support\",\"turns\":[{\"role\":\"user\",\"content\":\"Need a refund\"}],\"expected_outcome\":\"Refund path explained\"}]}");
+        var output = tempDir.resolve("generated");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "contexts", "--variation", "multi-turn",
+                "--contexts-file", contexts.toString(), "--responses-file", responses.toString(),
+                "--no-expected-outcome", "--expected-outcome",
+                "--output-dir", output.toString(), "--file-name", "with-expected-outcome-shorthand"
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var generated = Files.readString(output.resolve("with-expected-outcome-shorthand.json"));
         assertTrue(generated.contains("\"scenario\" : \"refund support\""));
         assertTrue(generated.contains("\"expected_outcome\" : \"Generated conversational expected outcome\""));
     }
