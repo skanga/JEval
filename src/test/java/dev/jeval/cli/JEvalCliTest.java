@@ -3770,6 +3770,24 @@ class JEvalCliTest {
     }
 
     @Test
+    void providerRejectsInvalidTemperatureValueLikeDeepEvalTyper() throws Exception {
+        var env = tempDir.resolve("invalid-temperature.env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "set-openai",
+                "--model", "gpt-4o-mini",
+                "--temperature", "warm",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for --temperature: warm"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void openRouterProviderAcceptsDeepEvalTemperatureShortAlias() throws Exception {
         var env = tempDir.resolve("openrouter-temperature.env");
         var out = new ByteArrayOutputStream();
