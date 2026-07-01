@@ -96,6 +96,17 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void metricScoresRejectsNegativeCounts() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScores("faithfulness", List.of(), -1, 0, 0)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScores("faithfulness", List.of(), 0, -1, 0)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScores("faithfulness", List.of(), 0, 0, -1)));
+    }
+
+    @Test
     void testRunResultRecordsRejectNonFiniteScores() {
         assertAll(
                 () -> assertThrows(IllegalArgumentException.class,

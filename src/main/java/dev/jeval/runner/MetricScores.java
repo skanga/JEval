@@ -11,5 +11,8 @@ public record MetricScores(String metric, List<Double> scores, int passes, int f
                 throw new IllegalArgumentException("MetricScores scores must be finite");
             }
         }
+        if (passes < 0 || fails < 0 || errors < 0) {
+            throw new IllegalArgumentException("MetricScores counts must be non-negative");
+        }
     }
 }
