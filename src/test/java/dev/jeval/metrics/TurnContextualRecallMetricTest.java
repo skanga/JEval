@@ -84,6 +84,15 @@ class TurnContextualRecallMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TurnContextualRecallMetric(Double.NaN, true, false, 1)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TurnContextualRecallMetric(Double.POSITIVE_INFINITY, true, false, 1)));
+    }
+
+    @Test
     void noRetrievalContextsScoresOne() {
         var metric = new TurnContextualRecallMetric(0.5, true, false, 1);
         var result = metric.measure(ConversationalTestCase.builder(List.of(

@@ -86,6 +86,15 @@ class TurnContextualPrecisionMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TurnContextualPrecisionMetric(Double.NaN, true, false, 1)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TurnContextualPrecisionMetric(Double.POSITIVE_INFINITY, true, false, 1)));
+    }
+
+    @Test
     void noRetrievalContextsScoresOne() {
         var metric = new TurnContextualPrecisionMetric(0.5, true, false, 1);
         var result = metric.measure(ConversationalTestCase.builder(List.of(
