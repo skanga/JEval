@@ -90,6 +90,16 @@ class GEvalUtilsTest {
     }
 
     @Test
+    void constructUploadPayloadRejectsMissingBlankOrEmptyCriteriaInputs() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GEvalUtils.constructUploadPayload("bad", List.of(SingleTurnParam.INPUT), null));
+        assertThrows(IllegalArgumentException.class,
+                () -> GEvalUtils.constructUploadPayload("bad", List.of(SingleTurnParam.INPUT), null, List.of(), null));
+        assertThrows(IllegalArgumentException.class,
+                () -> GEvalUtils.constructConversationalUploadPayload("bad", List.of(MultiTurnParam.ROLE), " "));
+    }
+
+    @Test
     void validateCriteriaAndEvaluationStepsRejectsMissingBlankOrEmptyInputs() {
         assertThrows(IllegalArgumentException.class,
                 () -> GEvalUtils.validateCriteriaAndEvaluationSteps(null, null));

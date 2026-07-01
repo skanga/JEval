@@ -282,6 +282,7 @@ public final class GEvalUtils {
             List<String> evaluationSteps,
             boolean multiTurn,
             List<Rubric> rubric) {
+        validateCriteriaAndEvaluationSteps(criteria, evaluationSteps);
         if (evaluationParams.isEmpty()) {
             throw new IllegalArgumentException("GEval requires at least one evaluation parameter.");
         }
