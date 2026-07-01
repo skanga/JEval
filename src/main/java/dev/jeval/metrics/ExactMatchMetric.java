@@ -20,6 +20,9 @@ public final class ExactMatchMetric implements Metric {
     }
 
     public ExactMatchMetric(double threshold) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Exact Match threshold must be finite");
+        }
         this.threshold = threshold;
     }
 

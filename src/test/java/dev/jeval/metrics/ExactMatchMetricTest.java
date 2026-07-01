@@ -93,4 +93,11 @@ class ExactMatchMetricTest {
         assertThrows(MissingTestCaseParamsException.class,
                 () -> new ExactMatchMetric().measure(testCase));
     }
+
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class, () -> new ExactMatchMetric(Double.NaN)),
+                () -> assertThrows(IllegalArgumentException.class, () -> new ExactMatchMetric(Double.POSITIVE_INFINITY)));
+    }
 }
