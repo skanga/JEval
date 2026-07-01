@@ -886,6 +886,9 @@ public final class Synthesizer {
     }
 
     private static List<Path> documentFiles(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            throw new IllegalArgumentException("Document path not found: " + path);
+        }
         if (Files.isRegularFile(path)) {
             validateDocumentExtension(path);
             return List.of(path);
