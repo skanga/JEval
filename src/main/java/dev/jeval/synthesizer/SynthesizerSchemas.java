@@ -138,9 +138,19 @@ final class SynthesizerSchemas {
     }
 
     record InputFeedback(String feedback, double score) {
+        InputFeedback {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("Input feedback score must be finite");
+            }
+        }
     }
 
     record ScenarioFeedback(String feedback, double score) {
+        ScenarioFeedback {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("Scenario feedback score must be finite");
+            }
+        }
     }
 
     private record RewrittenScenario(@JsonAlias("rewritten_scenario") String rewrittenScenario) {

@@ -1,6 +1,7 @@
 package dev.jeval.synthesizer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -67,6 +68,18 @@ class SynthesizerSchemasTest {
         assertEquals("students", styling.scenario());
         assertEquals("ask questions", styling.task());
         assertEquals("short question", styling.inputFormat());
+    }
+
+    @Test
+    void feedbackSchemasRejectNonFiniteScores() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new SynthesizerSchemas.InputFeedback("bad", Double.NaN));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SynthesizerSchemas.InputFeedback("bad", Double.POSITIVE_INFINITY));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SynthesizerSchemas.ScenarioFeedback("bad", Double.NaN));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SynthesizerSchemas.ScenarioFeedback("bad", Double.POSITIVE_INFINITY));
     }
 
     @Test
