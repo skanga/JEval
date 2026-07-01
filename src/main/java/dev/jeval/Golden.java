@@ -37,6 +37,9 @@ public record Golden(
         expectedTools = copyToolCallList("'expected_tools' must be a list of ToolCall", expectedTools);
         customColumnKeyValues = copyStringMap("'custom_column_key_values' must contain string keys and values",
                 customColumnKeyValues);
+        if (datasetRank != null && datasetRank < 0) {
+            throw new IllegalArgumentException("Golden datasetRank must be non-negative");
+        }
         multimodal = multimodal
                 || containsPlaceholder(input)
                 || containsPlaceholder(actualOutput)

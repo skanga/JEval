@@ -32,6 +32,9 @@ public record ConversationalGolden(
         customColumnKeyValues = copyStringMap("'custom_column_key_values' must contain string keys and values",
                 customColumnKeyValues);
         turns = copyList("'turns' must be a list of Turn", turns);
+        if (datasetRank != null && datasetRank < 0) {
+            throw new IllegalArgumentException("ConversationalGolden datasetRank must be non-negative");
+        }
         multimodal = multimodal
                 || containsPlaceholder(scenario)
                 || containsPlaceholder(expectedOutcome)

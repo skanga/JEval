@@ -117,6 +117,15 @@ class GoldenTest {
     }
 
     @Test
+    void goldensRejectNegativeDatasetRank() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> Golden.builder("input").datasetRank(-1).build()),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> ConversationalGolden.builder("scenario").datasetRank(-1).build()));
+    }
+
+    @Test
     void goldenModelDumpByAliasUsesDeepEvalSerializationAliases() {
         var golden = Golden.builder("input")
                 .actualOutput("actual")
