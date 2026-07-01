@@ -114,7 +114,7 @@ final class CliSettings {
     }
 
     static int setDebug(String[] args, PrintStream out, PrintStream err) {
-        var optionError = optionError(args, DEBUG_SET_OPTIONS);
+        var optionError = optionError(args, DEBUG_SET_OPTIONS, DEBUG_SET_VALUE_OPTIONS);
         if (optionError != null) {
             err.println(optionError);
             return 2;
@@ -148,7 +148,7 @@ final class CliSettings {
     }
 
     static int unsetDebug(String[] args, PrintStream out, PrintStream err) {
-        var optionError = optionError(args, DEBUG_UNSET_OPTIONS);
+        var optionError = optionError(args, DEBUG_UNSET_OPTIONS, DEBUG_UNSET_VALUE_OPTIONS);
         if (optionError != null) {
             err.println(optionError);
             return 2;
@@ -182,8 +182,16 @@ final class CliSettings {
             "--save", "-s",
             "--quiet", "-q");
     private static final List<String> DEBUG_UNSET_OPTIONS = List.of("--save", "-s", "--quiet", "-q");
+    private static final List<String> DEBUG_SET_VALUE_OPTIONS = List.of(
+            "--log-level",
+            "--retry-before-level", "--retry-after-level",
+            "--grpc-verbosity", "--grpc-trace",
+            "--trace-env",
+            "--trace-sample-rate",
+            "--save", "-s");
+    private static final List<String> DEBUG_UNSET_VALUE_OPTIONS = List.of("--save", "-s");
 
-    private static String optionError(String[] args, List<String> allowed) {
+    private static String optionError(String[] args, List<String> allowed, List<String> valued) {
         for (var i = 1; i < args.length; i++) {
             var arg = args[i];
             if (!arg.startsWith("-")) {
@@ -192,6 +200,9 @@ final class CliSettings {
             var name = arg.contains("=") ? arg.substring(0, arg.indexOf('=')) : arg;
             if (!allowed.contains(name)) {
                 return "No such option: " + name;
+            }
+            if (!arg.contains("=") && valued.contains(name) && missingValue(args, i)) {
+                return "Missing value for " + name;
             }
         }
         return null;

@@ -2995,6 +2995,18 @@ class JEvalCliTest {
     }
 
     @Test
+    void setDebugRejectsMissingLogLevelValueBeforeConsumingNextOption() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-debug", "--log-level", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Missing value for --log-level"));
+    }
+
+    @Test
     void unsetDebugRemovesDebugSettingsFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
@@ -3029,6 +3041,17 @@ class JEvalCliTest {
 
         assertEquals(2, exit);
         assertTrue(text(err).contains("No such option: --missing-option"));
+    }
+
+    @Test
+    void unsetDebugRejectsMissingSaveValueBeforeConsumingNextOption() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"unset-debug", "--save", "--quiet"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Missing value for --save"));
     }
 
     @Test
