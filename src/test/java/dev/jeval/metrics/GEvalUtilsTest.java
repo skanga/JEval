@@ -80,6 +80,10 @@ class GEvalUtilsTest {
         assertThrows(IllegalArgumentException.class,
                 () -> GEvalUtils.constructUploadPayload("bad", List.of(), "criteria"));
         assertThrows(IllegalArgumentException.class,
+                () -> GEvalUtils.constructUploadPayload("bad", null, "criteria"));
+        assertThrows(IllegalArgumentException.class,
+                () -> GEvalUtils.constructConversationalUploadPayload("bad", null, "criteria"));
+        assertThrows(IllegalArgumentException.class,
                 () -> GEvalUtils.constructUploadPayload("bad", List.of(SingleTurnParam.MCP_SERVERS), "criteria"));
         assertThrows(IllegalArgumentException.class,
                 () -> GEvalUtils.constructConversationalUploadPayload("bad", List.of(MultiTurnParam.CHATBOT_ROLE), "criteria"));

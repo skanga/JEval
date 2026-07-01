@@ -297,6 +297,9 @@ public final class GEvalUtils {
             List<T> evaluationParams,
             Map<T, String> supportedParams,
             String messagePrefix) {
+        if (evaluationParams == null) {
+            throw new IllegalArgumentException("GEval requires at least one evaluation parameter.");
+        }
         if (evaluationParams.isEmpty()) {
             return List.of();
         }
