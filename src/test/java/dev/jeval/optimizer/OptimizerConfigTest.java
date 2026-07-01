@@ -22,6 +22,8 @@ class OptimizerConfigTest {
     void asyncConfigRejectsInvalidBounds() {
         assertThrows(IllegalArgumentException.class, () -> new AsyncConfig(true, 0.0, 0));
         assertThrows(IllegalArgumentException.class, () -> new AsyncConfig(true, -0.1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new AsyncConfig(true, Double.NaN, 1));
+        assertThrows(IllegalArgumentException.class, () -> new AsyncConfig(true, Double.POSITIVE_INFINITY, 1));
     }
 
     @Test

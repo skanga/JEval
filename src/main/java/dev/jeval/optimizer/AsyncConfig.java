@@ -10,7 +10,7 @@ public record AsyncConfig(boolean runAsync, double throttleValue, int maxConcurr
         if (maxConcurrent < 1) {
             throw new IllegalArgumentException("'max_concurrent' must be at least 1");
         }
-        if (throttleValue < 0.0) {
+        if (!Double.isFinite(throttleValue) || throttleValue < 0.0) {
             throw new IllegalArgumentException("'throttle_value' must be at least 0");
         }
     }
