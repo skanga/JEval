@@ -28,6 +28,9 @@ public final class PatternMatchMetric implements Metric {
         if (pattern == null || pattern.isBlank()) {
             throw new IllegalArgumentException("Pattern match metric requires pattern");
         }
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Pattern Match threshold must be finite");
+        }
         this.pattern = pattern.strip();
         this.threshold = threshold;
         try {

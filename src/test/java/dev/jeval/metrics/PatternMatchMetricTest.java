@@ -89,4 +89,13 @@ class PatternMatchMetricTest {
                 () -> assertThrows(IllegalArgumentException.class, () -> new PatternMatchMetric(null)),
                 () -> assertThrows(IllegalArgumentException.class, () -> new PatternMatchMetric(" ")));
     }
+
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PatternMatchMetric(".*", false, Double.NaN)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PatternMatchMetric(".*", false, Double.POSITIVE_INFINITY)));
+    }
 }
