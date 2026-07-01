@@ -522,6 +522,9 @@ final class CliSettings {
         if (normalized.equals("DEEPEVAL_RETRY_JITTER")) {
             validateDoubleRange(normalized, value, 0.0, Double.POSITIVE_INFINITY);
         }
+        if (normalized.equals("DEEPEVAL_RETRY_CAP_SECONDS")) {
+            validateDoubleRange(normalized, value, 0.0, Double.POSITIVE_INFINITY);
+        }
         return value;
     }
 
