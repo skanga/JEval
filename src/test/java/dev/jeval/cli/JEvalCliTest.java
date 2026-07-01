@@ -3052,6 +3052,21 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsRejectsInvalidPerAttemptTimeoutOverrideLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "deepeval-per-attempt-timeout-seconds-override=0", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE: 0"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsAcceptsEqualsFormForDeepEvalAliases() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

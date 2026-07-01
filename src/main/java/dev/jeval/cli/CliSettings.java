@@ -531,6 +531,9 @@ final class CliSettings {
         if (normalized.equals("DEEPEVAL_TIMEOUT_THREAD_LIMIT")) {
             validateIntegerMin(normalized, value, 1);
         }
+        if (normalized.equals("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE")) {
+            validateDoubleRange(normalized, value, Double.MIN_VALUE, Double.POSITIVE_INFINITY);
+        }
         return value;
     }
 
