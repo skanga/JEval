@@ -563,6 +563,27 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunRejectsMissingRepeatValueBeforeConsumingNextOption() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "repeat-missing-value",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"test", "run", file.toString(), "--repeat", "--quiet"}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Missing value for --repeat"));
+    }
+
+    @Test
     void testRunExitOnFirstFailureStopsAfterFirstFailedCase() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """

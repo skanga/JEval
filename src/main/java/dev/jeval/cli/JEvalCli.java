@@ -300,51 +300,58 @@ public final class JEvalCli {
                     // Pytest compatibility flags accepted by DeepEval; local JEval runs have no pytest layer.
                 }
                 case "--color", "--durations", "-n", "--num-processes" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for " + arg);
                         return null;
                     }
+                    i++;
                 }
                 case "--format" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for --format");
                         return null;
                     }
+                    i++;
                     format = args[i].toLowerCase(Locale.ROOT);
                 }
                 case "--output" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for --output");
                         return null;
                     }
+                    i++;
                     output = Path.of(args[i]);
                 }
                 case "--results-folder" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for --results-folder");
                         return null;
                     }
+                    i++;
                     resultsFolder = args[i];
                 }
                 case "--results-subfolder" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for --results-subfolder");
                         return null;
                     }
+                    i++;
                     resultsSubfolder = args[i];
                 }
                 case "-id", "--identifier" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for " + arg);
                         return null;
                     }
+                    i++;
                     identifier = args[i];
                 }
                 case "-r", "--repeat" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for " + arg);
                         return null;
                     }
+                    i++;
                     repeat = Integer.parseInt(args[i]);
                     if (repeat < 1) {
                         err.println("The repeat argument must be at least 1.");
@@ -352,17 +359,19 @@ public final class JEvalCli {
                     }
                 }
                 case "-d", "--display" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for " + arg);
                         return null;
                     }
+                    i++;
                     display = args[i].toLowerCase(Locale.ROOT);
                 }
                 case "-m", "--mark" -> {
-                    if (++i == args.length) {
-                        usage(err);
+                    if (missingOptionValue(args, i)) {
+                        err.println("Missing value for " + arg);
                         return null;
                     }
+                    i++;
                     mark = args[i];
                 }
                 default -> {
