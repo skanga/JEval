@@ -18,5 +18,10 @@ public final class StepEfficiencySchemas {
     }
 
     public record EfficiencyVerdict(double score, String reason) {
+        public EfficiencyVerdict {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("EfficiencyVerdict score must be finite");
+            }
+        }
     }
 }

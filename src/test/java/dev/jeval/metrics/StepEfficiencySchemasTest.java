@@ -32,4 +32,12 @@ class StepEfficiencySchemasTest {
         assertThrows(IllegalArgumentException.class, () -> StepEfficiencySchemas.parseVerdict("{\"score\":\"bad\",\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> StepEfficiencySchemas.parseVerdict("{\"score\":0.75,\"reason\":1}"));
     }
+
+    @Test
+    void verdictRecordRejectsNonFiniteScores() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new StepEfficiencySchemas.EfficiencyVerdict(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new StepEfficiencySchemas.EfficiencyVerdict(Double.POSITIVE_INFINITY, "bad"));
+    }
 }
