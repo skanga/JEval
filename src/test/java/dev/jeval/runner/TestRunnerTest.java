@@ -1,6 +1,7 @@
 package dev.jeval.runner;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,6 +38,25 @@ class TestRunnerTest {
         assertEquals(0.5, result.summary().averageScore());
         assertEquals(0.5, result.summary().passRate());
         assertFalse(result.success());
+    }
+
+    @Test
+    void inlineCasesAcceptAdditionalMetadataAliasLikeDatasets() throws Exception {
+        var file = tempDir.resolve("metadata_eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "metadata",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"input": "q", "actualOutput": "yes", "expectedOutput": "yes",
+                     "additional_metadata": {"suite": "legacy"}}
+                  ]
+                }
+                """);
+
+        var result = assertDoesNotThrow(() -> new TestRunner().run(file));
+
+        assertEquals("legacy", result.results().getFirst().metadata().get("suite"));
     }
 
     @Test

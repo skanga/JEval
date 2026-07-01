@@ -581,6 +581,7 @@ public final class TestRunner {
             List<String> context,
             @JsonAlias("retrieval_context") List<String> retrievalContext,
             List<String> tags,
+            @JsonAlias("additional_metadata")
             Map<String, Object> metadata,
             String comments,
             @JsonAlias("token_cost") Double tokenCost,
