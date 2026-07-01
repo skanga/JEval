@@ -479,7 +479,9 @@ class SynthesizerTest {
         var good = tempDir.resolve("good.md");
         Files.writeString(tooSmall, "short");
         Files.writeString(good, "alpha beta gamma delta");
-        var model = new ScriptedModel(List.of("{\"data\":[{\"input\":\"What is in the good doc?\"}]}"));
+        var model = new ScriptedModel(List.of(
+                "{\"data\":[{\"input\":\"What is in the good doc?\"}]}",
+                "{\"data\":[{\"input\":\"What else is in the good doc?\"}]}"));
         var synthesizer = new Synthesizer(
                 model,
                 null,
@@ -492,13 +494,15 @@ class SynthesizerTest {
                 List.of(tooSmall, good),
                 false,
                 1,
-                new ContextConstructionConfig(1, 2, 2, 0, 0.5, 0.0, 3));
+                new ContextConstructionConfig(2, 2, 2, 0, 0.5, 0.0, 3));
 
-        assertEquals(1, goldens.size());
-        assertEquals("What is in the good doc?", goldens.getFirst().input());
-        assertEquals(List.of("alpha beta"), goldens.getFirst().context());
+        assertEquals(List.of("What is in the good doc?", "What else is in the good doc?"),
+                goldens.stream().map(Golden::input).toList());
+        assertEquals(List.of(List.of("alpha beta"), List.of("gamma delta")),
+                goldens.stream().map(Golden::context).toList());
         assertEquals(good.toString(), goldens.getFirst().sourceFile());
         assertTrue(model.prompts().getFirst().contains("alpha beta"));
+        assertTrue(model.prompts().get(1).contains("gamma delta"));
         assertEquals(false, model.prompts().getFirst().contains("short"));
     }
 

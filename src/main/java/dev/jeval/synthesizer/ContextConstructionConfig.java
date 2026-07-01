@@ -86,6 +86,9 @@ public record ContextConstructionConfig(
         if (minContextsPerDocument < 0) {
             throw new IllegalArgumentException("min_contexts_per_document must be non-negative");
         }
+        if (minContextsPerDocument > maxContextsPerDocument) {
+            throw new IllegalArgumentException("min_contexts_per_document must not exceed max_contexts_per_document.");
+        }
         if (maxContextLength < 1) {
             throw new IllegalArgumentException("max_context_length must be at least 1");
         }

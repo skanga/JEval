@@ -56,6 +56,12 @@ class ContextConstructionConfigTest {
     }
 
     @Test
+    void validatesContextCountOptionsLikeDeepEval() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(2, 3, 3, 1, 1024, 0, 0.5, 0.0, 3));
+    }
+
+    @Test
     void validatesCrossFileMergeOptionsLikeDeepEval() {
         assertThrows(IllegalArgumentException.class,
                 () -> new ContextConstructionConfig(3, 1, 1024, 0, 0.5, 0.0, 3, true, 1, 3));
