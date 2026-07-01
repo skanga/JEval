@@ -90,7 +90,10 @@ final class CliSettings {
                 dotenv.update(updates, removals);
             }
             if (parsed.listFilters() != null) {
-                list(dotenv, parsed.listFilters(), out);
+                if (list(dotenv, parsed.listFilters(), out) == 0) {
+                    err.println("No settings matched");
+                    return 2;
+                }
             } else if (!parsed.quiet() && updates.isEmpty() && removals.isEmpty()) {
                 out.println("No changes to save");
             }
@@ -181,15 +184,18 @@ final class CliSettings {
         }
     }
 
-    private static void list(DotenvFile dotenv, List<String> filters, PrintStream out) throws IOException {
+    private static int list(DotenvFile dotenv, List<String> filters, PrintStream out) throws IOException {
         var needles = filters.stream()
                 .map(filter -> filter.toUpperCase(Locale.ROOT).replace("-", "_"))
                 .toList();
+        var count = new int[1];
         dotenv.read().forEach((key, value) -> {
             if (needles.isEmpty() || needles.stream().anyMatch(key::contains)) {
                 out.println(key + "=" + (secret(key) ? "********" : value));
+                count[0]++;
             }
         });
+        return count[0];
     }
 
     private static boolean secret(String key) {

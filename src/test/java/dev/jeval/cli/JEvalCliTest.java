@@ -2449,6 +2449,25 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsListReturnsErrorWhenFilterMatchesNothing() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "settings", "--set", "log-level=info", "--save", "dotenv:" + env
+        }, out, err), text(err));
+
+        out.reset();
+        err.reset();
+        var exit = run(new String[] {"settings", "--list", "anthropic", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertEquals("", text(out));
+        assertTrue(text(err).contains("No settings matched"));
+    }
+
+    @Test
     void settingsListRejectsSetOrUnsetInSameCommand() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
