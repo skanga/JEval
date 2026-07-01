@@ -7,6 +7,9 @@ public record EvolutionConfig(int numEvolutions, List<Evolution> evolutions) {
         if (numEvolutions < 0) {
             throw new IllegalArgumentException("numEvolutions must be non-negative");
         }
+        if (evolutions != null && evolutions.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new IllegalArgumentException("evolutions must not contain null values");
+        }
         evolutions = evolutions == null || evolutions.isEmpty() ? List.of(Evolution.REASONING) : List.copyOf(evolutions);
     }
 
