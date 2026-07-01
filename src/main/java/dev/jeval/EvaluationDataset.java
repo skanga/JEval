@@ -608,17 +608,19 @@ public final class EvaluationDataset {
                 return;
             }
             var headers = parseCsvLine(lines.getFirst());
+            var actualOutputKey = csvHeader(headers, actualOutputColName, "actual_output", "actualOutput");
+            var expectedOutputKey = csvHeader(headers, expectedOutputColName, "expected_output", "expectedOutput");
             for (var i = 1; i < lines.size(); i++) {
                 if (lines.get(i).isBlank()) {
                     continue;
                 }
                 var row = csvRow(headers, parseCsvLine(lines.get(i)));
-                if (blank(row.get(inputColName)) || blank(row.get(actualOutputColName))) {
+                if (blank(row.get(inputColName)) || blank(row.get(actualOutputKey))) {
                     throw new IllegalArgumentException("Required fields are missing in one or more CSV rows");
                 }
                 addTestCase(LlmTestCase.builder(row.get(inputColName))
-                        .actualOutput(row.get(actualOutputColName))
-                        .expectedOutput(nullIfBlank(row.get(expectedOutputColName)))
+                        .actualOutput(row.get(actualOutputKey))
+                        .expectedOutput(nullIfBlank(row.get(expectedOutputKey)))
                         .context(csvListOrNull(row.get(contextColName), contextDelimiter))
                         .retrievalContext(csvListOrNull(row.get(retrievalContextColName), retrievalContextDelimiter))
                         .toolsCalled(toolListFromCsv(row.get(toolsCalledColName), "tools_called", ";"))
@@ -640,6 +642,12 @@ public final class EvaluationDataset {
         } catch (IOException error) {
             throw new IllegalArgumentException("The file " + file + " could not be read.", error);
         }
+    }
+
+    private static String csvHeader(List<String> headers, String requested, String defaultName, String alias) {
+        return defaultName.equals(requested) && headers.contains(alias) && !headers.contains(requested)
+                ? alias
+                : requested;
     }
 
     public void addGoldensFromJsonFile(Path file) {
