@@ -608,7 +608,7 @@ final class CliSettings {
     private static void validateDoubleRange(String key, String value, double min, double max) {
         try {
             var parsed = Double.parseDouble(value);
-            if (parsed < min || parsed > max) {
+            if (!Double.isFinite(parsed) || parsed < min || parsed > max) {
                 throw new NumberFormatException();
             }
         } catch (NumberFormatException error) {

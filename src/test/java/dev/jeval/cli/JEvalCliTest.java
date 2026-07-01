@@ -3395,6 +3395,31 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsRejectsNonFiniteDoublesLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "temperature=NaN", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for TEMPERATURE: NaN"));
+        assertEquals(false, Files.exists(env));
+
+        out.reset();
+        err.reset();
+        exit = run(new String[] {
+                "settings", "--set", "openai-cost-per-input-token=Infinity", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for OPENAI_COST_PER_INPUT_TOKEN: Infinity"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsRejectsInvalidRetryMaxAttemptsLikeDeepEval() {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
