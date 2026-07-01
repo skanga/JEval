@@ -493,6 +493,32 @@ class SynthesizerTest {
     }
 
     @Test
+    void generateGoldensFromDocsRejectsEmptyDocumentPathsLikeDeepEval() {
+        var synthesizer = new Synthesizer(
+                new ScriptedModel(List.of()),
+                null,
+                null,
+                noEvolutionConfig(),
+                noFiltrationConfig(),
+                new SynthesizerOptions(false, 100, false));
+
+        var singleTurnError = assertThrows(IllegalArgumentException.class, () -> synthesizer.generateGoldensFromDocs(
+                List.of(),
+                false,
+                1,
+                new ContextConstructionConfig(1, 1, 10, 0, 0.5, 0.0, 3)));
+        assertEquals("document_paths must not be empty", singleTurnError.getMessage());
+
+        var multiTurnError = assertThrows(IllegalArgumentException.class,
+                () -> synthesizer.generateConversationalGoldensFromDocs(
+                        List.of(),
+                        false,
+                        1,
+                        new ContextConstructionConfig(1, 1, 10, 0, 0.5, 0.0, 3)));
+        assertEquals("document_paths must not be empty", multiTurnError.getMessage());
+    }
+
+    @Test
     void generateGoldensFromDocsContinuesWhenOneDocumentCannotMeetMinimumContextsLikeDeepEval()
             throws Exception {
         var tooSmall = tempDir.resolve("tiny.md");

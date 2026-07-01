@@ -751,6 +751,9 @@ public final class Synthesizer {
     private static DocumentContexts documentContexts(
             List<Path> documentPaths,
             ContextConstructionConfig config) throws IOException {
+        if (documentPaths == null || documentPaths.isEmpty()) {
+            throw new IllegalArgumentException("document_paths must not be empty");
+        }
         var contexts = new ArrayList<List<String>>();
         var sourceFiles = new ArrayList<String>();
         var contextScores = new ArrayList<Double>();
