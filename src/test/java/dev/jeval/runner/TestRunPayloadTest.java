@@ -146,6 +146,15 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void testRunResultRecordsRejectMissingMetricAggregateNames() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.MetricAggregate(null, 0.0, 0.0, 0)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.MetricAggregate(" ", 0.0, 0.0, 0)));
+    }
+
+    @Test
     void testRunAddTestCaseRoutesPayloadTypeAndAccumulatesEvaluationCost() {
         var singleTurn = llmApi(0.25);
         var conversational = conversationalApi(0.4);

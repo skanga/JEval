@@ -93,6 +93,9 @@ public record TestRunResult(
 
     public record MetricAggregate(String name, double averageScore, double passRate, int total) {
         public MetricAggregate {
+            if (name == null || name.isBlank()) {
+                throw new IllegalArgumentException("MetricAggregate name is required");
+            }
             if (total < 0) {
                 throw new IllegalArgumentException("MetricAggregate total must be non-negative");
             }
