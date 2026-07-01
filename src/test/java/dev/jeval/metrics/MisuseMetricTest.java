@@ -62,6 +62,15 @@ class MisuseMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MisuseMetric("banking", Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MisuseMetric("banking", Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var metric = new StubMisuseMetric(List.of(), List.of());
 

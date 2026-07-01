@@ -42,6 +42,9 @@ public class MisuseMetric implements Metric {
         if (domain == null || domain.strip().isEmpty()) {
             throw new IllegalArgumentException("domain must be specified and non-empty");
         }
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Misuse threshold must be finite");
+        }
         this.model = model;
         this.domain = domain.strip().toLowerCase(Locale.ROOT);
         this.includeReason = includeReason;
