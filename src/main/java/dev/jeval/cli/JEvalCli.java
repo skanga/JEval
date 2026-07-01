@@ -52,6 +52,11 @@ public final class JEvalCli {
             usage(out);
             return 0;
         }
+        if (args.length == 3 && "test".equals(args[0]) && "run".equals(args[1])
+                && ("--help".equals(args[2]) || "-h".equals(args[2]))) {
+            usage(out);
+            return 0;
+        }
         if (args.length > 0 && "settings".equals(args[0])) {
             return CliSettings.settings(args, out, err);
         }

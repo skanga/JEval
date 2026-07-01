@@ -102,6 +102,22 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunHelpOptionsPrintUsageAndExitZero() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {"test", "run", "--help"}, out, err));
+        assertTrue(text(out).contains("Usage: jeval"));
+        assertEquals("", text(err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"test", "run", "-h"}, out, err));
+        assertTrue(text(out).contains("Usage: jeval"));
+        assertEquals("", text(err));
+    }
+
+    @Test
     void providerCommandHelpOptionsPrintUsageAndExitZero() {
         var out = new ByteArrayOutputStream();
         var err = new ByteArrayOutputStream();
