@@ -197,6 +197,10 @@ final class CliSettings {
                     err.println("Grok model name is not set. Pass --model (or set GROK_MODEL_NAME).");
                     return 2;
                 }
+                if ("set-moonshot".equals(command) && !hasValue(savePath(args), updates, "MOONSHOT_MODEL_NAME")) {
+                    err.println("Moonshot model name is not set. Pass --model (or set MOONSHOT_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
