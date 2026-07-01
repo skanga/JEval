@@ -38,6 +38,9 @@ public class PlanAdherenceMetric implements Metric {
     }
 
     public PlanAdherenceMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Plan Adherence threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

@@ -93,6 +93,15 @@ class PlanQualityMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PlanQualityMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PlanQualityMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var metric = new StubPlanQualityMetric(
                 new Task("Task"),

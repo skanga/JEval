@@ -44,6 +44,9 @@ public class PromptAlignmentMetric implements Metric {
         if (promptInstructions == null || promptInstructions.isEmpty()) {
             throw new IllegalArgumentException("'prompt_instructions' must not be empty.");
         }
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Prompt Alignment threshold must be finite");
+        }
         this.model = model;
         this.promptInstructions = List.copyOf(promptInstructions);
         this.includeReason = includeReason;

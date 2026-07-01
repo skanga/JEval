@@ -38,6 +38,9 @@ public class PlanQualityMetric implements Metric {
     }
 
     public PlanQualityMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Plan Quality threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

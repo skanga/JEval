@@ -61,6 +61,15 @@ class PromptAlignmentMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptAlignmentMetric(List.of("Use bullet points."), Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PromptAlignmentMetric(List.of("Use bullet points."), Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var metric = new StubPromptAlignmentMetric(List.of());
 

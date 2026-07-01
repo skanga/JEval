@@ -96,6 +96,15 @@ class PlanAdherenceMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PlanAdherenceMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new PlanAdherenceMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var metric = new StubPlanAdherenceMetric(
                 new Task("Task"),
