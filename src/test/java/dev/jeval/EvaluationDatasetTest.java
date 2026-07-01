@@ -608,6 +608,32 @@ class EvaluationDatasetTest {
     }
 
     @Test
+    void datasetGeneratesConversationalGoldensFromContextsWithChunkSourceFiles() {
+        var dataset = new EvaluationDataset();
+        var synthesizer = synthesizer(new ScriptedModel(List.of(
+                """
+                {"data":[{"scenario":"support agent uses policy and faq","turns":[
+                  {"role":"user","content":"Can I get a refund?"},
+                  {"role":"assistant","content":"Let me check."}
+                ]}]}
+                """)));
+        List<Object> sourceFiles = List.of(List.of("policy.md", "faq.md"));
+
+        dataset.generateConversationalGoldensFromContexts(
+                List.of(List.of("Policy text", "FAQ text")),
+                false,
+                1,
+                sourceFiles,
+                List.of(List.of("policy.md", "faq.md")),
+                null,
+                synthesizer);
+
+        assertEquals("support agent uses policy and faq", dataset.conversationalGoldens().getFirst().scenario());
+        assertEquals(List.of("policy.md", "faq.md"),
+                dataset.conversationalGoldens().getFirst().additionalMetadata().get("context_source_files"));
+    }
+
+    @Test
     void datasetGeneratesConversationalGoldensFromContextsWithSourceFilesAsync() {
         var dataset = new EvaluationDataset();
         var synthesizer = synthesizer(new ScriptedModel(List.of(

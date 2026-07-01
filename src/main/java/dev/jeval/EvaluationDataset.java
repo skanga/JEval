@@ -397,6 +397,24 @@ public final class EvaluationDataset {
         generated.forEach(this::addGolden);
     }
 
+    public void generateConversationalGoldensFromContexts(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
+            Integer targetFilesPerContext,
+            Synthesizer synthesizer) {
+        var generated = requireSynthesizer(synthesizer).generateConversationalGoldensFromContexts(
+                contexts,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                sourceFiles,
+                contextChunkSourceFiles,
+                targetFilesPerContext);
+        generated.forEach(this::addGolden);
+    }
+
     public CompletableFuture<Void> generateConversationalGoldensFromContextsAsync(
             List<List<String>> contexts,
             boolean includeExpectedOutcome,
