@@ -39,4 +39,16 @@ class GoalAccuracySchemasTest {
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parsePlanScore("{\"score\":\"Infinity\",\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parsePlanScore("{\"score\":0.75,\"reason\":1}"));
     }
+
+    @Test
+    void scoreRecordsRejectNonFiniteScores() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new GoalAccuracySchemas.GoalScore(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new GoalAccuracySchemas.GoalScore(Double.POSITIVE_INFINITY, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new GoalAccuracySchemas.PlanScore(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new GoalAccuracySchemas.PlanScore(Double.POSITIVE_INFINITY, "bad"));
+    }
 }

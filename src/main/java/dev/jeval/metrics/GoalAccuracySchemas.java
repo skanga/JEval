@@ -62,8 +62,18 @@ public final class GoalAccuracySchemas {
     }
 
     public record GoalScore(double score, String reason) {
+        public GoalScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("GoalScore score must be finite");
+            }
+        }
     }
 
     public record PlanScore(double score, String reason) {
+        public PlanScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("PlanScore score must be finite");
+            }
+        }
     }
 }
