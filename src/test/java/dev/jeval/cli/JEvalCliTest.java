@@ -1479,6 +1479,28 @@ class JEvalCliTest {
     }
 
     @Test
+    void generateRepeatedSaveOptionsUseLastValueLikeDeepEvalTyper() throws Exception {
+        var first = tempDir.resolve("first.env");
+        var second = tempDir.resolve("second.env");
+        Files.writeString(first, "");
+        Files.writeString(second, """
+                USE_OPENAI_MODEL=YES
+                OPENAI_MODEL_NAME=gpt-4o-mini
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "generate", "--method", "scratch", "--variation", "single-turn",
+                "--scenario", "users", "--task", "answer", "--input-format", "question",
+                "--num-goldens", "1", "--save", "dotenv:" + first, "--save", "dotenv:" + second
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("OPENAI_API_KEY is required"));
+    }
+
+    @Test
     void generatePassesModelOptionToProviderFactoryLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """

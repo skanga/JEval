@@ -444,17 +444,15 @@ final class GenerateCommand {
 
     private static Path savePath(String[] args) {
         var save = ".env";
-        for (var i = 0; i < args.length - 1; i++) {
+        for (var i = 0; i < args.length; i++) {
             if ("--save".equals(args[i]) || "-s".equals(args[i])) {
-                save = args[i + 1];
-                break;
-            }
-        }
-        for (var arg : args) {
-            if (arg.startsWith("--save=")) {
-                save = arg.substring("--save=".length());
-            } else if (arg.startsWith("-s=")) {
-                save = arg.substring("-s=".length());
+                if (i + 1 < args.length) {
+                    save = args[++i];
+                }
+            } else if (args[i].startsWith("--save=")) {
+                save = args[i].substring("--save=".length());
+            } else if (args[i].startsWith("-s=")) {
+                save = args[i].substring("-s=".length());
             }
         }
         if ("dotenv".equals(save) || "dotenv:".equals(save)) {
