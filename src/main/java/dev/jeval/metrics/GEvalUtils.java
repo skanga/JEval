@@ -70,7 +70,11 @@ public final class GEvalUtils {
 
     public record ApiRubric(List<Double> scoreRange, String expectedOutcome) {
         public ApiRubric {
-            scoreRange = scoreRange == null ? null : List.copyOf(scoreRange);
+            if (scoreRange == null || scoreRange.size() != 2
+                    || scoreRange.stream().anyMatch(value -> value == null || !Double.isFinite(value))) {
+                throw new IllegalArgumentException("ApiRubric scoreRange must contain two finite values.");
+            }
+            scoreRange = List.copyOf(scoreRange);
         }
     }
 

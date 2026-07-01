@@ -190,4 +190,12 @@ class GEvalUtilsTest {
         assertEquals("poor", response.rubric().getFirst().expectedOutcome());
         assertEquals(List.of(), emptyDefaults.requiredParameters());
     }
+
+    @Test
+    void apiRubricRejectsInvalidScoreRanges() {
+        assertThrows(IllegalArgumentException.class, () -> new GEvalUtils.ApiRubric(null, "bad"));
+        assertThrows(IllegalArgumentException.class, () -> new GEvalUtils.ApiRubric(List.of(0.0), "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new GEvalUtils.ApiRubric(List.of(Double.NaN, 1.0), "bad"));
+    }
 }
