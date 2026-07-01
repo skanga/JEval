@@ -391,6 +391,10 @@ final class CliSettings {
                     }
                     case "-s", "--save" -> save = savePath(value);
                     default -> {
+                        if (arg.substring(0, equals).startsWith("-")) {
+                            err.println("No such option: " + arg.substring(0, equals));
+                            return null;
+                        }
                     }
                 }
                 continue;
@@ -425,7 +429,11 @@ final class CliSettings {
                     save = savePath(args[++i]);
                 }
                 default -> {
-                    if (list != null && !arg.startsWith("-")) {
+                    if (arg.startsWith("-")) {
+                        err.println("No such option: " + arg);
+                        return null;
+                    }
+                    if (list != null) {
                         list.add(arg);
                     }
                 }
