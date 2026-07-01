@@ -1326,18 +1326,20 @@ public final class EvaluationDataset {
         var retrievalContextKey = jsonKey(row, retrievalContextKeyName, "retrieval_context", "retrievalContext");
         var toolsCalledKey = jsonKey(row, toolsCalledKeyName, "tools_called", "toolsCalled");
         var expectedToolsKey = jsonKey(row, expectedToolsKeyName, "expected_tools", "expectedTools");
+        var expectedOutcomeKey = jsonKey(row, expectedOutcomeKeyName, "expected_outcome", "expectedOutcome");
+        var userDescriptionKey = jsonKey(row, userDescriptionKeyName, "user_description", "userDescription");
         var customColumnKeyValuesKey = jsonKey(row, customColumnKeyValuesKeyName, "custom_column_key_values",
                 "customColumnKeyValues");
         var sourceFileKey = jsonKey(row, sourceFileKeyName, "source_file", "sourceFile");
         if (truthy(scenarioKeyName == null ? null : row.get(scenarioKeyName))) {
             var scenario = requiredText(row, scenarioKeyName);
             addGolden(ConversationalGolden.builder(scenario)
-                    .expectedOutcome(textOrNull(row, expectedOutcomeKeyName))
-                    .userDescription(textOrNull(row, userDescriptionKeyName))
+                    .expectedOutcome(textOrNull(row, expectedOutcomeKey))
+                    .userDescription(textOrNull(row, userDescriptionKey))
                     .context(textListOrSplitOrNull(row, contextKeyName, contextDelimiter))
                     .turns(turnListOrEmptyIfMissing(row, turnsKeyName))
-                    .additionalMetadata(objectMapOrNull(row, additionalMetadataKeyName))
-                    .customColumnKeyValues(stringMapOrNull(row, customColumnKeyValuesKeyName))
+                    .additionalMetadata(metadataMapOrNull(row, additionalMetadataKeyName))
+                    .customColumnKeyValues(stringMapOrNull(row, customColumnKeyValuesKey))
                     .name(textOrNull(row, nameKeyName))
                     .comments(textOrNull(row, commentsKeyName))
                     .build());

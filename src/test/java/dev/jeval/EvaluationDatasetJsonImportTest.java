@@ -1151,6 +1151,33 @@ class EvaluationDatasetJsonImportTest {
     }
 
     @Test
+    void addGoldensFromJsonFileAcceptsCamelCaseAliasesForDefaultConversationalKeys() throws IOException {
+        var file = tempDir.resolve("camel-case-conversational-import.json");
+        Files.writeString(file, """
+                [
+                  {
+                    "scenario": "Book a flight",
+                    "expectedOutcome": "User gets options",
+                    "userDescription": "Traveler",
+                    "turns": [{"role": "user", "content": "Find flights"}],
+                    "metadata": {"gk": "gv"},
+                    "customColumnKeyValues": {"col": "val"}
+                  }
+                ]
+                """);
+        var dataset = new EvaluationDataset();
+
+        dataset.addGoldensFromJsonFile(file);
+
+        var golden = dataset.conversationalGoldens().getFirst();
+        assertAll(
+                () -> assertEquals("User gets options", golden.expectedOutcome()),
+                () -> assertEquals("Traveler", golden.userDescription()),
+                () -> assertEquals(Map.of("gk", "gv"), golden.additionalMetadata()),
+                () -> assertEquals(Map.of("col", "val"), golden.customColumnKeyValues()));
+    }
+
+    @Test
     void structuredTurnsUseMetadataKeyLikeDeepEval() throws IOException {
         var file = tempDir.resolve("turn-metadata.json");
         Files.writeString(file, """
