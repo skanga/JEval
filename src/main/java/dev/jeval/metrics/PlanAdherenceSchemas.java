@@ -10,5 +10,10 @@ public final class PlanAdherenceSchemas {
     }
 
     public record PlanAdherenceScore(double score, String reason) {
+        public PlanAdherenceScore {
+            if (!Double.isFinite(score)) {
+                throw new IllegalArgumentException("PlanAdherenceScore score must be finite");
+            }
+        }
     }
 }

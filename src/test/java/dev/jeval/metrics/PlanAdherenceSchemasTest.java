@@ -24,4 +24,12 @@ class PlanAdherenceSchemasTest {
         assertThrows(IllegalArgumentException.class, () -> PlanAdherenceSchemas.parseScore("{\"score\":\"bad\",\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> PlanAdherenceSchemas.parseScore("{\"score\":0.25,\"reason\":1}"));
     }
+
+    @Test
+    void scoreRecordRejectsNonFiniteScores() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new PlanAdherenceSchemas.PlanAdherenceScore(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new PlanAdherenceSchemas.PlanAdherenceScore(Double.POSITIVE_INFINITY, "bad"));
+    }
 }
