@@ -2885,6 +2885,20 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetCoercesBooleanValuesLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "deepeval-verbose-mode=yes", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_VERBOSE_MODE", "true");
+    }
+
+    @Test
     void settingsRejectsMissingSetValueBeforeConsumingNextOption() {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

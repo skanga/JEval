@@ -508,6 +508,9 @@ final class CliSettings {
                 || normalized.equals("DEEPEVAL_RETRY_AFTER_LOG_LEVEL")) {
             return logLevel(value);
         }
+        if (booleanSettingKey(normalized)) {
+            return booleanValue(value);
+        }
         if (normalized.equals("TEMPERATURE")) {
             validateDoubleRange(normalized, value, 0.0, 2.0);
         }
@@ -576,6 +579,20 @@ final class CliSettings {
         return KNOWN_SETTING_KEYS.contains(normalizeSettingKey(key)) || KNOWN_SETTING_KEYS.contains(settingKey(key));
     }
 
+    private static boolean booleanSettingKey(String key) {
+        return LLM_FLAGS.contains(key)
+                || EMBED_FLAGS.contains(key)
+                || List.of(
+                        "CONFIDENT_TRACE_FLUSH",
+                        "CONFIDENT_TRACE_VERBOSE",
+                        "DEEPEVAL_DEBUG_ASYNC",
+                        "DEEPEVAL_DISABLE_TIMEOUTS",
+                        "DEEPEVAL_GRPC_LOGGING",
+                        "DEEPEVAL_LOG_STACK_TRACES",
+                        "DEEPEVAL_VERBOSE_MODE")
+                        .contains(key);
+    }
+
     private static java.util.Set<String> knownSettingKeys() {
         var keys = new java.util.HashSet<String>();
         keys.addAll(DEBUG_KEYS);
@@ -638,6 +655,14 @@ final class CliSettings {
             case "CRITICAL" -> "50";
             case "NOTSET" -> "0";
             default -> value;
+        };
+    }
+
+    private static String booleanValue(String value) {
+        return switch (value.strip().replace("\"", "").replace("'", "").toLowerCase(Locale.ROOT)) {
+            case "1", "true", "t", "yes", "y", "on", "enable", "enabled" -> "true";
+            case "0", "false", "f", "no", "n", "off", "disable", "disabled" -> "false";
+            default -> "false";
         };
     }
 
