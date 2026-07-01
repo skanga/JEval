@@ -511,6 +511,9 @@ final class CliSettings {
         if (booleanSettingKey(normalized)) {
             return booleanValue(value);
         }
+        if (normalized.equals("DEEPEVAL_FILE_SYSTEM")) {
+            return fileSystem(value);
+        }
         if (normalized.equals("TEMPERATURE")) {
             validateDoubleRange(normalized, value, 0.0, 2.0);
         }
@@ -610,7 +613,8 @@ final class CliSettings {
                 "LITELLM_PROXY_API_KEY", "LOCAL_EMBEDDING_API_KEY", "LOCAL_MODEL_API_KEY",
                 "MAX_TOKENS", "MOONSHOT_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
                 "PORTKEY_API_KEY", "TEMPERATURE",
-                "DEEPEVAL_DISABLE_DOTENV", "DEEPEVAL_DISABLE_TIMEOUTS", "DEEPEVAL_RESULTS_FOLDER",
+                "DEEPEVAL_DISABLE_DOTENV", "DEEPEVAL_DISABLE_TIMEOUTS", "DEEPEVAL_FILE_SYSTEM",
+                "DEEPEVAL_RESULTS_FOLDER",
                 "DEEPEVAL_RETRY_CAP_SECONDS", "DEEPEVAL_RETRY_EXP_BASE",
                 "DEEPEVAL_RETRY_INITIAL_SECONDS", "DEEPEVAL_RETRY_JITTER",
                 "DEEPEVAL_RETRY_MAX_ATTEMPTS", "DEEPEVAL_SDK_RETRY_PROVIDERS",
@@ -664,6 +668,13 @@ final class CliSettings {
             case "1", "true", "t", "yes", "y", "on", "enable", "enabled" -> "true";
             case "0", "false", "f", "no", "n", "off", "disable", "disabled" -> "false";
             default -> "false";
+        };
+    }
+
+    private static String fileSystem(String value) {
+        return switch (value.strip().toUpperCase(Locale.ROOT)) {
+            case "READ_ONLY", "READ-ONLY", "READONLY", "RO" -> "READ_ONLY";
+            default -> throw new IllegalArgumentException("Invalid value for DEEPEVAL_FILE_SYSTEM: " + value);
         };
     }
 

@@ -2913,6 +2913,35 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetNormalizesFileSystemLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "deepeval-file-system=ro", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_FILE_SYSTEM", "READ_ONLY");
+    }
+
+    @Test
+    void settingsRejectsInvalidFileSystemLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "deepeval-file-system=write", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for DEEPEVAL_FILE_SYSTEM: write"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsRejectsMissingSetValueBeforeConsumingNextOption() {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
