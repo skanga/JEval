@@ -34,6 +34,9 @@ public class RoleAdherenceMetric implements ConversationalMetric {
     }
 
     public RoleAdherenceMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Role Adherence threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

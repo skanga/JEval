@@ -40,6 +40,9 @@ public class TaskCompletionMetric implements Metric {
             String task,
             boolean includeReason,
             boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Task Completion threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

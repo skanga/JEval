@@ -87,6 +87,15 @@ class RoleAdherenceMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RoleAdherenceMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RoleAdherenceMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureRequiresChatbotRole() {
         var metric = new StubRoleAdherenceMetric(
                 new OutOfCharacterResponseVerdicts(List.of()),

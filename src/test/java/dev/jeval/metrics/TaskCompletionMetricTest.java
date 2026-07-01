@@ -89,6 +89,15 @@ class TaskCompletionMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TaskCompletionMetric(Double.NaN, null, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TaskCompletionMetric(Double.POSITIVE_INFINITY, null, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var metric = new StubTaskCompletionMetric(
                 new TaskAndOutcome("Task", "Outcome"),

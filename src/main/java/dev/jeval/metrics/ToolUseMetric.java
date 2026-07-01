@@ -45,6 +45,9 @@ public class ToolUseMetric implements ConversationalMetric {
             double threshold,
             boolean includeReason,
             boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Tool Use threshold must be finite");
+        }
         this.availableTools = List.copyOf(availableTools);
         this.model = model;
         this.includeReason = includeReason;
