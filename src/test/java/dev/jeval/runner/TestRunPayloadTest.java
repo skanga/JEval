@@ -78,6 +78,15 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void metricScoreTypeRejectsNonFiniteScores() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScoreType("faithfulness", Double.NaN)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MetricScoreType("faithfulness", Double.POSITIVE_INFINITY)));
+    }
+
+    @Test
     void testRunAddTestCaseRoutesPayloadTypeAndAccumulatesEvaluationCost() {
         var singleTurn = llmApi(0.25);
         var conversational = conversationalApi(0.4);
