@@ -222,7 +222,33 @@ public final class JEvalCli {
         var useCache = false;
         String mark = null;
         for (var i = start; i < args.length; i++) {
-            switch (args[i]) {
+            var arg = args[i];
+            var equals = arg.indexOf('=');
+            if (equals > 0) {
+                var value = arg.substring(equals + 1);
+                switch (arg.substring(0, equals)) {
+                    case "--format" -> format = value.toLowerCase(Locale.ROOT);
+                    case "--output" -> output = Path.of(value);
+                    case "--results-folder" -> resultsFolder = value;
+                    case "--results-subfolder" -> resultsSubfolder = value;
+                    case "--identifier" -> identifier = value;
+                    case "--repeat" -> {
+                        repeat = Integer.parseInt(value);
+                        if (repeat < 1) {
+                            err.println("The repeat argument must be at least 1.");
+                            return null;
+                        }
+                    }
+                    case "--display" -> display = value.toLowerCase(Locale.ROOT);
+                    case "--mark" -> mark = value;
+                    case "--color", "--durations", "--num-processes" -> {
+                    }
+                    default -> {
+                    }
+                }
+                continue;
+            }
+            switch (arg) {
                 case "--quiet" -> quiet = true;
                 case "-x", "--exit-on-first-failure" -> exitOnFirstFailure = true;
                 case "-X" -> exitOnFirstFailure = false;

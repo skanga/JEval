@@ -140,6 +140,33 @@ class JEvalCliTest {
     }
 
     @Test
+    void testRunAcceptsEqualsFormForDeepEvalOptions() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "spec-name",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var output = tempDir.resolve("reports");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "test", "run", file.toString(),
+                "--identifier=equals-smoke", "--format=html", "--output=" + output
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        var report = output.resolve("equals-smoke.html");
+        assertTrue(Files.exists(report));
+        assertTrue(Files.readString(report).contains("equals-smoke"));
+    }
+
+    @Test
     void testRunWritesDeepEvalLatestTestRunData() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
