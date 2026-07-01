@@ -120,6 +120,19 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void testRunResultRecordsRejectNegativeCounts() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.TestRunSummary(-1, 0, 0, 0.0, 0.0)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.TestRunSummary(0, -1, 0, 0.0, 0.0)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.TestRunSummary(0, 0, -1, 0.0, 0.0)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.MetricAggregate("faithfulness", 0.0, 0.0, -1)));
+    }
+
+    @Test
     void testRunAddTestCaseRoutesPayloadTypeAndAccumulatesEvaluationCost() {
         var singleTurn = llmApi(0.25);
         var conversational = conversationalApi(0.4);

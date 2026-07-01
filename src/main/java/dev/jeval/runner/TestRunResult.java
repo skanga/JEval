@@ -79,6 +79,9 @@ public record TestRunResult(
 
     public record TestRunSummary(int total, int passed, int failed, double averageScore, double passRate) {
         public TestRunSummary {
+            if (total < 0 || passed < 0 || failed < 0) {
+                throw new IllegalArgumentException("TestRunSummary counts must be non-negative");
+            }
             if (!Double.isFinite(averageScore)) {
                 throw new IllegalArgumentException("TestRunSummary averageScore must be finite");
             }
@@ -90,6 +93,9 @@ public record TestRunResult(
 
     public record MetricAggregate(String name, double averageScore, double passRate, int total) {
         public MetricAggregate {
+            if (total < 0) {
+                throw new IllegalArgumentException("MetricAggregate total must be non-negative");
+            }
             if (!Double.isFinite(averageScore)) {
                 throw new IllegalArgumentException("MetricAggregate averageScore must be finite");
             }
