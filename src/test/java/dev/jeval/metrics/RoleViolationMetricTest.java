@@ -48,6 +48,15 @@ class RoleViolationMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RoleViolationMetric("helpful assistant", Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new RoleViolationMetric("helpful assistant", Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var metric = new StubRoleViolationMetric(List.of(), List.of());
 

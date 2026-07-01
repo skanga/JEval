@@ -32,6 +32,9 @@ public class PIILeakageMetric implements Metric {
     }
 
     public PIILeakageMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("PII Leakage threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

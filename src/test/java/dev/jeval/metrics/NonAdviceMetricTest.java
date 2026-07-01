@@ -65,6 +65,15 @@ class NonAdviceMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new NonAdviceMetric(List.of("financial"), Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new NonAdviceMetric(List.of("financial"), Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var metric = new StubNonAdviceMetric(List.of(), List.of());
 

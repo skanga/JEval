@@ -41,6 +41,9 @@ public class NonAdviceMetric implements Metric {
         if (adviceTypes == null || adviceTypes.isEmpty()) {
             throw new IllegalArgumentException("advice_types must be specified and non-empty.");
         }
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Non-Advice threshold must be finite");
+        }
         this.model = model;
         this.adviceTypes = List.copyOf(adviceTypes);
         this.includeReason = includeReason;

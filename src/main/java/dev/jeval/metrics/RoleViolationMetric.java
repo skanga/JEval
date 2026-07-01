@@ -40,6 +40,9 @@ public class RoleViolationMetric implements Metric {
         if (role == null) {
             throw new IllegalArgumentException("Role parameter is required.");
         }
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Role Violation threshold must be finite");
+        }
         this.model = model;
         this.role = role;
         this.includeReason = includeReason;
