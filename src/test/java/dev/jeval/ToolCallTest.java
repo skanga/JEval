@@ -58,6 +58,11 @@ class ToolCallTest {
     }
 
     @Test
+    void nameMustNotBeBlank() {
+        assertThrows(IllegalArgumentException.class, () -> new ToolCall("  "));
+    }
+
+    @Test
     void stringRepresentationIncludesPopulatedDeepEvalFields() {
         var toolCall = new ToolCall("Search", "Searches policies", "Need policy data", Map.of("q", "refund"), "ok");
 

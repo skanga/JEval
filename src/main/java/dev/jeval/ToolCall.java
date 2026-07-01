@@ -32,7 +32,7 @@ public final class ToolCall {
             @JsonProperty("reasoning") String reasoning,
             @JsonProperty("inputParameters") @JsonAlias("input_parameters") Map<?, ?> inputParameters,
             @JsonProperty("output") Object output) {
-        if (name == null) {
+        if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("'name' is required");
         }
         this.name = name;
