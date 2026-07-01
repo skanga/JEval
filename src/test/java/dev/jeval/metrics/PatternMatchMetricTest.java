@@ -82,4 +82,11 @@ class PatternMatchMetricTest {
     void constructorRejectsInvalidRegexPattern() {
         assertThrows(IllegalArgumentException.class, () -> new PatternMatchMetric("["));
     }
+
+    @Test
+    void constructorRejectsMissingPattern() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class, () -> new PatternMatchMetric(null)),
+                () -> assertThrows(IllegalArgumentException.class, () -> new PatternMatchMetric(" ")));
+    }
 }

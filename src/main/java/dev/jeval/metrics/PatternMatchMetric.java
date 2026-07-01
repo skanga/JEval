@@ -25,6 +25,9 @@ public final class PatternMatchMetric implements Metric {
     }
 
     public PatternMatchMetric(String pattern, boolean ignoreCase, double threshold) {
+        if (pattern == null || pattern.isBlank()) {
+            throw new IllegalArgumentException("Pattern match metric requires pattern");
+        }
         this.pattern = pattern.strip();
         this.threshold = threshold;
         try {
