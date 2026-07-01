@@ -6,6 +6,15 @@ import java.util.regex.Pattern;
 public record RetrievedContextData(String context, String source) {
     private static final Pattern MARKER = Pattern.compile("^deepeval_source=(.*?),deepeval_context=(.*)$");
 
+    public RetrievedContextData {
+        if (context == null) {
+            throw new IllegalArgumentException("'context' must be a string");
+        }
+        if (source == null) {
+            throw new IllegalArgumentException("'source' must be a string");
+        }
+    }
+
     public String marker() {
         return "deepeval_source=" + source + ",deepeval_context=" + context;
     }
