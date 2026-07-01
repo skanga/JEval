@@ -185,6 +185,10 @@ final class CliSettings {
                     err.println("Anthropic model name is not set. Pass --model (or set ANTHROPIC_MODEL_NAME).");
                     return 2;
                 }
+                if ("set-bedrock".equals(command) && !hasValue(savePath(args), updates, "AWS_BEDROCK_MODEL_NAME")) {
+                    err.println("AWS Bedrock model name is not set. Pass --model (or set AWS_BEDROCK_MODEL_NAME).");
+                    return 2;
+                }
                 if ("set-ollama-embeddings".equals(command)) {
                     updates.put("LOCAL_EMBEDDING_API_KEY", "ollama");
                 }
