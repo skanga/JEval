@@ -3023,6 +3023,28 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetAcceptsGeneralStorageValuesLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "app-env=staging",
+                "--set", "env-dir-path=C:/tmp/jeval-env",
+                "--set", "deepeval-identifier=nightly-smoke",
+                "--set", "deepeval-cache-folder=.jeval-cache",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "APP_ENV", "staging");
+        assertDotenv(env, "ENV_DIR_PATH", "C:/tmp/jeval-env");
+        assertDotenv(env, "DEEPEVAL_IDENTIFIER", "nightly-smoke");
+        assertDotenv(env, "DEEPEVAL_CACHE_FOLDER", ".jeval-cache");
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
