@@ -1321,6 +1321,14 @@ public final class EvaluationDataset {
             String userDescriptionKeyName,
             String contextDelimiter,
             String retrievalContextDelimiter) {
+        var actualOutputKey = jsonKey(row, actualOutputKeyName, "actual_output", "actualOutput");
+        var expectedOutputKey = jsonKey(row, expectedOutputKeyName, "expected_output", "expectedOutput");
+        var retrievalContextKey = jsonKey(row, retrievalContextKeyName, "retrieval_context", "retrievalContext");
+        var toolsCalledKey = jsonKey(row, toolsCalledKeyName, "tools_called", "toolsCalled");
+        var expectedToolsKey = jsonKey(row, expectedToolsKeyName, "expected_tools", "expectedTools");
+        var customColumnKeyValuesKey = jsonKey(row, customColumnKeyValuesKeyName, "custom_column_key_values",
+                "customColumnKeyValues");
+        var sourceFileKey = jsonKey(row, sourceFileKeyName, "source_file", "sourceFile");
         if (truthy(scenarioKeyName == null ? null : row.get(scenarioKeyName))) {
             var scenario = requiredText(row, scenarioKeyName);
             addGolden(ConversationalGolden.builder(scenario)
@@ -1336,17 +1344,17 @@ public final class EvaluationDataset {
             return;
         }
         addGolden(Golden.builder(requiredText(row, inputKeyName))
-                .actualOutput(textOrNull(row, actualOutputKeyName))
-                .expectedOutput(textOrNull(row, expectedOutputKeyName))
+                .actualOutput(textOrNull(row, actualOutputKey))
+                .expectedOutput(textOrNull(row, expectedOutputKey))
                 .context(textListOrSplitOrNull(row, contextKeyName, contextDelimiter))
-                .retrievalContext(textListOrSplitOrNull(row, retrievalContextKeyName, retrievalContextDelimiter))
-                .toolsCalled(toolListOrNull(row, toolsCalledKeyName, contextDelimiter != null, contextDelimiter != null))
-                .expectedTools(toolListOrNull(row, expectedToolsKeyName, contextDelimiter != null, contextDelimiter != null))
+                .retrievalContext(textListOrSplitOrNull(row, retrievalContextKey, retrievalContextDelimiter))
+                .toolsCalled(toolListOrNull(row, toolsCalledKey, contextDelimiter != null, contextDelimiter != null))
+                .expectedTools(toolListOrNull(row, expectedToolsKey, contextDelimiter != null, contextDelimiter != null))
                 .additionalMetadata(objectMapOrNull(row, additionalMetadataKeyName))
-                .customColumnKeyValues(stringMapOrNull(row, customColumnKeyValuesKeyName))
+                .customColumnKeyValues(stringMapOrNull(row, customColumnKeyValuesKey))
                 .name(textOrNull(row, nameKeyName))
                 .comments(textOrNull(row, commentsKeyName))
-                .sourceFile(textOrNull(row, sourceFileKeyName))
+                .sourceFile(textOrNull(row, sourceFileKey))
                 .build());
     }
 

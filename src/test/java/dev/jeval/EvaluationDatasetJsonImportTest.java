@@ -915,6 +915,38 @@ class EvaluationDatasetJsonImportTest {
     }
 
     @Test
+    void addGoldensFromJsonFileAcceptsCamelCaseAliasesForDefaultSingleTurnKeys() throws IOException {
+        var file = tempDir.resolve("camel-case-goldens.json");
+        Files.writeString(file, """
+                [
+                  {
+                    "input": "Ask",
+                    "actualOutput": "Ans",
+                    "expectedOutput": "Ans",
+                    "retrievalContext": ["rctx"],
+                    "toolsCalled": [{"name": "search"}],
+                    "expectedTools": [{"name": "finalize"}],
+                    "customColumnKeyValues": {"col": "val"},
+                    "sourceFile": "src.txt"
+                  }
+                ]
+                """);
+        var dataset = new EvaluationDataset();
+
+        dataset.addGoldensFromJsonFile(file);
+
+        var golden = dataset.goldens().getFirst();
+        assertAll(
+                () -> assertEquals("Ans", golden.actualOutput()),
+                () -> assertEquals("Ans", golden.expectedOutput()),
+                () -> assertEquals(List.of("rctx"), golden.retrievalContext()),
+                () -> assertEquals(List.of(new ToolCall("search")), golden.toolsCalled()),
+                () -> assertEquals(List.of(new ToolCall("finalize")), golden.expectedTools()),
+                () -> assertEquals(Map.of("col", "val"), golden.customColumnKeyValues()),
+                () -> assertEquals("src.txt", golden.sourceFile()));
+    }
+
+    @Test
     void addGoldensFromJsonFileRejectsStringContextLikeDeepEval() throws IOException {
         var file = tempDir.resolve("string-context-golden.json");
         Files.writeString(file, """
