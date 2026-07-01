@@ -52,6 +52,7 @@ final class CliSettings {
     private static final List<String> EMBED_VALUES = List.of(
             "AZURE_EMBEDDING_MODEL_NAME", "AZURE_EMBEDDING_DEPLOYMENT_NAME",
             "LOCAL_EMBEDDING_MODEL_NAME", "LOCAL_EMBEDDING_BASE_URL");
+    private static final java.util.Set<String> KNOWN_SETTING_KEYS = knownSettingKeys();
 
     private CliSettings() {
     }
@@ -78,6 +79,10 @@ final class CliSettings {
                     return 2;
                 }
                 var rawKey = update.substring(0, index);
+                if (!knownSettingKey(rawKey)) {
+                    err.println("Unknown setting: '" + rawKey + "'");
+                    return 2;
+                }
                 var key = settingKey(rawKey);
                 if (deprecatedComputedSettingKey(rawKey) && explicitUpdates.contains(key)) {
                     continue;
@@ -491,6 +496,34 @@ final class CliSettings {
 
     private static String settingValue(String key, String value) {
         return settingKey(key).equals("LOG_LEVEL") ? logLevel(value) : value;
+    }
+
+    private static boolean knownSettingKey(String key) {
+        return KNOWN_SETTING_KEYS.contains(normalizeSettingKey(key)) || KNOWN_SETTING_KEYS.contains(settingKey(key));
+    }
+
+    private static java.util.Set<String> knownSettingKeys() {
+        var keys = new java.util.HashSet<String>();
+        keys.addAll(DEBUG_KEYS);
+        keys.addAll(LLM_FLAGS);
+        keys.addAll(LLM_VALUES);
+        keys.addAll(EMBED_FLAGS);
+        keys.addAll(EMBED_VALUES);
+        keys.addAll(DEPRECATED_COMPUTED_SETTING_KEYS.keySet());
+        keys.addAll(DEPRECATED_COMPUTED_SETTING_KEYS.values());
+        keys.addAll(List.of(
+                "ANTHROPIC_API_KEY", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
+                "AZURE_OPENAI_API_KEY", "DEEPSEEK_API_KEY", "GOOGLE_API_KEY",
+                "GOOGLE_SERVICE_ACCOUNT_KEY", "GROK_API_KEY", "LITELLM_API_KEY",
+                "LITELLM_PROXY_API_KEY", "LOCAL_EMBEDDING_API_KEY", "LOCAL_MODEL_API_KEY",
+                "MAX_TOKENS", "MOONSHOT_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
+                "PORTKEY_API_KEY", "TEMPERATURE",
+                "DEEPEVAL_DISABLE_TIMEOUTS", "DEEPEVAL_RESULTS_FOLDER",
+                "DEEPEVAL_RETRY_CAP_SECONDS", "DEEPEVAL_RETRY_EXP_BASE",
+                "DEEPEVAL_RETRY_INITIAL_SECONDS", "DEEPEVAL_RETRY_JITTER",
+                "DEEPEVAL_RETRY_MAX_ATTEMPTS", "DEEPEVAL_SDK_RETRY_PROVIDERS",
+                "DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS", "DEEPEVAL_TIMEOUT_THREAD_LIMIT"));
+        return keys;
     }
 
     private static void putOption(Map<String, String> updates, String[] args, String option, String key) {

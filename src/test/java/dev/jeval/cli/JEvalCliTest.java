@@ -2891,6 +2891,20 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsRejectsUnknownSettingLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"settings", "--set", "not-a-setting=value", "--save", "dotenv:" + env},
+                out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Unknown setting: 'not-a-setting'"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsAcceptsEqualsFormForDeepEvalAliases() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
