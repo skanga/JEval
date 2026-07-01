@@ -37,6 +37,9 @@ public class KnowledgeRetentionMetric implements ConversationalMetric {
     }
 
     public KnowledgeRetentionMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Knowledge Retention threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

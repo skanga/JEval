@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.jeval.ConversationalTestCase;
@@ -106,6 +107,15 @@ class GoalAccuracyMetricTest {
                 () -> assertEquals(0.0, result.score()),
                 () -> assertFalse(result.success()),
                 () -> assertEquals(1.0, result.threshold()));
+    }
+
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new GoalAccuracyMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new GoalAccuracyMetric(Double.POSITIVE_INFINITY, true, false)));
     }
 
     @Test
