@@ -75,6 +75,15 @@ class ToolCorrectnessMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ToolCorrectnessMetric(List.of(), false, false, Double.NaN, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ToolCorrectnessMetric(List.of(), false, false, Double.POSITIVE_INFINITY, false)));
+    }
+
+    @Test
     void exactModeRequiresSameToolsInSameOrder() {
         var testCase = testCase(
                 List.of(new ToolCall("Search"), new ToolCall("Lookup")),

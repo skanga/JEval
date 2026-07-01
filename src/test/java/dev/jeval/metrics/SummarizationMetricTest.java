@@ -73,6 +73,15 @@ class SummarizationMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new SummarizationMetric(Double.NaN, 5, null, true, false, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new SummarizationMetric(Double.POSITIVE_INFINITY, 5, null, true, false, null)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var metric = new StubSummarizationMetric(null, List.of(), List.of());
 

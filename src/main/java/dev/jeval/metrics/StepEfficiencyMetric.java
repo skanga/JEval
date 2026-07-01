@@ -34,6 +34,9 @@ public class StepEfficiencyMetric implements Metric {
     }
 
     public StepEfficiencyMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Step Efficiency threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

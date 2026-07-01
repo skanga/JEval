@@ -74,6 +74,15 @@ class StepEfficiencyMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new StepEfficiencyMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new StepEfficiencyMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureRequiresTrace() {
         var metric = new StubStepEfficiencyMetric(
                 new Task("Task"),

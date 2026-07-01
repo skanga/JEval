@@ -66,6 +66,9 @@ public final class ToolCorrectnessMetric implements Metric {
             boolean strictMode,
             List<ToolCall> availableTools,
             EvaluationModel model) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Tool Correctness threshold must be finite");
+        }
         this.evaluationParams = List.copyOf(evaluationParams);
         this.shouldExactMatch = shouldExactMatch;
         this.shouldConsiderOrdering = shouldConsiderOrdering;

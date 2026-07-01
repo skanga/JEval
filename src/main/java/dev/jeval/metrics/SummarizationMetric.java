@@ -56,6 +56,9 @@ public class SummarizationMetric implements Metric {
             boolean includeReason,
             boolean strictMode,
             Integer truthsExtractionLimit) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Summarization threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;
