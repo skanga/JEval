@@ -215,6 +215,20 @@ public final class JEvalCli {
         return index + 1 == args.length || (args[index + 1].startsWith("-") && !args[index + 1].matches("-\\d+"));
     }
 
+    private static Integer repeatValue(String value, String option, PrintStream err) {
+        try {
+            var repeat = Integer.parseInt(value);
+            if (repeat < 1) {
+                err.println("The repeat argument must be at least 1.");
+                return null;
+            }
+            return repeat;
+        } catch (NumberFormatException error) {
+            err.println("Invalid value for " + option + ": " + value);
+            return null;
+        }
+    }
+
     private static Path inspectTarget(InspectOptions options, Path storeRoot, Map<String, String> env) throws IOException {
         if (options.path() != null) {
             if (Files.isRegularFile(options.path())) {
@@ -289,11 +303,11 @@ public final class JEvalCli {
                     case "--results-subfolder" -> resultsSubfolder = value;
                     case "-id", "--identifier" -> identifier = value;
                     case "-r", "--repeat" -> {
-                        repeat = Integer.parseInt(value);
-                        if (repeat < 1) {
-                            err.println("The repeat argument must be at least 1.");
+                        var parsedRepeat = repeatValue(value, arg.substring(0, equals), err);
+                        if (parsedRepeat == null) {
                             return null;
                         }
+                        repeat = parsedRepeat;
                     }
                     case "-d", "--display" -> display = value.toLowerCase(Locale.ROOT);
                     case "-m", "--mark" -> mark = value;
@@ -371,11 +385,11 @@ public final class JEvalCli {
                         return null;
                     }
                     i++;
-                    repeat = Integer.parseInt(args[i]);
-                    if (repeat < 1) {
-                        err.println("The repeat argument must be at least 1.");
+                    var parsedRepeat = repeatValue(args[i], arg, err);
+                    if (parsedRepeat == null) {
                         return null;
                     }
+                    repeat = parsedRepeat;
                 }
                 case "-d", "--display" -> {
                     if (missingOptionValue(args, i)) {
