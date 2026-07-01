@@ -466,6 +466,22 @@ public final class Synthesizer {
                 sourceFiles));
     }
 
+    public CompletableFuture<List<ConversationalGolden>> generateConversationalGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutcome,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
+            Integer targetFilesPerContext) {
+        return CompletableFuture.supplyAsync(() -> generateConversationalGoldensFromContexts(
+                contexts,
+                includeExpectedOutcome,
+                maxGoldensPerContext,
+                sourceFiles,
+                contextChunkSourceFiles,
+                targetFilesPerContext));
+    }
+
     public List<ConversationalGolden> generateConversationalGoldensFromDocs(List<Path> documentPaths)
             throws IOException {
         return generateConversationalGoldensFromDocs(documentPaths, true, 2, ContextConstructionConfig.DEFAULT);
