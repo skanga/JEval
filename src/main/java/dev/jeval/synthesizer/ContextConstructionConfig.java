@@ -104,6 +104,10 @@ public record ContextConstructionConfig(
         if (chunkOverlap < 0) {
             throw new IllegalArgumentException("chunk_overlap must be non-negative");
         }
+        if (chunkOverlap >= chunkSize) {
+            throw new IllegalArgumentException(
+                    "`chunk_overlap` must not exceed " + (chunkSize - 1) + " (chunk_size - 1).");
+        }
         if (!Double.isFinite(contextQualityThreshold)
                 || contextQualityThreshold < 0
                 || contextQualityThreshold > 1) {

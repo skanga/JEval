@@ -62,6 +62,12 @@ class ContextConstructionConfigTest {
     }
 
     @Test
+    void validatesChunkOverlapOptionsLikeDeepEval() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new ContextConstructionConfig(3, 1, 3, 1, 2, 2, 0.5, 0.0, 3));
+    }
+
+    @Test
     void validatesCrossFileMergeOptionsLikeDeepEval() {
         assertThrows(IllegalArgumentException.class,
                 () -> new ContextConstructionConfig(3, 1, 1024, 0, 0.5, 0.0, 3, true, 1, 3));
