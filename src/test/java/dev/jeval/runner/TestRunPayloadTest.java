@@ -87,6 +87,19 @@ class TestRunPayloadTest {
     }
 
     @Test
+    void testRunResultRecordsRejectNonFiniteScores() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.TestRunSummary(1, 1, 0, Double.NaN, 1.0)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.TestRunSummary(1, 1, 0, 1.0, Double.POSITIVE_INFINITY)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.MetricAggregate("faithfulness", Double.NaN, 1.0, 1)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new TestRunResult.MetricAggregate("faithfulness", 1.0, Double.POSITIVE_INFINITY, 1)));
+    }
+
+    @Test
     void testRunAddTestCaseRoutesPayloadTypeAndAccumulatesEvaluationCost() {
         var singleTurn = llmApi(0.25);
         var conversational = conversationalApi(0.4);

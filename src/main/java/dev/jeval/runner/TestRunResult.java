@@ -78,8 +78,24 @@ public record TestRunResult(
     }
 
     public record TestRunSummary(int total, int passed, int failed, double averageScore, double passRate) {
+        public TestRunSummary {
+            if (!Double.isFinite(averageScore)) {
+                throw new IllegalArgumentException("TestRunSummary averageScore must be finite");
+            }
+            if (!Double.isFinite(passRate)) {
+                throw new IllegalArgumentException("TestRunSummary passRate must be finite");
+            }
+        }
     }
 
     public record MetricAggregate(String name, double averageScore, double passRate, int total) {
+        public MetricAggregate {
+            if (!Double.isFinite(averageScore)) {
+                throw new IllegalArgumentException("MetricAggregate averageScore must be finite");
+            }
+            if (!Double.isFinite(passRate)) {
+                throw new IllegalArgumentException("MetricAggregate passRate must be finite");
+            }
+        }
     }
 }
