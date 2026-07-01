@@ -655,6 +655,7 @@ final class CliSettings {
     private static boolean urlSettingKey(String key) {
         return List.of(
                 "AZURE_OPENAI_ENDPOINT",
+                "CONFIDENT_OTEL_URL",
                 "LITELLM_API_BASE",
                 "LITELLM_PROXY_API_BASE",
                 "LOCAL_EMBEDDING_BASE_URL",
@@ -703,8 +704,8 @@ final class CliSettings {
                 "MAX_TOKENS", "MEDIA_IMAGE_CONNECT_TIMEOUT_SECONDS", "MEDIA_IMAGE_READ_TIMEOUT_SECONDS",
                 "MOONSHOT_API_KEY", "OPENAI_API_KEY", "OPENAI_COST_PER_INPUT_TOKEN",
                 "OPENAI_COST_PER_OUTPUT_TOKEN", "OPENROUTER_API_KEY",
-                "PORTKEY_API_KEY", "TEMPERATURE", "CONFIDENT_OPEN_BROWSER", "CONFIDENT_REGION",
-                "CONFIDENT_TRACE_INTERNAL",
+                "PORTKEY_API_KEY", "TEMPERATURE", "CONFIDENT_OPEN_BROWSER", "CONFIDENT_OTEL_URL",
+                "CONFIDENT_REGION", "CONFIDENT_TRACE_INTERNAL",
                 "CUDA_LAUNCH_BLOCKING", "CUDA_VISIBLE_DEVICES",
                 "DEEPEVAL_CACHE_FOLDER", "DEEPEVAL_DEFAULT_SAVE",
                 "DEEPEVAL_DISABLE_DOTENV", "DEEPEVAL_DISABLE_TIMEOUTS", "DEEPEVAL_FILE_SYSTEM",

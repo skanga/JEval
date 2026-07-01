@@ -3147,6 +3147,29 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsValidatesConfidentOtelUrlLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "confident-otel-url=https://otel.example/v1/traces", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "CONFIDENT_OTEL_URL", "https://otel.example/v1/traces");
+
+        out.reset();
+        err.reset();
+        exit = run(new String[] {
+                "settings", "--set", "confident-otel-url=otel endpoint", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for CONFIDENT_OTEL_URL: otel endpoint"));
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
