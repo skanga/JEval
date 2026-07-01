@@ -506,7 +506,12 @@ public final class TestRunner {
         }
         return switch (type) {
             case "exact_match" -> new ExactMatchMetric(threshold);
-            case "pattern_match" -> new PatternMatchMetric(spec.pattern(), Boolean.TRUE.equals(spec.ignoreCase()), threshold);
+            case "pattern_match" -> {
+                if (spec.pattern() == null || spec.pattern().isBlank()) {
+                    throw new IllegalArgumentException("Pattern match metric requires pattern");
+                }
+                yield new PatternMatchMetric(spec.pattern(), Boolean.TRUE.equals(spec.ignoreCase()), threshold);
+            }
             default -> throw new IllegalArgumentException("Unsupported metric type: " + spec.type());
         };
     }

@@ -136,6 +136,22 @@ class TestRunnerTest {
     }
 
     @Test
+    void rejectsPatternMatchMetricWithoutPattern() throws Exception {
+        var spec = tempDir.resolve("eval.json");
+        Files.writeString(spec, """
+                {
+                  "name": "bad-pattern",
+                  "metrics": [{"type": "pattern_match"}],
+                  "cases": [{"input": "q", "actualOutput": "yes"}]
+                }
+                """);
+
+        var error = assertThrows(IllegalArgumentException.class, () -> new TestRunner().run(spec));
+
+        assertTrue(error.getMessage().contains("Pattern match metric requires pattern"));
+    }
+
+    @Test
     void runsCsvDatasetFromSpec() throws Exception {
         var dataset = tempDir.resolve("cases.csv");
         Files.writeString(dataset, """
