@@ -3039,6 +3039,18 @@ class JEvalCliTest {
     }
 
     @Test
+    void providerRejectsMissingOptionValueBeforeConsumingNextOption() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {"set-openai", "--model", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Missing value for --model"));
+    }
+
+    @Test
     void providerSetUnsetRoundtripUsesExclusiveFlags() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

@@ -162,6 +162,11 @@ final class CliSettings {
         if (spec == null) {
             return -1;
         }
+        var optionError = providerOptionError(spec, args);
+        if (optionError != null) {
+            err.println(optionError);
+            return 2;
+        }
         try {
             var updates = new LinkedHashMap<String, String>();
             var removals = new java.util.ArrayList<String>();
@@ -253,6 +258,21 @@ final class CliSettings {
             err.println(error.getMessage());
             return 2;
         }
+    }
+
+    private static String providerOptionError(ProviderSpec spec, String[] args) {
+        for (var i = 1; i < args.length; i++) {
+            var arg = args[i];
+            if (!arg.startsWith("-") || arg.contains("=")) {
+                continue;
+            }
+            if ((spec.setKeys().containsKey(arg) || "--save".equals(arg) || "-s".equals(arg)
+                    || ("USE_GEMINI_MODEL".equals(spec.useKey()) && "--service-account-file".equals(arg)))
+                    && missingValue(args, i)) {
+                return "Missing value for " + arg;
+            }
+        }
+        return null;
     }
 
     private static int list(DotenvFile dotenv, List<String> filters, PrintStream out) throws IOException {
