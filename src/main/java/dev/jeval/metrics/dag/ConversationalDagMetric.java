@@ -69,6 +69,9 @@ public final class ConversationalDagMetric implements ConversationalMetric {
         if (!ConversationalDagUtils.isValidDagFromRoots(dag.rootNodes())) {
             throw new IllegalArgumentException("Cycle detected in DAG graph.");
         }
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Conversational DAG threshold must be finite");
+        }
         this.name = name;
         this.dag = ConversationalDagUtils.copyGraph(dag);
         this.threshold = strictMode ? 1.0 : threshold;

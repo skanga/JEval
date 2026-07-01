@@ -62,6 +62,9 @@ public final class DagMetric implements Metric {
         if (!DagUtils.isValidDagFromRoots(dag.rootNodes())) {
             throw new IllegalArgumentException("Cycle detected in DAG graph.");
         }
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("DAG threshold must be finite");
+        }
         this.name = name;
         this.dag = DagUtils.copyGraph(dag);
         this.threshold = strictMode ? 1.0 : threshold;

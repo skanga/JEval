@@ -1,5 +1,6 @@
 package dev.jeval.metrics.dag;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -38,6 +39,15 @@ class DagMetricTest {
         assertEquals("Quality", metric.name());
         assertEquals(1.0, metric.threshold());
         assertEquals(true, metric.strictMode());
+    }
+
+    @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new DagMetric("Quality", dag(), Double.NaN, false, true)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new DagMetric("Quality", dag(), Double.POSITIVE_INFINITY, false, true)));
     }
 
     @Test
