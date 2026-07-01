@@ -19,6 +19,7 @@ import java.util.Locale;
 
 public final class JEvalCli {
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final String FALLBACK_VERSION = "0.1.0-SNAPSHOT";
 
     private JEvalCli() {
     }
@@ -32,6 +33,10 @@ public final class JEvalCli {
     }
 
     static int run(String[] args, PrintStream out, PrintStream err, Path storeRoot) {
+        if (args.length == 1 && ("--version".equals(args[0]) || "-V".equals(args[0]))) {
+            out.println("jeval " + version());
+            return 0;
+        }
         if (args.length > 0 && "settings".equals(args[0])) {
             return CliSettings.settings(args, out, err);
         }
@@ -359,6 +364,11 @@ public final class JEvalCli {
             return new TestTarget(Path.of(value), null);
         }
         return new TestTarget(Path.of(value.substring(0, selectorStart)), value.substring(selectorStart + 2));
+    }
+
+    private static String version() {
+        var version = JEvalCli.class.getPackage().getImplementationVersion();
+        return version == null ? FALLBACK_VERSION : version;
     }
 
     private static void usage(PrintStream err) {

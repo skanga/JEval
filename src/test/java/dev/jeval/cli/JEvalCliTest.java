@@ -52,6 +52,22 @@ class JEvalCliTest {
     }
 
     @Test
+    void versionOptionsPrintVersionAndExitZero() {
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {"--version"}, out, err));
+        assertTrue(text(out).contains("0.1.0-SNAPSHOT"));
+        assertEquals("", text(err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"-V"}, out, err));
+        assertTrue(text(out).contains("0.1.0-SNAPSHOT"));
+        assertEquals("", text(err));
+    }
+
+    @Test
     void exitsNonZeroWhenEvaluationFails() throws Exception {
         var file = tempDir.resolve("judgment_eval.json");
         Files.writeString(file, """
