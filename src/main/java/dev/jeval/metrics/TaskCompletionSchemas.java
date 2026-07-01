@@ -28,5 +28,10 @@ public final class TaskCompletionSchemas {
     }
 
     public record TaskCompletionVerdict(double verdict, String reason) {
+        public TaskCompletionVerdict {
+            if (!Double.isFinite(verdict)) {
+                throw new IllegalArgumentException("TaskCompletionVerdict verdict must be finite");
+            }
+        }
     }
 }

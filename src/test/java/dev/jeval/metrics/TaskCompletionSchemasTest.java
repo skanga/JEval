@@ -42,4 +42,12 @@ class TaskCompletionSchemasTest {
         assertThrows(IllegalArgumentException.class, () -> TaskCompletionSchemas.parseVerdict("{\"verdict\":\"bad\",\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> TaskCompletionSchemas.parseVerdict("{\"verdict\":0.75,\"reason\":1}"));
     }
+
+    @Test
+    void verdictRecordRejectsNonFiniteScores() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new TaskCompletionSchemas.TaskCompletionVerdict(Double.NaN, "bad"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new TaskCompletionSchemas.TaskCompletionVerdict(Double.POSITIVE_INFINITY, "bad"));
+    }
 }
