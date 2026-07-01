@@ -67,6 +67,7 @@ final class CliSettings {
             var updates = new LinkedHashMap<String, String>();
             var explicitUpdates = new java.util.HashSet<String>();
             var removals = new java.util.ArrayList<String>();
+            var existing = dotenv.read();
             for (var update : parsed.updates()) {
                 var index = update.indexOf('=');
                 if (index < 1) {
@@ -84,7 +85,7 @@ final class CliSettings {
                 }
             }
             for (var unset : parsed.unsets()) {
-                removals.add(settingKey(unset));
+                removals.addAll(unsetKeys(existing, unset));
             }
             if (!updates.isEmpty() || !removals.isEmpty()) {
                 dotenv.update(updates, removals);
@@ -200,6 +201,14 @@ final class CliSettings {
 
     private static boolean secret(String key) {
         return key.contains("KEY") || key.contains("TOKEN") || key.contains("SECRET");
+    }
+
+    private static List<String> unsetKeys(Map<String, String> existing, String filter) {
+        var needle = normalizeSettingKey(filter);
+        var matches = existing.keySet().stream()
+                .filter(key -> key.contains(needle))
+                .toList();
+        return matches.isEmpty() ? List.of(settingKey(filter)) : matches;
     }
 
     private static Parsed parse(String[] args, int start) {

@@ -2394,6 +2394,30 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsUnsetAcceptsPartialSettingFilter() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "settings",
+                "--set", "openai-api-key=sk-openai",
+                "--set", "anthropic-api-key=sk-anthropic",
+                "--set", "log-level=info",
+                "--save", "dotenv:" + env
+        }, out, err), text(err));
+
+        out.reset();
+        err.reset();
+        var exit = run(new String[] {"settings", "--unset", "api-key", "--save", "dotenv:" + env}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_API_KEY"));
+        assertEquals(false, readDotenv(env).containsKey("ANTHROPIC_API_KEY"));
+        assertDotenv(env, "LOG_LEVEL", "20");
+    }
+
+    @Test
     void settingsAcceptsDeepEvalSetAlias() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
