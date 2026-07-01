@@ -510,7 +510,21 @@ final class CliSettings {
         if (normalized.equals("CONFIDENT_TRACE_SAMPLE_RATE")) {
             validateDoubleRange(normalized, value, 0.0, 1.0);
         }
+        if (normalized.equals("DEEPEVAL_RETRY_MAX_ATTEMPTS")) {
+            validateIntegerMin(normalized, value, 1);
+        }
         return value;
+    }
+
+    private static void validateIntegerMin(String key, String value, int min) {
+        try {
+            var parsed = Integer.parseInt(value);
+            if (parsed < min) {
+                throw new NumberFormatException();
+            }
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException("Invalid value for " + key + ": " + value);
+        }
     }
 
     private static void validateDoubleRange(String key, String value, double min, double max) {
