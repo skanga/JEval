@@ -513,6 +513,9 @@ final class CliSettings {
         if (normalized.equals("DEEPEVAL_RETRY_MAX_ATTEMPTS")) {
             validateIntegerMin(normalized, value, 1);
         }
+        if (normalized.equals("DEEPEVAL_RETRY_EXP_BASE")) {
+            validateDoubleRange(normalized, value, 1.0, Double.POSITIVE_INFINITY);
+        }
         return value;
     }
 
