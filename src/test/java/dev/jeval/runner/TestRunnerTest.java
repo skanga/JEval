@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -131,6 +132,26 @@ class TestRunnerTest {
         assertEquals(2, result.results().size());
         assertEquals(1, result.summary().passed());
         assertEquals(1, result.summary().failed());
+    }
+
+    @Test
+    void jsonlDatasetAcceptsCamelCaseRetrievalContextAliasLikeInlineCases() throws Exception {
+        var dataset = tempDir.resolve("cases.jsonl");
+        Files.writeString(dataset, """
+                {"input":"q","actualOutput":"yes","expectedOutput":"yes","retrievalContext":["retrieved fact"]}
+                """);
+        var spec = tempDir.resolve("eval.json");
+        Files.writeString(spec, """
+                {
+                  "name": "jsonl-run",
+                  "dataset": "cases.jsonl",
+                  "metrics": [{"type": "exact_match"}]
+                }
+                """);
+
+        var result = assertDoesNotThrow(() -> new TestRunner().run(spec));
+
+        assertEquals(List.of("retrieved fact"), result.results().getFirst().retrievalContext());
     }
 
     @Test

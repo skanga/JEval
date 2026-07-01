@@ -448,7 +448,7 @@ public final class TestRunner {
                 .actualOutput(requiredText(node, "actual_output", "actualOutput"))
                 .expectedOutput(text(node, "expected_output", "expectedOutput"))
                 .context(textList(node, "context"))
-                .retrievalContext(textList(node, "retrieval_context"))
+                .retrievalContext(textList(node, "retrieval_context", "retrievalContext"))
                 .metadata(objectMap(node, node.has("metadata") ? "metadata" : "additional_metadata"))
                 .comments(text(node, "comments"))
                 .tokenCost(doubleOrNull(node, "token_cost"))
@@ -512,6 +512,10 @@ public final class TestRunner {
 
     private static List<String> textList(JsonNode node, String key) {
         return convertOrNull(node, key, new TypeReference<>() {});
+    }
+
+    private static List<String> textList(JsonNode node, String key, String alias) {
+        return textList(node, node.has(key) ? key : alias);
     }
 
     private static List<ToolCall> toolCalls(JsonNode node, String key) {
