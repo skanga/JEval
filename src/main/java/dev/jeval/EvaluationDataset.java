@@ -249,6 +249,24 @@ public final class EvaluationDataset {
                 .thenAccept(generated -> generated.forEach(this::addGolden));
     }
 
+    public CompletableFuture<Void> generateGoldensFromContextsAsync(
+            List<List<String>> contexts,
+            boolean includeExpectedOutput,
+            int maxGoldensPerContext,
+            List<?> sourceFiles,
+            List<List<String>> contextChunkSourceFiles,
+            Integer targetFilesPerContext,
+            Synthesizer synthesizer) {
+        return requireSynthesizer(synthesizer).generateGoldensFromContextsAsync(
+                contexts,
+                includeExpectedOutput,
+                maxGoldensPerContext,
+                sourceFiles,
+                contextChunkSourceFiles,
+                targetFilesPerContext)
+                .thenAccept(generated -> generated.forEach(this::addGolden));
+    }
+
     public void generateTextToSqlGoldensFromContext(
             List<String> context,
             boolean includeExpectedOutput,
