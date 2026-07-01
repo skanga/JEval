@@ -595,14 +595,19 @@ final class CliSettings {
         return LLM_FLAGS.contains(key)
                 || EMBED_FLAGS.contains(key)
                 || List.of(
+                        "CONFIDENT_OPEN_BROWSER",
                         "CONFIDENT_TRACE_FLUSH",
                         "CONFIDENT_TRACE_VERBOSE",
+                        "CUDA_LAUNCH_BLOCKING",
                         "DEEPEVAL_DEBUG_ASYNC",
                         "DEEPEVAL_DISABLE_DOTENV",
                         "DEEPEVAL_DISABLE_TIMEOUTS",
                         "DEEPEVAL_GRPC_LOGGING",
                         "DEEPEVAL_LOG_STACK_TRACES",
-                        "DEEPEVAL_VERBOSE_MODE")
+                        "DEEPEVAL_VERBOSE_MODE",
+                        "GOOGLE_GENAI_USE_VERTEXAI",
+                        "TOKENIZERS_PARALLELISM",
+                        "TRANSFORMERS_NO_ADVISORY_WARNINGS")
                         .contains(key);
     }
 
@@ -621,7 +626,8 @@ final class CliSettings {
                 "GOOGLE_SERVICE_ACCOUNT_KEY", "GROK_API_KEY", "LITELLM_API_KEY",
                 "LITELLM_PROXY_API_KEY", "LOCAL_EMBEDDING_API_KEY", "LOCAL_MODEL_API_KEY",
                 "MAX_TOKENS", "MOONSHOT_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
-                "PORTKEY_API_KEY", "TEMPERATURE", "CONFIDENT_REGION",
+                "PORTKEY_API_KEY", "TEMPERATURE", "CONFIDENT_OPEN_BROWSER", "CONFIDENT_REGION",
+                "CUDA_LAUNCH_BLOCKING", "CUDA_VISIBLE_DEVICES",
                 "DEEPEVAL_DEFAULT_SAVE",
                 "DEEPEVAL_DISABLE_DOTENV", "DEEPEVAL_DISABLE_TIMEOUTS", "DEEPEVAL_FILE_SYSTEM",
                 "DEEPEVAL_RESULTS_FOLDER",
@@ -629,7 +635,8 @@ final class CliSettings {
                 "DEEPEVAL_RETRY_INITIAL_SECONDS", "DEEPEVAL_RETRY_JITTER",
                 "DEEPEVAL_RETRY_MAX_ATTEMPTS", "DEEPEVAL_SDK_RETRY_PROVIDERS",
                 "DEEPEVAL_MAX_CONCURRENT_DOC_PROCESSING",
-                "DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS", "DEEPEVAL_TIMEOUT_THREAD_LIMIT"));
+                "DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS", "DEEPEVAL_TIMEOUT_THREAD_LIMIT",
+                "PYTHONPATH", "TOKENIZERS_PARALLELISM", "TRANSFORMERS_NO_ADVISORY_WARNINGS"));
         return keys;
     }
 

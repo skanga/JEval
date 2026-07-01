@@ -2899,6 +2899,28 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetCoercesRuntimeBooleanValuesLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "confident-open-browser=disabled",
+                "--set", "cuda-launch-blocking=1",
+                "--set", "tokenizers-parallelism=off",
+                "--set", "transformers-no-advisory-warnings=yes",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "CONFIDENT_OPEN_BROWSER", "false");
+        assertDotenv(env, "CUDA_LAUNCH_BLOCKING", "true");
+        assertDotenv(env, "TOKENIZERS_PARALLELISM", "false");
+        assertDotenv(env, "TRANSFORMERS_NO_ADVISORY_WARNINGS", "true");
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
