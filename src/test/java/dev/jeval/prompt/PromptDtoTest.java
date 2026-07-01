@@ -115,6 +115,25 @@ class PromptDtoTest {
     }
 
     @Test
+    void promptHttpResponseRejectsMissingIdentityAndTypeFields() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> promptHttpResponse(null, "abc123", "v1", PromptType.TEXT)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> promptHttpResponse(" ", "abc123", "v1", PromptType.TEXT)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> promptHttpResponse("prompt-1", null, "v1", PromptType.TEXT)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> promptHttpResponse("prompt-1", " ", "v1", PromptType.TEXT)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> promptHttpResponse("prompt-1", "abc123", null, PromptType.TEXT)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> promptHttpResponse("prompt-1", "abc123", " ", PromptType.TEXT)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> promptHttpResponse("prompt-1", "abc123", "v1", null)));
+    }
+
+    @Test
     void promptPushRequestKeepsDeepEvalFieldsAndCopiesLists() {
         var messages = new ArrayList<>(List.of(new PromptMessage("user", "Hello")));
         var tools = new ArrayList<>(List.of(new Tool("tool-1", "search", "Search docs", ToolMode.STRICT, null)));
@@ -190,5 +209,22 @@ class PromptDtoTest {
                         () -> new PromptApi(null, PromptType.TEXT)),
                 () -> assertThrows(IllegalArgumentException.class,
                         () -> new PromptApi("prompt-1", null)));
+    }
+
+    private static PromptHttpResponse promptHttpResponse(String id, String hash, String version, PromptType type) {
+        return new PromptHttpResponse(
+                id,
+                hash,
+                version,
+                "Production",
+                null,
+                null,
+                PromptInterpolationType.FSTRING,
+                type,
+                null,
+                OutputType.TEXT,
+                null,
+                null,
+                "main");
     }
 }

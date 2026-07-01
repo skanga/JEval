@@ -18,6 +18,18 @@ public record PromptHttpResponse(
         String branch) {
 
     public PromptHttpResponse {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("PromptHttpResponse id is required");
+        }
+        if (hash == null || hash.isBlank()) {
+            throw new IllegalArgumentException("PromptHttpResponse hash is required");
+        }
+        if (version == null || version.isBlank()) {
+            throw new IllegalArgumentException("PromptHttpResponse version is required");
+        }
+        if (type == null) {
+            throw new IllegalArgumentException("PromptHttpResponse type is required");
+        }
         messages = messages == null ? null : List.copyOf(messages);
         tools = tools == null ? null : List.copyOf(tools);
     }
