@@ -498,6 +498,9 @@ public final class TestRunner {
     private static Metric metric(MetricSpec spec) {
         var type = spec.type().toLowerCase(Locale.ROOT).replace("-", "_");
         var threshold = spec.threshold() == null ? 1.0 : spec.threshold();
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Invalid value for threshold: " + spec.threshold());
+        }
         return switch (type) {
             case "exact_match" -> new ExactMatchMetric(threshold);
             case "pattern_match" -> new PatternMatchMetric(spec.pattern(), Boolean.TRUE.equals(spec.ignoreCase()), threshold);

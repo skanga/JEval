@@ -104,6 +104,22 @@ class TestRunnerTest {
     }
 
     @Test
+    void rejectsNonFiniteMetricThresholds() throws Exception {
+        var spec = tempDir.resolve("eval.json");
+        Files.writeString(spec, """
+                {
+                  "name": "bad-threshold",
+                  "metrics": [{"type": "exact_match", "threshold": 1e999}],
+                  "cases": [{"input": "q", "actualOutput": "yes", "expectedOutput": "yes"}]
+                }
+                """);
+
+        var error = assertThrows(IllegalArgumentException.class, () -> new TestRunner().run(spec));
+
+        assertTrue(error.getMessage().contains("Invalid value for threshold"));
+    }
+
+    @Test
     void runsCsvDatasetFromSpec() throws Exception {
         var dataset = tempDir.resolve("cases.csv");
         Files.writeString(dataset, """
