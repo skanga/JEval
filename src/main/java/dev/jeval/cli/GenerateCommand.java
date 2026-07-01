@@ -504,7 +504,9 @@ final class GenerateCommand {
         for (var arg : args) {
             if ("--include-expected".equals(arg) || "--include-expected-output".equals(arg)) {
                 value = true;
-            } else if ("--no-include-expected".equals(arg) || "--no-expected-output".equals(arg)) {
+            } else if ("--no-include-expected".equals(arg)
+                    || "--no-include-expected-output".equals(arg)
+                    || "--no-expected-output".equals(arg)) {
                 value = false;
             }
         }
@@ -600,7 +602,8 @@ final class GenerateCommand {
                 "--max-files-per-context", "--encoding", "--document-path");
         var flags = Set.of(
                 "--async-mode", "--sync-mode", "--include-expected", "--no-include-expected",
-                "--include-expected-output", "--no-expected-output", "--cost-tracking", "--allow-cross-file-contexts");
+                "--include-expected-output", "--no-include-expected-output", "--no-expected-output",
+                "--cost-tracking", "--allow-cross-file-contexts");
         for (var i = 1; i < args.length; i++) {
             var arg = args[i];
             if (!arg.startsWith("-")) {
