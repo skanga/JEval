@@ -3099,6 +3099,36 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsNormalizesSdkRetryProvidersLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "deepeval-sdk-retry-providers=OpenAI, anthropic,unknown,openai, Bedrock",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_SDK_RETRY_PROVIDERS", "openai,anthropic,bedrock");
+    }
+
+    @Test
+    void settingsSdkRetryProvidersStarWinsLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "deepeval-sdk-retry-providers=OpenAI,*", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_SDK_RETRY_PROVIDERS", "*");
+    }
+
+    @Test
     void settingsRejectsInvalidPositiveCostValuesLikeDeepEval() {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

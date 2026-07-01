@@ -540,6 +540,9 @@ final class CliSettings {
         if (urlSettingKey(normalized)) {
             validateUrl(normalized, value);
         }
+        if (normalized.equals("DEEPEVAL_SDK_RETRY_PROVIDERS")) {
+            return retryProviders(value);
+        }
         if (normalized.equals("DEEPEVAL_RETRY_MAX_ATTEMPTS")) {
             validateIntegerMin(normalized, value, 1);
         }
@@ -619,6 +622,37 @@ final class CliSettings {
         } catch (URISyntaxException error) {
             throw new IllegalArgumentException("Invalid value for " + key + ": " + value);
         }
+    }
+
+    private static String retryProviders(String value) {
+        var providers = new java.util.LinkedHashSet<String>();
+        for (var token : value.split("[,\\s]+")) {
+            var provider = token.strip().toLowerCase(Locale.ROOT);
+            if (provider.equals("*")) {
+                return "*";
+            }
+            if (supportedProvider(provider)) {
+                providers.add(provider);
+            }
+        }
+        return String.join(",", providers);
+    }
+
+    private static boolean supportedProvider(String provider) {
+        return List.of(
+                "openai",
+                "azure",
+                "anthropic",
+                "bedrock",
+                "deepseek",
+                "google",
+                "grok",
+                "kimi",
+                "litellm",
+                "local",
+                "ollama",
+                "openrouter")
+                .contains(provider);
     }
 
     private static boolean knownSettingKey(String key) {
