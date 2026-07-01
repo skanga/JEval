@@ -321,7 +321,7 @@ final class CliSettings {
             if (!providerOptions(command, spec).contains(name)) {
                 return "No such option: " + name;
             }
-            if (!arg.contains("=") && providerValuedOptions(spec).contains(name) && missingValue(args, i)) {
+            if (!arg.contains("=") && providerValuedOptions(command, spec).contains(name) && missingValue(args, i)) {
                 return "Missing value for " + name;
             }
         }
@@ -329,7 +329,7 @@ final class CliSettings {
     }
 
     private static List<String> providerOptions(String command, ProviderSpec spec) {
-        var options = new java.util.ArrayList<>(providerValuedOptions(spec));
+        var options = new java.util.ArrayList<>(providerValuedOptions(command, spec));
         if (command.startsWith("unset-")) {
             options.add("--clear-secrets");
             options.add("-x");
@@ -337,11 +337,13 @@ final class CliSettings {
         return options;
     }
 
-    private static List<String> providerValuedOptions(ProviderSpec spec) {
-        var options = new java.util.ArrayList<>(spec.setKeys().keySet());
+    private static List<String> providerValuedOptions(String command, ProviderSpec spec) {
+        var options = command.startsWith("unset-")
+                ? new java.util.ArrayList<String>()
+                : new java.util.ArrayList<>(spec.setKeys().keySet());
         options.add("--save");
         options.add("-s");
-        if ("USE_GEMINI_MODEL".equals(spec.useKey())) {
+        if (!command.startsWith("unset-") && "USE_GEMINI_MODEL".equals(spec.useKey())) {
             options.add("--service-account-file");
         }
         return options;
