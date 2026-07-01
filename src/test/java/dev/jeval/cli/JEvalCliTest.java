@@ -3154,6 +3154,31 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsRejectsInvalidFloatCostValuesLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "openai-cost-per-input-token=many", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for OPENAI_COST_PER_INPUT_TOKEN: many"));
+        assertEquals(false, Files.exists(env));
+
+        out.reset();
+        err.reset();
+        exit = run(new String[] {
+                "settings", "--set", "gemini-cost-per-output-token=none", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for GEMINI_COST_PER_OUTPUT_TOKEN: none"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsValidatesProviderUrlsLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

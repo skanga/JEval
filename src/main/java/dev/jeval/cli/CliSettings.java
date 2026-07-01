@@ -537,6 +537,9 @@ final class CliSettings {
         if (positiveCostSettingKey(normalized)) {
             validateDoubleRange(normalized, value, Double.MIN_VALUE, Double.POSITIVE_INFINITY);
         }
+        if (floatCostSettingKey(normalized)) {
+            validateDoubleRange(normalized, value, -Double.MAX_VALUE, Double.MAX_VALUE);
+        }
         if (urlSettingKey(normalized)) {
             validateUrl(normalized, value);
         }
@@ -705,6 +708,23 @@ final class CliSettings {
                 "ANTHROPIC_COST_PER_OUTPUT_TOKEN",
                 "AWS_BEDROCK_COST_PER_INPUT_TOKEN",
                 "AWS_BEDROCK_COST_PER_OUTPUT_TOKEN")
+                .contains(key);
+    }
+
+    private static boolean floatCostSettingKey(String key) {
+        return List.of(
+                "DEEPSEEK_COST_PER_INPUT_TOKEN",
+                "DEEPSEEK_COST_PER_OUTPUT_TOKEN",
+                "GEMINI_COST_PER_INPUT_TOKEN",
+                "GEMINI_COST_PER_OUTPUT_TOKEN",
+                "GROK_COST_PER_INPUT_TOKEN",
+                "GROK_COST_PER_OUTPUT_TOKEN",
+                "MOONSHOT_COST_PER_INPUT_TOKEN",
+                "MOONSHOT_COST_PER_OUTPUT_TOKEN",
+                "OPENAI_COST_PER_INPUT_TOKEN",
+                "OPENAI_COST_PER_OUTPUT_TOKEN",
+                "OPENROUTER_COST_PER_INPUT_TOKEN",
+                "OPENROUTER_COST_PER_OUTPUT_TOKEN")
                 .contains(key);
     }
 
