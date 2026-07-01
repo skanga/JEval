@@ -38,6 +38,17 @@ class OptimizerPoliciesTest {
     }
 
     @Test
+    void pickBestWithTiesRejectsNonFiniteScores() {
+        var parents = new LinkedHashMap<String, String>();
+        parents.put("p1", null);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> OptimizerPolicies.pickBestWithTies(Map.of("p1", Double.NaN), parents, new Random(123)));
+        assertThrows(IllegalArgumentException.class,
+                () -> new OptimizerPolicies.TieBreakResult("p1", List.of("p1"), Double.POSITIVE_INFINITY));
+    }
+
+    @Test
     void pickBestWithTiesPrefersChildWhenTied() {
         var totals = new LinkedHashMap<String, Double>();
         totals.put("root", 0.8);

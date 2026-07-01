@@ -26,6 +26,11 @@ public final class OptimizerPolicies {
         if (totals == null || totals.isEmpty()) {
             throw new IllegalArgumentException("No candidate prompt configuration to choose from.");
         }
+        for (var score : totals.values()) {
+            if (score == null || !Double.isFinite(score)) {
+                throw new IllegalArgumentException("Candidate scores must be finite.");
+            }
+        }
         var maxScore = totals.values().stream().mapToDouble(Double::doubleValue).max().orElseThrow();
         var tied = new ArrayList<String>();
         for (var entry : totals.entrySet()) {
@@ -159,5 +164,11 @@ public final class OptimizerPolicies {
     }
 
     public record TieBreakResult(String chosenId, List<String> tiedIds, double maxScore) {
+        public TieBreakResult {
+            if (!Double.isFinite(maxScore)) {
+                throw new IllegalArgumentException("TieBreakResult maxScore must be finite");
+            }
+            tiedIds = tiedIds == null ? List.of() : List.copyOf(tiedIds);
+        }
     }
 }
