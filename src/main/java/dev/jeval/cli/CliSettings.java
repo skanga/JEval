@@ -540,6 +540,9 @@ final class CliSettings {
         if (normalized.equals("DEEPEVAL_TASK_GATHER_BUFFER_SECONDS_OVERRIDE")) {
             validateDoubleRange(normalized, value, 0.0, Double.POSITIVE_INFINITY);
         }
+        if (normalized.equals("DEEPEVAL_MAX_CONCURRENT_DOC_PROCESSING")) {
+            validateIntegerMin(normalized, value, 1);
+        }
         return value;
     }
 
@@ -589,6 +592,7 @@ final class CliSettings {
                 "DEEPEVAL_RETRY_CAP_SECONDS", "DEEPEVAL_RETRY_EXP_BASE",
                 "DEEPEVAL_RETRY_INITIAL_SECONDS", "DEEPEVAL_RETRY_JITTER",
                 "DEEPEVAL_RETRY_MAX_ATTEMPTS", "DEEPEVAL_SDK_RETRY_PROVIDERS",
+                "DEEPEVAL_MAX_CONCURRENT_DOC_PROCESSING",
                 "DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS", "DEEPEVAL_TIMEOUT_THREAD_LIMIT"));
         return keys;
     }
