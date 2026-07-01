@@ -2949,6 +2949,47 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetAcceptsDisplayTruncationValuesLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "deepeval-maxlen-tiny=41",
+                "--set", "deepeval-maxlen-short=61",
+                "--set", "deepeval-maxlen-medium=121",
+                "--set", "deepeval-maxlen-long=241",
+                "--set", "deepeval-shorten-default-maxlen=181",
+                "--set", "deepeval-shorten-suffix=...",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "DEEPEVAL_MAXLEN_TINY", "41");
+        assertDotenv(env, "DEEPEVAL_MAXLEN_SHORT", "61");
+        assertDotenv(env, "DEEPEVAL_MAXLEN_MEDIUM", "121");
+        assertDotenv(env, "DEEPEVAL_MAXLEN_LONG", "241");
+        assertDotenv(env, "DEEPEVAL_SHORTEN_DEFAULT_MAXLEN", "181");
+        assertDotenv(env, "DEEPEVAL_SHORTEN_SUFFIX", "...");
+    }
+
+    @Test
+    void settingsRejectsInvalidDisplayTruncationIntegerLikeDeepEval() {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings", "--set", "deepeval-maxlen-short=many", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for DEEPEVAL_MAXLEN_SHORT: many"));
+        assertEquals(false, Files.exists(env));
+    }
+
+    @Test
     void settingsSetAcceptsDisableDotenvLikeDeepEval() throws Exception {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();

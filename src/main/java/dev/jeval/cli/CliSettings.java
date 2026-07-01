@@ -529,6 +529,9 @@ final class CliSettings {
         if (normalized.equals("CONFIDENT_TRACE_SAMPLE_RATE")) {
             validateDoubleRange(normalized, value, 0.0, 1.0);
         }
+        if (displayLengthSettingKey(normalized)) {
+            validateInteger(normalized, value);
+        }
         if (normalized.equals("DEEPEVAL_RETRY_MAX_ATTEMPTS")) {
             validateIntegerMin(normalized, value, 1);
         }
@@ -563,6 +566,14 @@ final class CliSettings {
             validateIntegerMin(normalized, value, 1);
         }
         return value;
+    }
+
+    private static void validateInteger(String key, String value) {
+        try {
+            Integer.parseInt(value);
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException("Invalid value for " + key + ": " + value);
+        }
     }
 
     private static void validateIntegerMin(String key, String value, int min) {
@@ -618,6 +629,16 @@ final class CliSettings {
                         .contains(key);
     }
 
+    private static boolean displayLengthSettingKey(String key) {
+        return List.of(
+                "DEEPEVAL_MAXLEN_TINY",
+                "DEEPEVAL_MAXLEN_SHORT",
+                "DEEPEVAL_MAXLEN_MEDIUM",
+                "DEEPEVAL_MAXLEN_LONG",
+                "DEEPEVAL_SHORTEN_DEFAULT_MAXLEN")
+                .contains(key);
+    }
+
     private static java.util.Set<String> knownSettingKeys() {
         var keys = new java.util.HashSet<String>();
         keys.addAll(DEBUG_KEYS);
@@ -638,6 +659,8 @@ final class CliSettings {
                 "CUDA_LAUNCH_BLOCKING", "CUDA_VISIBLE_DEVICES",
                 "DEEPEVAL_DEFAULT_SAVE",
                 "DEEPEVAL_DISABLE_DOTENV", "DEEPEVAL_DISABLE_TIMEOUTS", "DEEPEVAL_FILE_SYSTEM",
+                "DEEPEVAL_MAXLEN_TINY", "DEEPEVAL_MAXLEN_SHORT",
+                "DEEPEVAL_MAXLEN_MEDIUM", "DEEPEVAL_MAXLEN_LONG",
                 "DEEPEVAL_RESULTS_FOLDER",
                 "DEEPEVAL_RETRY_CAP_SECONDS", "DEEPEVAL_RETRY_EXP_BASE",
                 "DEEPEVAL_RETRY_INITIAL_SECONDS", "DEEPEVAL_RETRY_JITTER",
@@ -646,6 +669,7 @@ final class CliSettings {
                 "ENABLE_DEEPEVAL_CACHE", "ERROR_REPORTING",
                 "IGNORE_DEEPEVAL_ERRORS", "SKIP_DEEPEVAL_MISSING_PARAMS",
                 "DEEPEVAL_MAX_CONCURRENT_DOC_PROCESSING",
+                "DEEPEVAL_SHORTEN_DEFAULT_MAXLEN", "DEEPEVAL_SHORTEN_SUFFIX",
                 "DEEPEVAL_TIMEOUT_SEMAPHORE_WARN_AFTER_SECONDS", "DEEPEVAL_TIMEOUT_THREAD_LIMIT",
                 "PYTHONPATH", "TOKENIZERS_PARALLELISM", "TRANSFORMERS_NO_ADVISORY_WARNINGS"));
         return keys;
