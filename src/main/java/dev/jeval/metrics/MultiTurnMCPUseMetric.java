@@ -44,6 +44,9 @@ public class MultiTurnMCPUseMetric implements ConversationalMetric {
     }
 
     public MultiTurnMCPUseMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("Multi-Turn MCP Use threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

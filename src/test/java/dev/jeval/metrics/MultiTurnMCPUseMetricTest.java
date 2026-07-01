@@ -58,6 +58,15 @@ class MultiTurnMCPUseMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MultiTurnMCPUseMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MultiTurnMCPUseMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureUsesModelPromptsAndParsesJsonResponses() {
         var model = new ScriptedModel(List.of(
                 "{\"score\":0.75,\"reason\":\"Right primitive.\"}",

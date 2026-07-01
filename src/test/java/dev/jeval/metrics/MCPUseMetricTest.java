@@ -79,6 +79,15 @@ class MCPUseMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MCPUseMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MCPUseMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void measureAllowsEmptyInputLikeDeepEval() {
         var metric = new StubMCPUseMetric(new MCPPrimitivesScore(1.0, "ok"), new MCPArgsScore(1.0, "ok"));
 

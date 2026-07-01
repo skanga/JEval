@@ -40,6 +40,9 @@ public class MCPTaskCompletionMetric implements ConversationalMetric {
     }
 
     public MCPTaskCompletionMetric(EvaluationModel model, double threshold, boolean includeReason, boolean strictMode) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("MCP Task Completion threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

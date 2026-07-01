@@ -62,6 +62,15 @@ class MCPTaskCompletionMetricTest {
     }
 
     @Test
+    void constructorRejectsNonFiniteThresholds() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MCPTaskCompletionMetric(Double.NaN, true, false)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new MCPTaskCompletionMetric(Double.POSITIVE_INFINITY, true, false)));
+    }
+
+    @Test
     void presentEmptyMcpListStillCountsAsMcpInteraction() {
         var metric = new StubMCPTaskCompletionMetric(List.of(new TaskCompletionVerdict(1.0, "Done.")));
         var testCase = ConversationalTestCase.builder(List.of(
