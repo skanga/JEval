@@ -195,7 +195,11 @@ public final class JEvalCli {
             return Files.isDirectory(options.folder()) ? latestTimestampedRun(options.folder()) : null;
         }
         var rolling = storeRoot.resolve(".deepeval").resolve(".latest_run_full.json");
-        return Files.isRegularFile(rolling) ? rolling : null;
+        if (Files.isRegularFile(rolling)) {
+            return rolling;
+        }
+        var experiments = storeRoot.resolve("experiments");
+        return Files.isDirectory(experiments) ? latestTimestampedRun(experiments) : null;
     }
 
     private static Path latestTimestampedRun(Path folder) throws IOException {

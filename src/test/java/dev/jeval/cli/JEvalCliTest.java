@@ -1150,6 +1150,34 @@ class JEvalCliTest {
     }
 
     @Test
+    void inspectFallsBackToExperimentsFolderLikeDeepEval() throws Exception {
+        var file = tempDir.resolve("eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "experiments-inspect",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [
+                    {"name": "good", "input": "q", "actualOutput": "a", "expectedOutput": "a"}
+                  ]
+                }
+                """);
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+        assertEquals(0, run(new String[] {
+                "test", "run", file.toString(), "--quiet",
+                "--results-folder", tempDir.resolve("experiments").toString()
+        }, out, err));
+        Files.delete(tempDir.resolve(".deepeval").resolve(".latest_run_full.json"));
+
+        out.reset();
+        err.reset();
+        var exit = run(new String[] {"inspect"}, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertTrue(text(out).contains("experiments-inspect"));
+    }
+
+    @Test
     void testRunWritesDeepEvalResultsFolderAndSubfolder() throws Exception {
         var file = tempDir.resolve("eval.json");
         Files.writeString(file, """
