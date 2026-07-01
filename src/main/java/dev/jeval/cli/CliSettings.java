@@ -514,6 +514,12 @@ final class CliSettings {
         if (normalized.equals("DEEPEVAL_FILE_SYSTEM")) {
             return fileSystem(value);
         }
+        if (normalized.equals("CONFIDENT_REGION")) {
+            return value.strip().toUpperCase(Locale.ROOT);
+        }
+        if (normalized.equals("AWS_BEDROCK_REGION")) {
+            return value.strip().toLowerCase(Locale.ROOT);
+        }
         if (normalized.equals("TEMPERATURE")) {
             validateDoubleRange(normalized, value, 0.0, 2.0);
         }
@@ -612,7 +618,7 @@ final class CliSettings {
                 "GOOGLE_SERVICE_ACCOUNT_KEY", "GROK_API_KEY", "LITELLM_API_KEY",
                 "LITELLM_PROXY_API_KEY", "LOCAL_EMBEDDING_API_KEY", "LOCAL_MODEL_API_KEY",
                 "MAX_TOKENS", "MOONSHOT_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY",
-                "PORTKEY_API_KEY", "TEMPERATURE",
+                "PORTKEY_API_KEY", "TEMPERATURE", "CONFIDENT_REGION",
                 "DEEPEVAL_DISABLE_DOTENV", "DEEPEVAL_DISABLE_TIMEOUTS", "DEEPEVAL_FILE_SYSTEM",
                 "DEEPEVAL_RESULTS_FOLDER",
                 "DEEPEVAL_RETRY_CAP_SECONDS", "DEEPEVAL_RETRY_EXP_BASE",

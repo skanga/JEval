@@ -2942,6 +2942,24 @@ class JEvalCliTest {
     }
 
     @Test
+    void settingsSetNormalizesRegionsLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        var exit = run(new String[] {
+                "settings",
+                "--set", "confident-region=us",
+                "--set", "aws-bedrock-region=US-WEST-2",
+                "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(0, exit, text(err));
+        assertDotenv(env, "CONFIDENT_REGION", "US");
+        assertDotenv(env, "AWS_BEDROCK_REGION", "us-west-2");
+    }
+
+    @Test
     void settingsRejectsMissingSetValueBeforeConsumingNextOption() {
         var env = tempDir.resolve(".env");
         var out = new ByteArrayOutputStream();
