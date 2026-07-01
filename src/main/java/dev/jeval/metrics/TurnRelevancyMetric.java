@@ -41,6 +41,9 @@ public class TurnRelevancyMetric implements ConversationalMetric {
             boolean includeReason,
             boolean strictMode,
             int windowSize) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("TurnRelevancy threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;

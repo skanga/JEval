@@ -55,6 +55,9 @@ public class TurnFaithfulnessMetric implements ConversationalMetric {
             boolean penalizeAmbiguousClaims,
             Integer truthsExtractionLimit,
             int windowSize) {
+        if (!Double.isFinite(threshold)) {
+            throw new IllegalArgumentException("TurnFaithfulness threshold must be finite");
+        }
         this.model = model;
         this.includeReason = includeReason;
         this.strictMode = strictMode;
