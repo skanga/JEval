@@ -36,16 +36,23 @@ public final class GoalAccuracySchemas {
     private static double requiredDouble(JsonNode node, String field) {
         var value = required(node, field);
         if (value.isNumber()) {
-            return value.asDouble();
+            return finiteDouble(value.asDouble(), field);
         }
         if (value.isTextual()) {
             try {
-                return Double.parseDouble(value.asText());
+                return finiteDouble(Double.parseDouble(value.asText()), field);
             } catch (NumberFormatException error) {
                 throw new IllegalArgumentException("Goal accuracy schema field must be a number: " + field, error);
             }
         }
         throw new IllegalArgumentException("Goal accuracy schema field must be a number: " + field);
+    }
+
+    private static double finiteDouble(double value, String field) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException("Goal accuracy schema field must be a finite number: " + field);
+        }
+        return value;
     }
 
     public record GoalSteps(String userGoal, List<String> stepsTaken) {

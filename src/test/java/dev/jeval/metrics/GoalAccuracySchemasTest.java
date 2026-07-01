@@ -31,10 +31,12 @@ class GoalAccuracySchemasTest {
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parseGoalScore("{\"score\":0.75}"));
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parseGoalScore("{\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parseGoalScore("{\"score\":\"bad\",\"reason\":\"ok\"}"));
+        assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parseGoalScore("{\"score\":\"NaN\",\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parseGoalScore("{\"score\":0.75,\"reason\":1}"));
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parsePlanScore("{\"score\":0.75}"));
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parsePlanScore("{\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parsePlanScore("{\"score\":\"bad\",\"reason\":\"ok\"}"));
+        assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parsePlanScore("{\"score\":\"Infinity\",\"reason\":\"ok\"}"));
         assertThrows(IllegalArgumentException.class, () -> GoalAccuracySchemas.parsePlanScore("{\"score\":0.75,\"reason\":1}"));
     }
 }
