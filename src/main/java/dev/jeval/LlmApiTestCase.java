@@ -103,6 +103,21 @@ public record LlmApiTestCase(
         mcpToolsCalled = copyMaps(mcpToolsCalled);
         mcpResourcesCalled = copyMaps(mcpResourcesCalled);
         mcpPromptsCalled = copyMaps(mcpPromptsCalled);
+        if (tokenCost != null && (!Double.isFinite(tokenCost) || tokenCost < 0.0)) {
+            throw new IllegalArgumentException("LlmApiTestCase tokenCost must be finite and non-negative");
+        }
+        if (completionTime != null && (!Double.isFinite(completionTime) || completionTime < 0.0)) {
+            throw new IllegalArgumentException("LlmApiTestCase completionTime must be finite and non-negative");
+        }
+        if (runDuration != null && (!Double.isFinite(runDuration) || runDuration < 0.0)) {
+            throw new IllegalArgumentException("LlmApiTestCase runDuration must be finite and non-negative");
+        }
+        if (evaluationCost != null && (!Double.isFinite(evaluationCost) || evaluationCost < 0.0)) {
+            throw new IllegalArgumentException("LlmApiTestCase evaluationCost must be finite and non-negative");
+        }
+        if (order != null && order < 0) {
+            throw new IllegalArgumentException("LlmApiTestCase order must be non-negative");
+        }
     }
 
     public Map<String, Object> modelDump() {

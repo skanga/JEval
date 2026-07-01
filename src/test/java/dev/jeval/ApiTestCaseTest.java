@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
@@ -312,6 +313,29 @@ class ApiTestCaseTest {
     }
 
     @Test
+    void llmApiTestCaseRejectsInvalidNumericValues() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> llmApiWithNumbers(-0.01, null, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> llmApiWithNumbers(Double.NaN, null, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> llmApiWithNumbers(null, -0.01, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> llmApiWithNumbers(null, Double.POSITIVE_INFINITY, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> llmApiWithNumbers(null, null, -0.01, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> llmApiWithNumbers(null, null, Double.NaN, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> llmApiWithNumbers(null, null, null, -0.01, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> llmApiWithNumbers(null, null, null, Double.POSITIVE_INFINITY, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> llmApiWithNumbers(null, null, null, null, -1)));
+    }
+
+    @Test
     void conversationalApiTestCaseUpdateHelpersAppendMetricsAndAccumulateDuration() {
         var passing = new MetricData("conversation completeness", 0.5, true, 1.0, null, false, null, null, null, null, null, null);
         var failing = new MetricData("knowledge retention", 0.5, false, 0.1, "forgot", false, null, null, 0.4, null, null, null);
@@ -330,6 +354,21 @@ class ApiTestCaseTest {
                 () -> assertFalse(updated.success()),
                 () -> assertEquals(5.5, updated.runDuration()),
                 () -> assertEquals(0.4, updated.evaluationCost()));
+    }
+
+    @Test
+    void conversationalApiTestCaseRejectsInvalidNumericValues() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> conversationalApiWithNumbers(-0.01, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> conversationalApiWithNumbers(Double.NaN, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> conversationalApiWithNumbers(null, -0.01, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> conversationalApiWithNumbers(null, Double.POSITIVE_INFINITY, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> conversationalApiWithNumbers(null, null, -1)));
     }
 
     private static LlmApiTestCase llmApi(Boolean success, List<Object> metricsData, Double evaluationCost) {
@@ -360,6 +399,36 @@ class ApiTestCaseTest {
                 null);
     }
 
+    private static LlmApiTestCase llmApiWithNumbers(
+            Double tokenCost, Double completionTime, Double runDuration, Double evaluationCost, Integer order) {
+        return new LlmApiTestCase(
+                "case",
+                "input",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                tokenCost,
+                completionTime,
+                null,
+                true,
+                null,
+                runDuration,
+                evaluationCost,
+                order,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
+
     private static ConversationalApiTestCase conversationalApi(
             Boolean success, List<Object> metricsData, Double runDuration, Double evaluationCost) {
         return new ConversationalApiTestCase(
@@ -370,6 +439,27 @@ class ApiTestCaseTest {
                 evaluationCost,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    private static ConversationalApiTestCase conversationalApiWithNumbers(
+            Double runDuration, Double evaluationCost, Integer order) {
+        return new ConversationalApiTestCase(
+                "conversation",
+                true,
+                null,
+                runDuration,
+                evaluationCost,
+                null,
+                order,
                 null,
                 null,
                 null,

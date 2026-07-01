@@ -32,6 +32,15 @@ public record ConversationalApiTestCase(
         imagesMapping = imagesMapping == null ? null : Map.copyOf(imagesMapping);
         tags = tags == null ? null : List.copyOf(tags);
         mcpServers = copyMaps(mcpServers);
+        if (runDuration != null && (!Double.isFinite(runDuration) || runDuration < 0.0)) {
+            throw new IllegalArgumentException("ConversationalApiTestCase runDuration must be finite and non-negative");
+        }
+        if (evaluationCost != null && (!Double.isFinite(evaluationCost) || evaluationCost < 0.0)) {
+            throw new IllegalArgumentException("ConversationalApiTestCase evaluationCost must be finite and non-negative");
+        }
+        if (order != null && order < 0) {
+            throw new IllegalArgumentException("ConversationalApiTestCase order must be non-negative");
+        }
     }
 
     public Map<String, Object> modelDump() {
