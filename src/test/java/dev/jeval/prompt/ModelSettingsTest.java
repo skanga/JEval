@@ -2,6 +2,7 @@ package dev.jeval.prompt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
@@ -53,5 +54,20 @@ class ModelSettingsTest {
 
         assertNull(settings.provider());
         assertNull(settings.stopSequence());
+    }
+
+    @Test
+    void rejectsInvalidNumericValues() {
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ModelSettings(null, null, Double.NaN, null, null, null, null, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ModelSettings(null, null, null, -1, null, null, null, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ModelSettings(null, null, null, null, Double.POSITIVE_INFINITY, null, null, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ModelSettings(null, null, null, null, null, Double.NaN, null, null, null, null)),
+                () -> assertThrows(IllegalArgumentException.class,
+                        () -> new ModelSettings(null, null, null, null, null, null, Double.POSITIVE_INFINITY, null, null, null)));
     }
 }

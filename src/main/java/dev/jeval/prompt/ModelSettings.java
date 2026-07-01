@@ -15,6 +15,19 @@ public record ModelSettings(
         Verbosity verbosity) {
 
     public ModelSettings {
+        requireFinite(temperature, "temperature");
+        requireFinite(topP, "topP");
+        requireFinite(frequencyPenalty, "frequencyPenalty");
+        requireFinite(presencePenalty, "presencePenalty");
+        if (maxTokens != null && maxTokens < 0) {
+            throw new IllegalArgumentException("ModelSettings maxTokens must be non-negative");
+        }
         stopSequence = stopSequence == null ? null : List.copyOf(stopSequence);
+    }
+
+    private static void requireFinite(Double value, String name) {
+        if (value != null && !Double.isFinite(value)) {
+            throw new IllegalArgumentException("ModelSettings " + name + " must be finite");
+        }
     }
 }
