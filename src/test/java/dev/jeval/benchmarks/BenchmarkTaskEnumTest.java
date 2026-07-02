@@ -28,6 +28,38 @@ class BenchmarkTaskEnumTest {
     }
 
     @Test
+    void bbqTaskValuesMatchDeepEval() {
+        assertEquals(List.of(
+                "Age",
+                "Disability_status",
+                "Gender_identity",
+                "Nationality",
+                "Physical_appearance",
+                "Race_ethnicity",
+                "Race_x_SES",
+                "Race_x_gender",
+                "Religion",
+                "SES",
+                "Sexual_orientation"),
+                Arrays.stream(BBQTask.values()).map(BBQTask::value).toList());
+    }
+
+    @Test
+    void equityMedQaTaskValuesMatchDeepEval() {
+        assertEquals(List.of(
+                "ehai",
+                "fbrt_llm",
+                "fbrt_llm_661_sampled",
+                "fbrt_manual",
+                "mixed_mmqa_omaq",
+                "multimedqa",
+                "omaq",
+                "omiye_et_al",
+                "trinds"),
+                Arrays.stream(EquityMedQATask.values()).map(EquityMedQATask::value).toList());
+    }
+
+    @Test
     void truthfulQaTaskValuesMatchDeepEval() {
         assertEquals(List.of(
                 "Language",
