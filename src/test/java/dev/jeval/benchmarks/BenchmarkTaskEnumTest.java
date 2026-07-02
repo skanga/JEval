@@ -93,6 +93,60 @@ class BenchmarkTaskEnumTest {
     }
 
     @Test
+    void squadTaskValuesMatchDeepEval() {
+        assertEquals(List.of(
+                "Pharmacy",
+                "Normans",
+                "Huguenot",
+                "Doctor_Who",
+                "1973_oil_crisis",
+                "Computational_complexity_theory",
+                "Warsaw",
+                "American_Broadcasting_Company",
+                "Chloroplast",
+                "Apollo_program",
+                "Teacher",
+                "Martin_Luther",
+                "Economic_inequality",
+                "Yuan_dynasty",
+                "Scottish_Parliament",
+                "Islamism",
+                "United_Methodist_Church",
+                "Immune_system",
+                "Newcastle_upon_Tyne",
+                "Ctenophora",
+                "Fresno,_California",
+                "Steam_engine",
+                "Packet_switching",
+                "Force",
+                "Jacksonville,_Florida",
+                "European_Union_law",
+                "Super_Bowl_50",
+                "Victoria_and_Albert_Museum",
+                "Black_Death",
+                "Construction",
+                "Sky_(United_Kingdom)",
+                "University_of_Chicago",
+                "Victoria_(Australia)",
+                "French_and_Indian_War",
+                "Imperialism",
+                "Private_school",
+                "Geology",
+                "Harvard_University",
+                "Rhine",
+                "Prime_number",
+                "Intergovernmental_Panel_on_Climate_Change",
+                "Amazon_rainforest",
+                "Kenya",
+                "Southern_California",
+                "Nikola_Tesla",
+                "Civil_disobedience",
+                "Genghis_Khan",
+                "Oxygen"),
+                Arrays.stream(SQuADTask.values()).map(SQuADTask::value).toList());
+    }
+
+    @Test
     void truthfulQaTaskValuesMatchDeepEval() {
         assertEquals(List.of(
                 "Language",
