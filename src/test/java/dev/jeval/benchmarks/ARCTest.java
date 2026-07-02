@@ -54,7 +54,24 @@ class ARCTest {
                 () -> assertEquals(1.0, result.overallAccuracy()),
                 () -> assertEquals(ARCMode.CHALLENGE, benchmark.mode()),
                 () -> assertEquals(1, benchmark.predictions().size()),
-                () -> assertEquals(List.of("one"), model.prompts()));
+                () -> assertEquals(1, model.prompts().size()),
+                () -> assertTrue(model.prompts().getFirst().contains("one")));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalFewShotPromptAndConfinement() {
+        var benchmark = new ARC(List.of(Golden.builder("Which option is correct?\nA. first\nB. second\nC. third\nD. fourth\nAnswer: ")
+                .expectedOutput("A")
+                .build()));
+        var model = new ScriptedModel("A");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith("Which factor will most likely cause a person to develop a fever?")),
+                () -> assertTrue(prompt.contains("Which option is correct?\nA. first\nB. second\nC. third\nD. fourth\nAnswer: ")),
+                () -> assertTrue(prompt.endsWith("Output 'A', 'B', 'C', or 'D'. Full answer not needed.")));
     }
 
     @Test
