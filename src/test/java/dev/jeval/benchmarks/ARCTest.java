@@ -15,6 +15,12 @@ import org.junit.jupiter.api.Test;
 class ARCTest {
 
     @Test
+    void modeValuesMatchDeepEval() {
+        assertEquals("ARC-Easy", ARCMode.EASY.value());
+        assertEquals("ARC-Challenge", ARCMode.CHALLENGE.value());
+    }
+
+    @Test
     void evaluateScoresSuppliedGoldensAndStoresPredictionsLikeDeepEval() {
         var benchmark = new ARC(List.of(
                 Golden.builder("What is 2+2?\nA. 3\nB. 4\nC. 5\nD. 6").expectedOutput("B").build(),
