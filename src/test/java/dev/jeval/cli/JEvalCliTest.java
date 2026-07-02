@@ -3430,6 +3430,15 @@ class JEvalCliTest {
 
         assertEquals(2, exit);
         assertTrue(text(err).contains("Invalid value for OPENROUTER_BASE_URL: not a url"));
+
+        out.reset();
+        err.reset();
+        exit = run(new String[] {
+                "settings", "--set", "deepseek-base-url=not a url", "--save", "dotenv:" + env
+        }, out, err);
+
+        assertEquals(2, exit);
+        assertTrue(text(err).contains("Invalid value for DEEPSEEK_BASE_URL: not a url"));
     }
 
     @Test
@@ -4933,6 +4942,36 @@ class JEvalCliTest {
         assertEquals(false, readDotenv(env).containsKey("USE_MOONSHOT_MODEL"));
         assertEquals(false, readDotenv(env).containsKey("MOONSHOT_MODEL_NAME"));
         assertEquals(false, readDotenv(env).containsKey("MOONSHOT_BASE_URL"));
+    }
+
+    @Test
+    void deepSeekProviderRoundtripUsesExclusiveFlagsAndBaseUrl() throws Exception {
+        var env = tempDir.resolve(".env");
+        var out = new ByteArrayOutputStream();
+        var err = new ByteArrayOutputStream();
+
+        assertEquals(0, run(new String[] {
+                "set-openai", "--model", "gpt-4o-mini", "--save", "dotenv:" + env
+        }, out, err));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {
+                "set-deepseek", "--model", "deepseek-chat",
+                "--base-url", "https://api.deepseek.com", "--save", "dotenv:" + env
+        }, out, err));
+        assertDotenv(env, "USE_DEEPSEEK_MODEL", "YES");
+        assertDotenv(env, "DEEPSEEK_MODEL_NAME", "deepseek-chat");
+        assertDotenv(env, "DEEPSEEK_BASE_URL", "https://api.deepseek.com");
+        assertEquals(false, readDotenv(env).containsKey("USE_OPENAI_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("OPENAI_MODEL_NAME"));
+
+        out.reset();
+        err.reset();
+        assertEquals(0, run(new String[] {"unset-deepseek", "--save", "dotenv:" + env}, out, err));
+        assertEquals(false, readDotenv(env).containsKey("USE_DEEPSEEK_MODEL"));
+        assertEquals(false, readDotenv(env).containsKey("DEEPSEEK_MODEL_NAME"));
+        assertEquals(false, readDotenv(env).containsKey("DEEPSEEK_BASE_URL"));
     }
 
     @Test

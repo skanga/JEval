@@ -49,6 +49,7 @@ class KeyFileHandlerTest {
         assertEquals("confident_api_key", KeyFileHandler.KeyValues.CONFIDENT_API_KEY.value());
         assertEquals("USE_OPENAI_MODEL", KeyFileHandler.ModelKeyValues.USE_OPENAI_MODEL.value());
         assertEquals("OPENROUTER_API_KEY", KeyFileHandler.ModelKeyValues.OPENROUTER_API_KEY.value());
+        assertEquals("DEEPSEEK_BASE_URL", KeyFileHandler.ModelKeyValues.DEEPSEEK_BASE_URL.value());
         assertEquals("GEMINI_COST_PER_INPUT_TOKEN",
                 KeyFileHandler.ModelKeyValues.GEMINI_COST_PER_INPUT_TOKEN.value());
         assertEquals("GEMINI_COST_PER_OUTPUT_TOKEN",

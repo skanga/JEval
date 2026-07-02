@@ -40,7 +40,7 @@ final class CliSettings {
             "OPENAI_API_VERSION", "ANTHROPIC_MODEL_NAME", "AWS_BEDROCK_MODEL_NAME", "AWS_BEDROCK_REGION",
             "OLLAMA_MODEL_NAME", "LOCAL_MODEL_NAME", "LOCAL_MODEL_BASE_URL", "LOCAL_MODEL_FORMAT",
             "GROK_MODEL_NAME", "GROK_BASE_URL", "MOONSHOT_MODEL_NAME", "MOONSHOT_BASE_URL",
-            "DEEPSEEK_MODEL_NAME", "GEMINI_MODEL_NAME",
+            "DEEPSEEK_MODEL_NAME", "DEEPSEEK_BASE_URL", "GEMINI_MODEL_NAME",
             "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GOOGLE_GENAI_USE_VERTEXAI", "AZURE_MODEL_VERSION",
             "LITELLM_MODEL_NAME", "LITELLM_API_BASE",
             "LITELLM_PROXY_API_BASE", "PORTKEY_MODEL_NAME", "PORTKEY_BASE_URL", "PORTKEY_PROVIDER_NAME",
@@ -701,6 +701,7 @@ final class CliSettings {
                 "LITELLM_PROXY_API_BASE",
                 "LOCAL_EMBEDDING_BASE_URL",
                 "LOCAL_MODEL_BASE_URL",
+                "DEEPSEEK_BASE_URL",
                 "OPENROUTER_BASE_URL",
                 "PORTKEY_BASE_URL")
                 .contains(key);
@@ -990,6 +991,7 @@ final class CliSettings {
                 case "set-deepseek", "unset-deepseek" -> llmWithSecrets(
                         "USE_DEEPSEEK_MODEL",
                         Map.of("--model", "DEEPSEEK_MODEL_NAME", "-m", "DEEPSEEK_MODEL_NAME",
+                                "--base-url", "DEEPSEEK_BASE_URL", "-u", "DEEPSEEK_BASE_URL",
                                 "--cost-per-input-token", "DEEPSEEK_COST_PER_INPUT_TOKEN",
                                 "-i", "DEEPSEEK_COST_PER_INPUT_TOKEN",
                                 "--cost-per-output-token", "DEEPSEEK_COST_PER_OUTPUT_TOKEN",
