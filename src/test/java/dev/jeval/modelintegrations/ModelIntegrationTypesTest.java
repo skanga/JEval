@@ -57,6 +57,30 @@ class ModelIntegrationTypesTest {
     }
 
     @Test
+    void outputParametersCalculatesEvaluationCostFromTokenPricesLikeDeepEval() {
+        var cost = new OutputParameters("answer", 3, 5, null).evaluationCost(0.01, 0.02);
+
+        assertEquals(0.13, cost.value());
+        assertEquals(3, cost.inputTokens());
+        assertEquals(5, cost.outputTokens());
+    }
+
+    @Test
+    void outputParametersKeepsMissingTokenCountsNullWhenCalculatingCostLikeDeepEval() {
+        var cost = new OutputParameters("answer", null, 5, null).evaluationCost(0.01, 0.02);
+
+        assertEquals(0.10, cost.value());
+        assertNull(cost.inputTokens());
+        assertEquals(5, cost.outputTokens());
+    }
+
+    @Test
+    void outputParametersCostIsUnknownWhenTokenPricesAreIncompleteLikeDeepEval() {
+        assertNull(new OutputParameters("answer", 3, 5, null).evaluationCost(null, 0.02));
+        assertNull(new OutputParameters("answer", 3, 5, null).evaluationCost(0.01, null));
+    }
+
+    @Test
     void recordsAllowMissingValuesLikePydanticModels() {
         var input = new InputParameters();
         var output = new OutputParameters();
