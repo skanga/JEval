@@ -17,6 +17,12 @@ import org.junit.jupiter.api.Test;
 class TruthfulQATest {
 
     @Test
+    void modeValuesMatchDeepEval() {
+        assertEquals("mc1", TruthfulQAMode.MC1.value());
+        assertEquals("mc2", TruthfulQAMode.MC2.value());
+    }
+
+    @Test
     void mc1ScoresExactMatchLikeDeepEval() {
         var taskGoldens = new LinkedHashMap<String, List<Golden>>();
         taskGoldens.put("Health", List.of(
