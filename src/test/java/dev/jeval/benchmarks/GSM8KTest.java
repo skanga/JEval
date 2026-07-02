@@ -50,7 +50,37 @@ class GSM8KTest {
         assertAll(
                 () -> assertEquals(1.0, result.overallAccuracy()),
                 () -> assertEquals(1, benchmark.predictions().size()),
-                () -> assertEquals(List.of("one"), model.prompts()));
+                () -> assertEquals(1, model.prompts().size()),
+                () -> assertTrue(model.prompts().getFirst().contains("one")));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalPromptTemplateShotsCotAndConfinement() {
+        var shots = List.of(Golden.builder("A store has 2 bags with 3 apples each.")
+                .actualOutput("There are 2 * 3 = 6 apples.\n#### 6")
+                .expectedOutput("6")
+                .build());
+        var benchmark = new GSM8K(List.of(
+                Golden.builder("If Sam has 2 apples and buys 3 more, how many apples does Sam have?")
+                        .expectedOutput("5")
+                        .build()),
+                1,
+                shots,
+                1,
+                true);
+        var model = new ScriptedModel("5");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith("The following are grade school math word problems\n\n")),
+                () -> assertTrue(prompt.contains("**Problem**: A store has 2 bags with 3 apples each.")),
+                () -> assertTrue(prompt.contains("**Solution**: There are 2 * 3 = 6 apples.")),
+                () -> assertTrue(prompt.contains("**Answer**: 6")),
+                () -> assertTrue(prompt.contains("**Problem**: If Sam has 2 apples and buys 3 more")),
+                () -> assertTrue(prompt.contains("Let's think step-by-step.")),
+                () -> assertTrue(prompt.endsWith("Make sure to output only the numerical answer.")));
     }
 
     @Test
