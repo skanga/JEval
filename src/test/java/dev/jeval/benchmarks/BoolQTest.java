@@ -50,7 +50,24 @@ class BoolQTest {
         assertAll(
                 () -> assertEquals(1.0, result.overallAccuracy()),
                 () -> assertEquals(1, benchmark.predictions().size()),
-                () -> assertEquals(List.of("one"), model.prompts()));
+                () -> assertEquals(1, model.prompts().size()),
+                () -> assertTrue(model.prompts().getFirst().contains("one")));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalFewShotPromptAndConfinement() {
+        var benchmark = new BoolQ(List.of(Golden.builder("Q: Is Java typed?\nP: Java is typed.\nA: ")
+                .expectedOutput("Yes")
+                .build()));
+        var model = new ScriptedModel("Yes");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith("Q: do iran and afghanistan speak the same language?")),
+                () -> assertTrue(prompt.contains("Q: Is Java typed?\nP: Java is typed.\nA: ")),
+                () -> assertTrue(prompt.endsWith("Make sure to output only 'Yes' or 'No'.")));
     }
 
     @Test
