@@ -2,6 +2,8 @@ package dev.jeval.benchmarks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class BenchmarkTaskEnumTest {
@@ -23,5 +25,49 @@ class BenchmarkTaskEnumTest {
         assertEquals("Necessary Conditional Reasoning", LogiQATask.NECESSARY_CONDITIONAL_REASONING.value());
         assertEquals("Disjunctive Reasoning", LogiQATask.DISJUNCTIVE_REASONING.value());
         assertEquals("Conjunctive Reasoning", LogiQATask.CONJUNCTIVE_REASONING.value());
+    }
+
+    @Test
+    void truthfulQaTaskValuesMatchDeepEval() {
+        assertEquals(List.of(
+                "Language",
+                "Misquotations",
+                "Nutrition",
+                "Fiction",
+                "Science",
+                "Proverbs",
+                "Mandela Effect",
+                "Indexical Error: Identity",
+                "Confusion: Places",
+                "Economics",
+                "Psychology",
+                "Confusion: People",
+                "Education",
+                "Conspiracies",
+                "Subjective",
+                "Misconceptions",
+                "Indexical Error: Other",
+                "Myths and Fairytales",
+                "Indexical Error: Time",
+                "Misconceptions: Topical",
+                "Politics",
+                "Finance",
+                "Indexical Error: Location",
+                "Confusion: Other",
+                "Law",
+                "Distraction",
+                "History",
+                "Weather",
+                "Statistics",
+                "Misinformation",
+                "Superstitions",
+                "Logical Falsehood",
+                "Health",
+                "Stereotypes",
+                "Religion",
+                "Advertising",
+                "Sociology",
+                "Paranormal"),
+                Arrays.stream(TruthfulQATask.values()).map(TruthfulQATask::value).toList());
     }
 }
