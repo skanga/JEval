@@ -106,7 +106,7 @@ public final class JEvalCli {
                     options.skipOnMissingParams(),
                     options.mark(),
                     storeRoot.resolve(".deepeval").resolve(".deepeval-cache.json"),
-                    options.useCache() && options.repeat() == 1);
+                    options.useCache() && !options.repeatSpecified());
             if (options.identifier() != null) {
                 result = withName(result, options.identifier());
             }
@@ -284,6 +284,7 @@ public final class JEvalCli {
         var quiet = false;
         String identifier = null;
         var repeat = 1;
+        var repeatSpecified = false;
         var exitOnFirstFailure = false;
         var display = "all";
         var ignoreErrors = false;
@@ -308,6 +309,7 @@ public final class JEvalCli {
                             return null;
                         }
                         repeat = parsedRepeat;
+                        repeatSpecified = true;
                     }
                     case "-d", "--display" -> display = value.toLowerCase(Locale.ROOT);
                     case "-m", "--mark" -> mark = value;
@@ -390,6 +392,7 @@ public final class JEvalCli {
                         return null;
                     }
                     repeat = parsedRepeat;
+                    repeatSpecified = true;
                 }
                 case "-d", "--display" -> {
                     if (missingOptionValue(args, i)) {
@@ -438,7 +441,8 @@ public final class JEvalCli {
                 useCache,
                 mark,
                 resultsFolder,
-                resultsSubfolder);
+                resultsSubfolder,
+                repeatSpecified);
     }
 
     private static String report(dev.jeval.runner.TestRunResult result, String format) {
@@ -584,7 +588,8 @@ public final class JEvalCli {
             boolean useCache,
             String mark,
             String resultsFolder,
-            String resultsSubfolder) {
+            String resultsSubfolder,
+            boolean repeatSpecified) {
     }
 
     private record InspectOptions(Path path, Path folder, String format) {
