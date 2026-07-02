@@ -1,8 +1,11 @@
 package dev.jeval.metrics;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import dev.jeval.ConversationalTestCase;
 import dev.jeval.ArenaTestCase;
 import dev.jeval.LlmTestCase;
@@ -10,6 +13,8 @@ import dev.jeval.MissingTestCaseParamsException;
 import dev.jeval.MultiTurnParam;
 import dev.jeval.SingleTurnParam;
 import dev.jeval.Turn;
+import dev.jeval.ToolCall;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,6 +22,7 @@ import java.util.Map;
 
 public final class MetricUtils {
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final DefaultPrettyPrinter PYTHON_INDENT_PRETTY_PRINTER = pythonIndentPrettyPrinter();
     private static final String INVALID_JSON_MESSAGE =
             "Evaluation LLM outputted an invalid JSON. Please use a better evaluation model.";
 
@@ -173,6 +179,53 @@ public final class MetricUtils {
             units.add(List.copyOf(current));
         }
         return units;
+    }
+
+    public static String printToolsCalled(List<ToolCall> toolsCalledList) {
+        if (toolsCalledList == null || toolsCalledList.isEmpty()) {
+            return "";
+        }
+        var text = new StringBuilder("[\n");
+        for (var i = 0; i < toolsCalledList.size(); i++) {
+            try {
+                var json = MAPPER.writer(PYTHON_INDENT_PRETTY_PRINTER)
+                        .writeValueAsString(toolsCalledList.get(i).modelDump(false));
+                text.append(json.lines()
+                        .map(line -> "  " + line)
+                        .collect(java.util.stream.Collectors.joining("\n")));
+            } catch (JsonProcessingException error) {
+                throw new IllegalArgumentException("Unable to serialize tool call.", error);
+            }
+            text.append(i < toolsCalledList.size() - 1 ? ",\n" : "\n");
+        }
+        return text.append("]").toString();
+    }
+
+    private static DefaultPrettyPrinter pythonIndentPrettyPrinter() {
+        var printer = new PythonIndentPrettyPrinter();
+        var indenter = new DefaultIndenter("    ", "\n");
+        printer.indentObjectsWith(indenter);
+        printer.indentArraysWith(indenter);
+        return printer;
+    }
+
+    private static final class PythonIndentPrettyPrinter extends DefaultPrettyPrinter {
+        private PythonIndentPrettyPrinter() {
+        }
+
+        private PythonIndentPrettyPrinter(PythonIndentPrettyPrinter base) {
+            super(base);
+        }
+
+        @Override
+        public DefaultPrettyPrinter createInstance() {
+            return new PythonIndentPrettyPrinter(this);
+        }
+
+        @Override
+        public void writeObjectFieldValueSeparator(JsonGenerator generator) throws IOException {
+            generator.writeRaw(": ");
+        }
     }
 
     public static JsonNode trimAndLoadJson(String input) {

@@ -13,6 +13,8 @@ import dev.jeval.MissingTestCaseParamsException;
 import dev.jeval.MultiTurnParam;
 import dev.jeval.SingleTurnParam;
 import dev.jeval.Turn;
+import dev.jeval.ToolCall;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -221,6 +223,30 @@ class MetricUtilsTest {
         assertEquals(Map.of("source", "unit"), turns.getFirst().get("metadata"));
         assertEquals(List.of("tag"), turns.getFirst().get("tags"));
         assertEquals(Map.of("input", "empty"), turns.get(1));
+    }
+
+    @Test
+    void printToolsCalledFormatsIndentedJsonListLikeDeepEval() {
+        var parameters = new LinkedHashMap<String, Object>();
+        parameters.put("query", "refund");
+
+        assertEquals("""
+                [
+                  {
+                      "name": "Search",
+                      "description": null,
+                      "reasoning": null,
+                      "input_parameters": {
+                          "query": "refund"
+                      },
+                      "output": "ok"
+                  }
+                ]""", MetricUtils.printToolsCalled(List.of(new ToolCall("Search", parameters, "ok"))));
+    }
+
+    @Test
+    void printToolsCalledReturnsEmptyStringForNoToolsLikeDeepEval() {
+        assertEquals("", MetricUtils.printToolsCalled(List.of()));
     }
 
     @Test
