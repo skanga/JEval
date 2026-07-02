@@ -8,7 +8,9 @@ import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import dev.jeval.ConversationalTestCase;
 import dev.jeval.ArenaTestCase;
+import dev.jeval.EvaluationCost;
 import dev.jeval.LlmTestCase;
+import dev.jeval.MetricData;
 import dev.jeval.MissingTestCaseParamsException;
 import dev.jeval.MllmImage;
 import dev.jeval.MultiTurnParam;
@@ -265,6 +267,32 @@ public final class MetricUtils {
         out.print(logs + "\n\n");
         out.print("=".repeat(70) + "\n");
         out.flush();
+    }
+
+    public static MetricData metricDataWithEvaluationCost(
+            String name,
+            double threshold,
+            boolean success,
+            Double score,
+            String reason,
+            Boolean strictMode,
+            String evaluationModel,
+            String error,
+            EvaluationCost evaluationCost,
+            String verboseLogs) {
+        return new MetricData(
+                name,
+                threshold,
+                success,
+                score,
+                reason,
+                strictMode,
+                evaluationModel,
+                error,
+                evaluationCost == null ? null : evaluationCost.value(),
+                evaluationCost == null ? null : evaluationCost.inputTokens(),
+                evaluationCost == null ? null : evaluationCost.outputTokens(),
+                verboseLogs);
     }
 
     private static DefaultPrettyPrinter pythonIndentPrettyPrinter() {
