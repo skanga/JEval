@@ -53,7 +53,7 @@ class HellaSwagTest {
         assertAll(
                 () -> assertEquals(1.0, result.overallAccuracy()),
                 () -> assertEquals(1, benchmark.predictions().size()),
-                () -> assertEquals(List.of("one"), model.prompts()));
+                () -> assertEquals(List.of(prompt("task", "one")), model.prompts()));
     }
 
     @Test
@@ -68,8 +68,33 @@ class HellaSwagTest {
 
         assertAll(
                 () -> assertEquals(2.0 / 3.0, result.overallAccuracy()),
-                () -> assertEquals(List.of(List.of("one", "two"), List.of("three")), model.batches()),
+                () -> assertEquals(List.of(List.of(prompt("task", "one"), prompt("task", "two")),
+                        List.of(prompt("task", "three"))), model.batches()),
                 () -> assertEquals(0, benchmark.predictions().get(2).correct()));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalTaskPromptShotsAndConfinementForGeneration() {
+        var benchmark = new HellaSwag(Map.of("Applying sunscreen", List.of(
+                Golden.builder("A person pours lotion.\nA. applies it\nB. sleeps\nAnswer:")
+                        .expectedOutput("A")
+                        .build())),
+                null,
+                List.of(Golden.builder("Someone opens a bottle.\nA. drinks\nB. runs\nAnswer:")
+                        .expectedOutput("A")
+                        .build()),
+                1);
+        var model = new ScriptedModel("A");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith(
+                        "The following are multiple choice questions (with answers) are sentence completion problems about Applying sunscreen.")),
+                () -> assertTrue(prompt.contains("Someone opens a bottle.\nA. drinks\nB. runs\nAnswer: A")),
+                () -> assertTrue(prompt.contains("A person pours lotion.\nA. applies it\nB. sleeps\nAnswer:")),
+                () -> assertTrue(prompt.endsWith("Output 'A', 'B', 'C', or 'D'. Full answer not needed.")));
     }
 
     @Test
@@ -77,6 +102,13 @@ class HellaSwagTest {
         var thrown = assertThrows(IllegalArgumentException.class, () -> new HellaSwag(Map.of()));
 
         assertTrue(thrown.getMessage().contains("taskGoldens"));
+    }
+
+    private static String prompt(String task, String input) {
+        return "The following are multiple choice questions (with answers) "
+                + "are sentence completion problems about %s.\n\n%s\n\n"
+                        .formatted(task, input)
+                + "Output 'A', 'B', 'C', or 'D'. Full answer not needed.";
     }
 
     private static final class ScriptedModel implements EvaluationModel {
