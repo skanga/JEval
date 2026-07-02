@@ -10,6 +10,7 @@ import dev.jeval.ConversationalTestCase;
 import dev.jeval.Contestant;
 import dev.jeval.LlmTestCase;
 import dev.jeval.MissingTestCaseParamsException;
+import dev.jeval.MllmImage;
 import dev.jeval.MultiTurnParam;
 import dev.jeval.SingleTurnParam;
 import dev.jeval.Turn;
@@ -60,6 +61,37 @@ class MetricUtilsTest {
                 emptyActualOutput,
                 List.of(SingleTurnParam.ACTUAL_OUTPUT),
                 "DummyMetric"));
+    }
+
+    @Test
+    void checkLlmTestCaseParamsValidatesInputAndActualOutputImageCountsLikeDeepEval() {
+        var image = new MllmImage("aW1hZ2U=", "image/png");
+        var testCase = LlmTestCase.builder("input " + image)
+                .actualOutput("output " + image)
+                .build();
+
+        assertDoesNotThrow(() -> MetricUtils.checkLlmTestCaseParams(
+                testCase,
+                List.of(SingleTurnParam.INPUT, SingleTurnParam.ACTUAL_OUTPUT),
+                "ImageMetric",
+                1,
+                1));
+        assertEquals(
+                "Can only evaluate test cases with '2' input images using the 'ImageMetric' metric. `1` found.",
+                assertThrows(IllegalArgumentException.class, () -> MetricUtils.checkLlmTestCaseParams(
+                        testCase,
+                        List.of(SingleTurnParam.INPUT),
+                        "ImageMetric",
+                        2,
+                        null)).getMessage());
+        assertEquals(
+                "Can only evaluate test cases with '2' output images using the 'ImageMetric' metric. `1` found.",
+                assertThrows(IllegalArgumentException.class, () -> MetricUtils.checkLlmTestCaseParams(
+                        testCase,
+                        List.of(SingleTurnParam.ACTUAL_OUTPUT),
+                        "ImageMetric",
+                        null,
+                        2)).getMessage());
     }
 
     @Test

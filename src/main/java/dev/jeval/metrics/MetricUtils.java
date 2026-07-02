@@ -10,10 +10,12 @@ import dev.jeval.ConversationalTestCase;
 import dev.jeval.ArenaTestCase;
 import dev.jeval.LlmTestCase;
 import dev.jeval.MissingTestCaseParamsException;
+import dev.jeval.MllmImage;
 import dev.jeval.MultiTurnParam;
 import dev.jeval.SingleTurnParam;
 import dev.jeval.Turn;
 import dev.jeval.ToolCall;
+import dev.jeval.Utils;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -34,9 +36,32 @@ public final class MetricUtils {
             LlmTestCase testCase,
             List<SingleTurnParam> testCaseParams,
             String metricName) {
+        checkLlmTestCaseParams(testCase, testCaseParams, metricName, null, null);
+    }
+
+    public static void checkLlmTestCaseParams(
+            LlmTestCase testCase,
+            List<SingleTurnParam> testCaseParams,
+            String metricName,
+            Integer inputImageCount,
+            Integer actualOutputImageCount) {
         if (testCaseParams.contains(SingleTurnParam.ACTUAL_OUTPUT) && "".equals(testCase.actualOutput())) {
             throw new MissingTestCaseParamsException(
                     "'actual_output' cannot be empty for the '" + metricName + "' metric");
+        }
+        if (inputImageCount != null && inputImageCount > 0) {
+            var count = imageCount(testCase.input());
+            if (count != inputImageCount) {
+                throw new IllegalArgumentException("Can only evaluate test cases with '" + inputImageCount
+                        + "' input images using the '" + metricName + "' metric. `" + count + "` found.");
+            }
+        }
+        if (actualOutputImageCount != null && actualOutputImageCount > 0) {
+            var count = imageCount(testCase.actualOutput());
+            if (count != actualOutputImageCount) {
+                throw new IllegalArgumentException("Can only evaluate test cases with '" + actualOutputImageCount
+                        + "' output images using the '" + metricName + "' metric. `" + count + "` found.");
+            }
         }
         var missingParams = new ArrayList<String>();
         for (var param : testCaseParams) {
@@ -48,6 +73,15 @@ public final class MetricUtils {
             throw new MissingTestCaseParamsException(
                     joinMissingParams(missingParams) + " cannot be None for the '" + metricName + "' metric");
         }
+    }
+
+    private static int imageCount(String text) {
+        if (text == null) {
+            return 0;
+        }
+        return (int) Utils.convertToMultiModalArray(text).stream()
+                .filter(MllmImage.class::isInstance)
+                .count();
     }
 
     public static void checkArenaTestCaseParams(
