@@ -52,7 +52,24 @@ class WinograndeTest {
         assertAll(
                 () -> assertEquals(1.0, result.overallAccuracy()),
                 () -> assertEquals(1, benchmark.predictions().size()),
-                () -> assertEquals(List.of("one"), model.prompts()));
+                () -> assertEquals(1, model.prompts().size()),
+                () -> assertTrue(model.prompts().getFirst().contains("one")));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalFewShotPromptAndConfinement() {
+        var benchmark = new Winogrande(List.of(Golden.builder("Sentence: The _ won.\nA. runner\nB. crowd\nAnswer:")
+                .expectedOutput("A")
+                .build()));
+        var model = new ScriptedModel("A");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith("Sentence: Ian volunteered to eat Dennis's menudo")),
+                () -> assertTrue(prompt.contains("Sentence: The _ won.\nA. runner\nB. crowd\nAnswer:")),
+                () -> assertTrue(prompt.endsWith("Output 'A', 'B', 'C', or 'D'. Full answer not needed.")));
     }
 
     @Test
