@@ -105,9 +105,10 @@ final class LangChain4jProviderModels {
     }
 
     private static OpenAiEmbeddingModel openAiEmbedding(Map<String, String> config, String modelOverride) {
+        var modelName = openAiEmbeddingModelName(config, modelOverride);
         return OpenAiEmbeddingModel.builder()
                 .apiKey(required(config, "OPENAI_API_KEY"))
-                .modelName(modelName(config, "OPENAI_EMBEDDING_MODEL_NAME", modelOverride, "text-embedding-3-small"))
+                .modelName(modelName)
                 .build();
     }
 
@@ -294,6 +295,16 @@ final class LangChain4jProviderModels {
             throw new IllegalArgumentException(key + " is required for provider-backed generation.");
         }
         return value;
+    }
+
+    private static String openAiEmbeddingModelName(Map<String, String> config, String modelOverride) {
+        var model = modelName(config, "OPENAI_EMBEDDING_MODEL_NAME", modelOverride, "text-embedding-3-small");
+        if (!java.util.Set.of("text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002")
+                .contains(model)) {
+            throw new IllegalArgumentException(
+                    "Invalid model. Available OpenAI Embedding models: text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002");
+        }
+        return model;
     }
 
     private static String deploymentName(Map<String, String> config, String modelOverride) {

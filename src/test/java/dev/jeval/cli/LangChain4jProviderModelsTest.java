@@ -483,6 +483,33 @@ class LangChain4jProviderModelsTest {
     }
 
     @Test
+    void acceptsValidOpenAiEmbeddingModelLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                OPENAI_API_KEY=sk-test
+                """);
+
+        var model = LangChain4jProviderModels.embeddingFrom(new DotenvFile(env), "text-embedding-3-large");
+
+        var openAi = assertInstanceOf(OpenAiEmbeddingModel.class, model);
+        assertEquals("text-embedding-3-large", openAi.modelName());
+    }
+
+    @Test
+    void rejectsInvalidOpenAiEmbeddingModelLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                OPENAI_API_KEY=sk-test
+                """);
+
+        var error = assertThrows(IllegalArgumentException.class,
+                () -> LangChain4jProviderModels.embeddingFrom(new DotenvFile(env), "custom-embedding"));
+
+        assertEquals("Invalid model. Available OpenAI Embedding models: text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002",
+                error.getMessage());
+    }
+
+    @Test
     void createsAzureOpenAiEmbeddingModelFromDotenv() throws Exception {
         var env = tempDir.resolve(".env");
         Files.writeString(env, """
