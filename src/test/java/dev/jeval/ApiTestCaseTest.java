@@ -83,6 +83,16 @@ class ApiTestCaseTest {
     }
 
     @Test
+    void singleTurnApiNameUsesPytestRunTestNameEnvLikeDeepEval() {
+        var api = ApiTestCases.from(
+                LlmTestCase.builder("input").build(),
+                1,
+                Map.of(Constants.PYTEST_RUN_TEST_NAME, "module.py::test_case"));
+
+        assertEquals("module.py::test_case", api.name());
+    }
+
+    @Test
     void apiConversionUsesNullForEmptyRetrievalContextLikeDeepEval() {
         var singleTurn = LlmTestCase.builder("input")
                 .retrievalContext(List.of())
@@ -230,6 +240,16 @@ class ApiTestCaseTest {
         var api = ApiTestCases.from(ConversationalTestCase.builder(List.of(new Turn("user", "hello"))).build(), null);
 
         assertEquals("conversational_test_case_None", api.name());
+    }
+
+    @Test
+    void conversationalApiNameUsesPytestRunTestNameEnvLikeDeepEval() {
+        var api = ApiTestCases.from(
+                ConversationalTestCase.builder(List.of(new Turn("user", "hello"))).build(),
+                1,
+                Map.of(Constants.PYTEST_RUN_TEST_NAME, "module.py::test_conversation"));
+
+        assertEquals("module.py::test_conversation", api.name());
     }
 
     @Test

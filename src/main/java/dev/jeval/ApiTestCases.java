@@ -1,14 +1,21 @@
 package dev.jeval;
 
 import java.util.List;
+import java.util.Map;
 
 public final class ApiTestCases {
     private ApiTestCases() {
     }
 
     public static LlmApiTestCase from(LlmTestCase testCase, Integer index) {
+        return from(testCase, index, System.getenv());
+    }
+
+    static LlmApiTestCase from(LlmTestCase testCase, Integer index, Map<String, String> env) {
         var order = testCase.datasetRank() != null ? testCase.datasetRank() : index;
-        var name = testCase.name() != null ? testCase.name() : "test_case_" + pythonNameIndex(order);
+        var name = testCase.name() != null
+                ? testCase.name()
+                : env.getOrDefault(Constants.PYTEST_RUN_TEST_NAME, "test_case_" + pythonNameIndex(order));
         return new LlmApiTestCase(
                 name,
                 testCase.input(),
@@ -38,8 +45,14 @@ public final class ApiTestCases {
     }
 
     public static ConversationalApiTestCase from(ConversationalTestCase testCase, Integer index) {
+        return from(testCase, index, System.getenv());
+    }
+
+    static ConversationalApiTestCase from(ConversationalTestCase testCase, Integer index, Map<String, String> env) {
         var order = testCase.datasetRank() != null ? testCase.datasetRank() : index;
-        var name = testCase.name() != null ? testCase.name() : "conversational_test_case_" + pythonNameIndex(order);
+        var name = testCase.name() != null
+                ? testCase.name()
+                : env.getOrDefault(Constants.PYTEST_RUN_TEST_NAME, "conversational_test_case_" + pythonNameIndex(order));
         return new ConversationalApiTestCase(
                 name,
                 true,
