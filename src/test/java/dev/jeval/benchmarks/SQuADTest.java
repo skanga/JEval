@@ -58,6 +58,28 @@ class SQuADTest {
     }
 
     @Test
+    void evaluateUsesDeepEvalFewShotPromptAndConfinementForGeneration() {
+        var evaluator = new ScriptedModel("{\"answer\": 1}");
+        var benchmark = new SQuAD(Map.of("Apollo_program", List.of(
+                Golden.builder("Context: Apollo 11 landed on the Moon.\nQuestion: What landed on the Moon?\nAnswer:")
+                        .expectedOutput("Apollo 11")
+                        .build())),
+                evaluator);
+        var model = new RecordingModel("Apollo 11");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith("Context: After Hurricane Katrina in 2005")),
+                () -> assertTrue(prompt.contains("Question: What did Beyonce and Rowland found in 2005?")),
+                () -> assertTrue(prompt.contains("Answer: the Survivor Foundation")),
+                () -> assertTrue(prompt.contains("Context: Apollo 11 landed on the Moon.")),
+                () -> assertTrue(prompt.endsWith(
+                        "Output the answer, which should a text segment taken from the context.")));
+    }
+
+    @Test
     void constructorRejectsEmptyTaskGoldens() {
         var thrown = assertThrows(IllegalArgumentException.class,
                 () -> new SQuAD(Map.of(), prompt -> "{\"answer\": 1}"));
