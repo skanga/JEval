@@ -14,6 +14,9 @@ import dev.jeval.MultiTurnParam;
 import dev.jeval.SingleTurnParam;
 import dev.jeval.Turn;
 import dev.jeval.ToolCall;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -247,6 +250,39 @@ class MetricUtilsTest {
     @Test
     void printToolsCalledReturnsEmptyStringForNoToolsLikeDeepEval() {
         assertEquals("", MetricUtils.printToolsCalled(List.of()));
+    }
+
+    @Test
+    void constructVerboseLogsJoinsAllButFinalStepLikeDeepEval() {
+        assertEquals(
+                "first \n \nsecond",
+                MetricUtils.constructVerboseLogs("Faithfulness", List.of("first", "second", "score"), false));
+    }
+
+    @Test
+    void constructVerboseLogsPrintsMetricHeaderAndFinalStepWhenVerbose() {
+        var output = new ByteArrayOutputStream();
+
+        var logs = MetricUtils.constructVerboseLogs(
+                "Faithfulness",
+                List.of("first", "second", "score"),
+                true,
+                new PrintStream(output, true, StandardCharsets.UTF_8));
+
+        assertEquals("first \n \nsecond", logs);
+        assertEquals("""
+                **************************************************
+                Faithfulness Verbose Logs
+                **************************************************
+
+                first\s
+                \s
+                second
+                \s
+                score
+
+                ======================================================================
+                """, output.toString(StandardCharsets.UTF_8));
     }
 
     @Test

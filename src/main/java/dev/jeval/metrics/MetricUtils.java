@@ -15,6 +15,7 @@ import dev.jeval.SingleTurnParam;
 import dev.jeval.Turn;
 import dev.jeval.ToolCall;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -199,6 +200,37 @@ public final class MetricUtils {
             text.append(i < toolsCalledList.size() - 1 ? ",\n" : "\n");
         }
         return text.append("]").toString();
+    }
+
+    public static String constructVerboseLogs(String metricName, List<String> steps, boolean verboseMode) {
+        return constructVerboseLogs(metricName, steps, verboseMode, System.out);
+    }
+
+    public static String constructVerboseLogs(
+            String metricName,
+            List<String> steps,
+            boolean verboseMode,
+            PrintStream out) {
+        var verboseLogs = new StringBuilder();
+        for (var i = 0; i < steps.size() - 1; i++) {
+            verboseLogs.append(steps.get(i));
+            if (i < steps.size() - 2) {
+                verboseLogs.append(" \n \n");
+            }
+        }
+        if (verboseMode) {
+            printVerboseLogs(metricName, verboseLogs + "\n \n" + steps.getLast(), out);
+        }
+        return verboseLogs.toString();
+    }
+
+    public static void printVerboseLogs(String metricName, String logs, PrintStream out) {
+        out.print("*".repeat(50) + "\n");
+        out.print(metricName + " Verbose Logs\n");
+        out.print("*".repeat(50) + "\n\n");
+        out.print(logs + "\n\n");
+        out.print("=".repeat(70) + "\n");
+        out.flush();
     }
 
     private static DefaultPrettyPrinter pythonIndentPrettyPrinter() {
