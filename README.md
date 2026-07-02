@@ -116,7 +116,7 @@ java -jar target/jeval-0.1.0-SNAPSHOT.jar set-gemini --model gemini-2.5-flash --
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-gemini --model gemini-2.5-flash --service-account-file path\to\service-account.json --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-grok --model grok-4 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-moonshot --model kimi-k2 --save dotenv:.env
-java -jar target/jeval-0.1.0-SNAPSHOT.jar set-deepseek --model deepseek-chat --save dotenv:.env
+java -jar target/jeval-0.1.0-SNAPSHOT.jar set-deepseek --model deepseek-chat --base-url https://api.deepseek.com --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-litellm --model openai/gpt-4.1 --base-url http://localhost:4000 --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-portkey --model gpt-4.1 --provider openai --save dotenv:.env
 java -jar target/jeval-0.1.0-SNAPSHOT.jar set-ollama --model llama3 --base-url http://localhost:11434 --save dotenv:.env
