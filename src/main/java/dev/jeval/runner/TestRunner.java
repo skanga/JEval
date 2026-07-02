@@ -85,39 +85,43 @@ public final class TestRunner {
             String mark,
             Path cacheFile,
             boolean useCache) throws IOException {
-        if (repeat < 1) {
-            throw new IllegalArgumentException("The repeat argument must be at least 1.");
-        }
-        var cache = TestRunCache.open(cacheFile);
-        if (Files.isDirectory(path)) {
-            if (selector != null) {
-                throw new IllegalArgumentException("Test selectors are only supported for files: " + path);
+        try {
+            if (repeat < 1) {
+                throw new IllegalArgumentException("The repeat argument must be at least 1.");
             }
-            var results = new ArrayList<TestCaseResult>();
-            try (var files = Files.walk(path)) {
-                for (var file : files
-                        .filter(Files::isRegularFile)
-                        .filter(TestRunner::isJson)
-                        .sorted()
-                        .toList()) {
-                    results.addAll(runFile(
-                            file,
-                            null,
-                            repeat,
-                            exitOnFirstFailure,
-                            ignoreErrors,
-                            skipOnMissingParams,
-                            mark,
-                            cache,
-                            useCache).results());
-                    if (exitOnFirstFailure && results.stream().anyMatch(result -> !result.success())) {
-                        break;
+            var cache = TestRunCache.open(cacheFile);
+            if (Files.isDirectory(path)) {
+                if (selector != null) {
+                    throw new IllegalArgumentException("Test selectors are only supported for files: " + path);
+                }
+                var results = new ArrayList<TestCaseResult>();
+                try (var files = Files.walk(path)) {
+                    for (var file : files
+                            .filter(Files::isRegularFile)
+                            .filter(TestRunner::isJson)
+                            .sorted()
+                            .toList()) {
+                        results.addAll(runFile(
+                                file,
+                                null,
+                                repeat,
+                                exitOnFirstFailure,
+                                ignoreErrors,
+                                skipOnMissingParams,
+                                mark,
+                                cache,
+                                useCache).results());
+                        if (exitOnFirstFailure && results.stream().anyMatch(result -> !result.success())) {
+                            break;
+                        }
                     }
                 }
+                return summarize(path.getFileName().toString(), results);
             }
-            return summarize(path.getFileName().toString(), results);
+            return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, skipOnMissingParams, mark, cache, useCache);
+        } finally {
+            TestRunHooks.invokeTestRunEndHook();
         }
-        return runFile(path, selector, repeat, exitOnFirstFailure, ignoreErrors, skipOnMissingParams, mark, cache, useCache);
     }
 
     private TestRunResult runFile(Path path) throws IOException {

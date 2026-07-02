@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -39,6 +40,25 @@ class TestRunnerTest {
         assertEquals(0.5, result.summary().averageScore());
         assertEquals(0.5, result.summary().passRate());
         assertFalse(result.success());
+    }
+
+    @Test
+    void runInvokesTestRunEndHookOnceLikeDeepEval() throws Exception {
+        var file = tempDir.resolve("hook_eval.json");
+        Files.writeString(file, """
+                {
+                  "name": "hook",
+                  "metrics": [{"type": "exact_match"}],
+                  "cases": [{"input": "q", "actualOutput": "yes", "expectedOutput": "yes"}]
+                }
+                """);
+        var calls = new AtomicInteger();
+
+        TestRunHooks.onTestRunEnd(calls::incrementAndGet);
+        new TestRunner().run(file);
+        new TestRunner().run(file);
+
+        assertEquals(1, calls.get());
     }
 
     @Test
