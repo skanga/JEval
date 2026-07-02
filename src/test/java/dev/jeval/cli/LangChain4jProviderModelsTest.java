@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import dev.jeval.langchain4j.LangChain4jEvaluationModel;
+import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
+import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
+import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -464,6 +467,67 @@ class LangChain4jProviderModelsTest {
 
         assertNotNull(model);
         assertInstanceOf(LangChain4jEvaluationModel.class, model);
+    }
+
+    @Test
+    void createsOpenAiEmbeddingModelByDefaultLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                OPENAI_API_KEY=sk-test
+                """);
+
+        var model = LangChain4jProviderModels.embeddingFrom(new DotenvFile(env), "text-embedding-3-small");
+
+        var openAi = assertInstanceOf(OpenAiEmbeddingModel.class, model);
+        assertEquals("text-embedding-3-small", openAi.modelName());
+    }
+
+    @Test
+    void createsAzureOpenAiEmbeddingModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_AZURE_OPENAI_EMBEDDING=YES
+                AZURE_OPENAI_ENDPOINT=https://jeval.openai.azure.com/
+                AZURE_OPENAI_API_KEY=azure-test
+                AZURE_EMBEDDING_DEPLOYMENT_NAME=embedding-prod
+                OPENAI_API_VERSION=2024-06-01
+                """);
+
+        var model = LangChain4jProviderModels.embeddingFrom(new DotenvFile(env));
+
+        assertInstanceOf(AzureOpenAiEmbeddingModel.class, model);
+    }
+
+    @Test
+    void createsLocalEmbeddingModelFromDotenv() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_LOCAL_EMBEDDINGS=YES
+                LOCAL_EMBEDDING_MODEL_NAME=nomic-embed-text
+                LOCAL_EMBEDDING_BASE_URL=http://localhost:8000/v1
+                LOCAL_EMBEDDING_API_KEY=local-key
+                """);
+
+        var model = LangChain4jProviderModels.embeddingFrom(new DotenvFile(env));
+
+        var openAi = assertInstanceOf(OpenAiEmbeddingModel.class, model);
+        assertEquals("nomic-embed-text", openAi.modelName());
+    }
+
+    @Test
+    void createsOllamaEmbeddingModelWhenLocalApiKeyIsOllamaLikeDeepEval() throws Exception {
+        var env = tempDir.resolve(".env");
+        Files.writeString(env, """
+                USE_LOCAL_EMBEDDINGS=YES
+                LOCAL_EMBEDDING_MODEL_NAME=nomic-embed-text
+                LOCAL_EMBEDDING_BASE_URL=http://localhost:11434
+                LOCAL_EMBEDDING_API_KEY=ollama
+                """);
+
+        var model = LangChain4jProviderModels.embeddingFrom(new DotenvFile(env));
+
+        var ollama = assertInstanceOf(OllamaEmbeddingModel.class, model);
+        assertEquals("nomic-embed-text", ollama.modelName());
     }
 
     @Test

@@ -5,11 +5,15 @@ import dev.jeval.EvaluationModel;
 import dev.jeval.langchain4j.LangChain4jEvaluationModel;
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
+import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
 import dev.langchain4j.model.bedrock.BedrockChatModel;
 import dev.langchain4j.model.bedrock.BedrockChatRequestParameters;
+import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.ollama.OllamaEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import java.io.IOException;
 import java.util.Map;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -73,6 +77,24 @@ final class LangChain4jProviderModels {
                 "No supported provider is configured; run set-openai, set-azure-openai, set-bedrock, set-anthropic, set-gemini, set-grok, set-moonshot, set-deepseek, set-litellm, set-portkey, set-ollama, set-local-model, or set-openrouter, or pass --responses-file.");
     }
 
+    static EmbeddingModel embeddingFrom(DotenvFile dotenv) throws IOException {
+        return embeddingFrom(dotenv, null);
+    }
+
+    static EmbeddingModel embeddingFrom(DotenvFile dotenv, String modelOverride) throws IOException {
+        var config = dotenv.read();
+        if ("ollama".equals(value(config, "LOCAL_EMBEDDING_API_KEY", null))) {
+            return ollamaEmbedding(config, modelOverride);
+        }
+        if ("YES".equals(config.get("USE_LOCAL_EMBEDDINGS"))) {
+            return localEmbedding(config, modelOverride);
+        }
+        if ("YES".equals(config.get("USE_AZURE_OPENAI_EMBEDDING"))) {
+            return azureOpenAiEmbedding(config, modelOverride);
+        }
+        return openAiEmbedding(config, modelOverride);
+    }
+
     private static OpenAiChatModel openAi(Map<String, String> config, String modelOverride) {
         var builder = OpenAiChatModel.builder()
                 .apiKey(required(config, "OPENAI_API_KEY"))
@@ -80,6 +102,38 @@ final class LangChain4jProviderModels {
         optionalDouble(config, "TEMPERATURE", builder::temperature);
         optionalInteger(config, "MAX_TOKENS", builder::maxTokens);
         return builder.build();
+    }
+
+    private static OpenAiEmbeddingModel openAiEmbedding(Map<String, String> config, String modelOverride) {
+        return OpenAiEmbeddingModel.builder()
+                .apiKey(required(config, "OPENAI_API_KEY"))
+                .modelName(modelName(config, "OPENAI_EMBEDDING_MODEL_NAME", modelOverride, "text-embedding-3-small"))
+                .build();
+    }
+
+    private static AzureOpenAiEmbeddingModel azureOpenAiEmbedding(Map<String, String> config, String modelOverride) {
+        return AzureOpenAiEmbeddingModel.builder()
+                .endpoint(required(config, "AZURE_OPENAI_ENDPOINT"))
+                .apiKey(required(config, "AZURE_OPENAI_API_KEY"))
+                .deploymentName(azureEmbeddingDeploymentName(config, modelOverride))
+                .serviceVersion(value(config, "OPENAI_API_VERSION", "2024-06-01"))
+                .httpClientProvider(new JdkHttpClientProvider())
+                .build();
+    }
+
+    private static OpenAiEmbeddingModel localEmbedding(Map<String, String> config, String modelOverride) {
+        return OpenAiEmbeddingModel.builder()
+                .apiKey(value(config, "LOCAL_EMBEDDING_API_KEY", "local"))
+                .modelName(modelName(config, "LOCAL_EMBEDDING_MODEL_NAME", modelOverride, null))
+                .baseUrl(value(config, "LOCAL_EMBEDDING_BASE_URL", "http://localhost:8000/v1"))
+                .build();
+    }
+
+    private static OllamaEmbeddingModel ollamaEmbedding(Map<String, String> config, String modelOverride) {
+        return OllamaEmbeddingModel.builder()
+                .modelName(modelName(config, "LOCAL_EMBEDDING_MODEL_NAME", modelOverride, null))
+                .baseUrl(value(config, "LOCAL_EMBEDDING_BASE_URL", "http://localhost:11434"))
+                .build();
     }
 
     private static AzureOpenAiChatModel azureOpenAi(Map<String, String> config, String modelOverride) {
@@ -248,6 +302,14 @@ final class LangChain4jProviderModels {
             return value;
         }
         return modelName(config, "AZURE_MODEL_NAME", modelOverride, null);
+    }
+
+    private static String azureEmbeddingDeploymentName(Map<String, String> config, String modelOverride) {
+        var value = value(config, "AZURE_EMBEDDING_DEPLOYMENT_NAME", null);
+        if (value != null) {
+            return value;
+        }
+        return modelName(config, "AZURE_EMBEDDING_MODEL_NAME", modelOverride, null);
     }
 
     private static String portkeyModelName(Map<String, String> config, String modelOverride) {
