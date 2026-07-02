@@ -2,6 +2,7 @@ package dev.jeval;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import dev.jeval.metrics.MetricUtils;
@@ -26,6 +27,27 @@ class MetricDataTest {
                 "logs");
 
         assertEquals(0.125, data.evaluationCost());
+        assertEquals(12, data.inputTokenCount());
+        assertEquals(34, data.outputTokenCount());
+    }
+
+    @Test
+    void fromEvaluationCostKeepsTokenCountsWhenCostValueIsUnknownLikeDeepEval() {
+        var cost = new EvaluationCost(null, 12, 34);
+
+        var data = MetricUtils.metricDataWithEvaluationCost(
+                "faithfulness",
+                0.5,
+                true,
+                0.75,
+                "ok",
+                false,
+                "gpt",
+                null,
+                cost,
+                "logs");
+
+        assertNull(data.evaluationCost());
         assertEquals(12, data.inputTokenCount());
         assertEquals(34, data.outputTokenCount());
     }
