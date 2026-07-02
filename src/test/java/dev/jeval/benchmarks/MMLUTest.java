@@ -55,7 +55,8 @@ class MMLUTest {
         assertAll(
                 () -> assertEquals(1.0, result.overallAccuracy()),
                 () -> assertEquals(1, benchmark.predictions().size()),
-                () -> assertEquals(List.of("one"), model.prompts()));
+                () -> assertEquals(1, model.prompts().size()),
+                () -> assertTrue(model.prompts().getFirst().contains("one")));
     }
 
     @Test
@@ -71,9 +72,40 @@ class MMLUTest {
 
         assertAll(
                 () -> assertEquals(2.0 / 3.0, result.overallAccuracy()),
-                () -> assertEquals(List.of(List.of("one", "two"), List.of("three")), model.batches()),
+                () -> assertEquals(2, model.batches().size()),
+                () -> assertEquals(2, model.batches().getFirst().size()),
+                () -> assertTrue(model.batches().getFirst().getFirst().contains("one")),
+                () -> assertTrue(model.batches().getFirst().get(1).contains("two")),
+                () -> assertEquals(1, model.batches().get(1).size()),
+                () -> assertTrue(model.batches().get(1).getFirst().contains("three")),
                 () -> assertEquals(3, benchmark.predictions().size()),
                 () -> assertEquals(0, benchmark.predictions().get(2).correct()));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalPromptTemplateShotsAndConfinement() {
+        var shots = List.of(
+                Golden.builder("What is 1 + 1?\nA. 1\nB. 2\nC. 3\nD. 4\nAnswer:")
+                        .expectedOutput("B")
+                        .build());
+        var benchmark = new MMLU(Map.of("abstract_algebra", List.of(
+                Golden.builder("What is 2 + 2?\nA. 3\nB. 4\nC. 5\nD. 6\nAnswer:")
+                        .expectedOutput("B")
+                        .build())),
+                null,
+                shots,
+                1);
+        var model = new ScriptedModel("B");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith(
+                        "The following are multiple choice questions (with answers) about abstract algebra.\n\n")),
+                () -> assertTrue(prompt.contains("What is 1 + 1?\nA. 1\nB. 2\nC. 3\nD. 4\nAnswer: B\n\n")),
+                () -> assertTrue(prompt.contains("What is 2 + 2?\nA. 3\nB. 4\nC. 5\nD. 6\nAnswer:")),
+                () -> assertTrue(prompt.endsWith("Output 'A', 'B', 'C', or 'D'. Full answer not needed.")));
     }
 
     @Test
