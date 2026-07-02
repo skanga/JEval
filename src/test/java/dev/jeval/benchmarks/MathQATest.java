@@ -51,8 +51,30 @@ class MathQATest {
 
         assertAll(
                 () -> assertEquals(2.0 / 3.0, result.overallAccuracy()),
-                () -> assertEquals(List.of(List.of("one", "two"), List.of("three")), model.batches()),
+                () -> assertEquals(2, model.batches().size()),
+                () -> assertEquals(2, model.batches().getFirst().size()),
+                () -> assertTrue(model.batches().getFirst().getFirst().contains("one")),
+                () -> assertTrue(model.batches().getFirst().get(1).contains("two")),
+                () -> assertEquals(1, model.batches().get(1).size()),
+                () -> assertTrue(model.batches().get(1).getFirst().contains("three")),
                 () -> assertEquals(0, benchmark.predictions().get(2).correct()));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalFewShotPromptAndConfinement() {
+        var benchmark = new MathQA(Map.of("general", List.of(
+                Golden.builder("Question: 2 + 2?\na ) 4\nb ) 5\nAnswer:")
+                        .expectedOutput("a")
+                        .build())));
+        var model = new ScriptedModel("a");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith("Question: the banker ' s gain of a certain sum")),
+                () -> assertTrue(prompt.contains("Question: 2 + 2?\na ) 4\nb ) 5\nAnswer:")),
+                () -> assertTrue(prompt.endsWith("Output 'a', 'b', 'c', or 'd'. Full answer not needed.")));
     }
 
     @Test
@@ -64,6 +86,7 @@ class MathQATest {
 
     private static final class ScriptedModel implements EvaluationModel {
         private final Queue<String> responses;
+        private final Queue<String> prompts = new ArrayDeque<>();
 
         private ScriptedModel(String... responses) {
             this.responses = new ArrayDeque<>(List.of(responses));
@@ -71,7 +94,12 @@ class MathQATest {
 
         @Override
         public String generate(String prompt) {
+            prompts.add(prompt);
             return responses.remove();
+        }
+
+        private List<String> prompts() {
+            return List.copyOf(prompts);
         }
     }
 
