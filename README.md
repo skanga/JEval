@@ -134,7 +134,10 @@ matching API key or secret material in the same dotenv file, for example with
 Embedding provider settings are persisted for DeepEval-compatible configuration
 parity: `set-azure-openai-embedding`, `set-local-embeddings`, and
 `set-ollama-embeddings`. The Ollama embedding command stores DeepEval's local
-embedding sentinel `LOCAL_EMBEDDING_API_KEY=ollama`.
+embedding sentinel `LOCAL_EMBEDDING_API_KEY=ollama`. When no embedding provider
+is selected, JEval uses OpenAI embeddings with DeepEval's valid model names:
+`text-embedding-3-small`, `text-embedding-3-large`, or
+`text-embedding-ada-002`.
 
 Provider retry helpers honor DeepEval-style environment settings:
 `DEEPEVAL_RETRY_MAX_ATTEMPTS`, `DEEPEVAL_RETRY_INITIAL_SECONDS`,
