@@ -51,8 +51,39 @@ class DROPTest {
 
         assertAll(
                 () -> assertEquals(2.0 / 3.0, result.overallAccuracy()),
-                () -> assertEquals(List.of(List.of("one", "two"), List.of("three")), model.batches()),
+                () -> assertEquals(2, model.batches().size()),
+                () -> assertEquals(2, model.batches().getFirst().size()),
+                () -> assertTrue(model.batches().getFirst().getFirst().contains("one")),
+                () -> assertTrue(model.batches().getFirst().get(1).contains("two")),
+                () -> assertEquals(1, model.batches().get(1).size()),
+                () -> assertTrue(model.batches().get(1).getFirst().contains("three")),
                 () -> assertEquals(0, benchmark.predictions().get(2).correct()));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalPromptTemplateShotsAndTypeConfinement() {
+        var shots = List.of(Golden.builder("Passage: A game happened in 1999.\nQuestion: What year?\nAnswer: ")
+                .expectedOutput("1999")
+                .build());
+        var benchmark = new DROP(Map.of("history", List.of(
+                Golden.builder("Passage: The event was in 2001.\nQuestion: What year?\nAnswer: ")
+                        .expectedOutput("2001")
+                        .context(List.of("number"))
+                        .build())),
+                null,
+                shots,
+                1);
+        var model = new ScriptedModel("2001");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith("Answer the following question based on the passage.\n\n")),
+                () -> assertTrue(prompt.contains("Below are some examples:\n\n")),
+                () -> assertTrue(prompt.contains("Passage: A game happened in 1999.\nQuestion: What year?\nAnswer: 1999\n")),
+                () -> assertTrue(prompt.contains("Passage: The event was in 2001.\nQuestion: What year?\nAnswer: ")),
+                () -> assertTrue(prompt.endsWith("Output should be a number. No explanation needed.")));
     }
 
     @Test
@@ -64,6 +95,7 @@ class DROPTest {
 
     private static final class ScriptedModel implements EvaluationModel {
         private final Queue<String> responses;
+        private final Queue<String> prompts = new ArrayDeque<>();
 
         private ScriptedModel(String... responses) {
             this.responses = new ArrayDeque<>(List.of(responses));
@@ -71,7 +103,12 @@ class DROPTest {
 
         @Override
         public String generate(String prompt) {
+            prompts.add(prompt);
             return responses.remove();
+        }
+
+        private List<String> prompts() {
+            return List.copyOf(prompts);
         }
     }
 
