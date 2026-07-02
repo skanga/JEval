@@ -51,8 +51,31 @@ class LogiQATest {
 
         assertAll(
                 () -> assertEquals(2.0 / 3.0, result.overallAccuracy()),
-                () -> assertEquals(List.of(List.of("one", "two"), List.of("three")), model.batches()),
+                () -> assertEquals(2, model.batches().size()),
+                () -> assertEquals(2, model.batches().getFirst().size()),
+                () -> assertTrue(model.batches().getFirst().getFirst().contains("one")),
+                () -> assertTrue(model.batches().getFirst().get(1).contains("two")),
+                () -> assertEquals(1, model.batches().get(1).size()),
+                () -> assertTrue(model.batches().get(1).getFirst().contains("three")),
                 () -> assertEquals(0, benchmark.predictions().get(2).correct()));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalFewShotPromptAndConfinement() {
+        var benchmark = new LogiQA(Map.of("logic", List.of(
+                Golden.builder("Write a multi-choice question for the following article:\nArticle: A implies B.\nQuestion: What follows?\nOptions: A B\nB C\nAnswer: ")
+                        .expectedOutput("A")
+                        .build())));
+        var model = new ScriptedModel("A");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith("Input\nWrite a multi-choice question for the following article:")),
+                () -> assertTrue(prompt.contains("Who is from Shanghai and has a master's degree?")),
+                () -> assertTrue(prompt.contains("Write a multi-choice question for the following article:\nArticle: A implies B.")),
+                () -> assertTrue(prompt.endsWith("Output 'A', 'B', 'C', or 'D'. Full answer not needed.")));
     }
 
     @Test
@@ -64,6 +87,7 @@ class LogiQATest {
 
     private static final class ScriptedModel implements EvaluationModel {
         private final Queue<String> responses;
+        private final Queue<String> prompts = new ArrayDeque<>();
 
         private ScriptedModel(String... responses) {
             this.responses = new ArrayDeque<>(List.of(responses));
@@ -71,7 +95,12 @@ class LogiQATest {
 
         @Override
         public String generate(String prompt) {
+            prompts.add(prompt);
             return responses.remove();
+        }
+
+        private List<String> prompts() {
+            return List.copyOf(prompts);
         }
     }
 
