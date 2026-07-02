@@ -50,7 +50,27 @@ class LambadaTest {
         assertAll(
                 () -> assertEquals(1.0, result.overallAccuracy()),
                 () -> assertEquals(1, benchmark.predictions().size()),
-                () -> assertEquals(List.of("one"), model.prompts()));
+                () -> assertEquals(1, model.prompts().size()),
+                () -> assertTrue(model.prompts().getFirst().contains("one")));
+    }
+
+    @Test
+    void evaluateUsesDeepEvalFewShotPromptAndConfinement() {
+        var benchmark = new LAMBADA(List.of(
+                Golden.builder("Context: The child opened the box.\nTarget Sentence: Inside was a tiny ____ \nTarget Word:")
+                        .expectedOutput("kitten")
+                        .build()));
+        var model = new ScriptedModel("kitten");
+
+        benchmark.evaluate(model);
+
+        var prompt = model.prompts().getFirst();
+        assertAll(
+                () -> assertTrue(prompt.startsWith("Context: her pay for the evening was almost double")),
+                () -> assertTrue(prompt.contains("Target Sentence: brian and max were a lot of fun")),
+                () -> assertTrue(prompt.contains("Target Word: cake")),
+                () -> assertTrue(prompt.contains("Context: The child opened the box.")),
+                () -> assertTrue(prompt.endsWith("Output the target word! Do not include punctuations.")));
     }
 
     @Test
